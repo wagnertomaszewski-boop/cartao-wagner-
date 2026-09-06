@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Wagner Tomaszewski | Vereador de Cristal</title>
 
 <style>
@@ -15,46 +16,43 @@ body{
   background:#061c31;
   font-family:Arial, sans-serif;
   color:white;
+  text-align:center;
 }
 
 .cartao{
-  position:relative;
   width:100%;
-  max-width:720px;
-  margin:auto;
-}
-
-.imagem{
-  width:100%;
+  border:0;
   display:block;
+  min-height:1220px;
 }
 
-/* NOVOS BOTÕES */
-.acoes{
-  max-width:720px;
-  margin:auto;
-  padding:20px 25px 30px;
+.solicitacoes{
+  padding:28px 18px 40px;
   background:#061c31;
 }
 
-.titulo{
-  text-align:center;
-  font-size:22px;
-  font-weight:bold;
-  margin:5px 0 18px;
+.solicitacoes h2{
+  font-size:27px;
+  margin:5px 0 10px;
+}
+
+.solicitacoes p{
+  color:#d6e0e8;
+  font-size:16px;
+  margin:0 auto 24px;
+  max-width:520px;
 }
 
 .botao{
   display:block;
-  width:100%;
-  padding:19px 12px;
-  margin:13px 0;
+  max-width:620px;
+  margin:15px auto;
+  padding:21px 15px;
   border-radius:18px;
-  text-align:center;
   text-decoration:none;
   color:white;
-  font-size:19px;
   font-weight:bold;
+  font-size:20px;
   box-shadow:0 5px 12px rgba(0,0,0,.25);
 }
 
@@ -63,51 +61,58 @@ body{
 }
 
 .acompanhar{
-  background:#1976b9;
+  background:#247bb8;
 }
 
-.legenda{
+.sub{
   display:block;
-  font-size:13px;
+  font-size:14px;
   font-weight:normal;
-  margin-top:5px;
+  margin-top:7px;
   opacity:.9;
+}
+
+footer{
+  padding:20px;
+  font-size:13px;
+  color:#aebdca;
 }
 </style>
 </head>
 
 <body>
 
-<div class="cartao">
+<iframe
+  class="cartao"
+  src="Cartao_Wagner_Tomaszewski_Visual_PDF_Interativo.html"
+  title="Cartão Digital Wagner Tomaszewski">
+</iframe>
 
-<img
-class="imagem"
-src="Cartão Cívico de Wagner Tomaszewski(1).png"
-alt="Cartão Digital Wagner Tomaszewski">
+<section class="solicitacoes">
 
-</div>
+<h2>📣 Solicitações da Comunidade</h2>
 
-<div class="acoes">
-
-<div class="titulo">
-📢 Solicitações da Comunidade
-</div>
+<p>
+Envie sua demanda diretamente ao mandato ou acompanhe uma solicitação já realizada.
+</p>
 
 <a class="botao enviar" href="solicitacao.html">
 📝 ENVIAR SUA SOLICITAÇÃO
-<span class="legenda">
-Envie uma demanda, sugestão ou pedido ao mandato
-</span>
+<span class="sub">Envie uma demanda, sugestão ou pedido</span>
 </a>
 
 <a class="botao acompanhar" href="acompanhar.html">
 🔎 ACOMPANHAR SUA SOLICITAÇÃO
-<span class="legenda">
-Consulte o andamento pelo número de protocolo
-</span>
+<span class="sub">Consulte pelo número de protocolo</span>
 </a>
 
-</div>
+</section>
+
+<footer>
+Wagner Tomaszewski<br>
+Vereador de Cristal/RS<br><br>
+Trabalho, diálogo e compromisso com a nossa gente!
+</footer>
 
 </body>
-</html>     
+</html>
