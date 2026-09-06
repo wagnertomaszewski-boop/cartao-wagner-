@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Painel Administrativo | Wagner Tomaszewski</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+<h1>Painel Administrativo</h1>
+<p>Solicitações recebidas</p>
+
+<div id="lista">Carregando solicitações...</div>
+
+<script>
+const SUPABASE_URL = "https://kmttgzraotabxvqmrren.supabase.co";
+
+const SUPABASE_KEY = "sb_publishable_vwnOpIVm_uIgQrtGAZaOUw_jWocq4U4";
+
+const supabaseClient = supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+async function carregarSolicitacoes() {
+
+  const { data, error } = await supabaseClient
+    .from("solicitacoes")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  const lista = document.getElementById("lista");
+
+  if (error) {
+    lista.innerHTML = "Erro ao carregar: " + error.message;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    lista.innerHTML = "Nenhuma solicitação encontrada.";
+    return;
+  }
+
+  lista.innerHTML = "";
+
+  data.forEach(item => {
+
+    const bloco = document.createElement("div");
+
+    bloco.style.background = "#ffffff";
+    bloco.style.color = "#071a2b";
+    bloco.style.padding = "15px";
+    bloco.style.margin = "12px";
+    bloco.style.borderRadius = "10px";
+
+    bloco.innerHTML =
+      "<strong>Solicitação #" + item.id + "</strong><br><br>" +
+      JSON.stringify(item, null, 2);
+
+    lista.appendChild(bloco);
+
+  });
+}
+
+carregarSolicitacoes();
+</script>
+
+</body>
+</html>
