@@ -1,55 +1,133 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Painel Administrativo | Wagner Tomaszewski</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f6f8;color:#17202a}
-header{background:#071a2b;color:#fff;padding:22px 16px;text-align:center}header h1{margin:0 0 5px;font-size:26px}
-header p{margin:0;color:#cbd5df}.container{max-width:800px;margin:auto;padding:18px}
-.card{background:#fff;border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px #0002;border-left:5px solid #0b7a45}
-.protocolo,.status{color:#0b7a45;font-weight:bold}.protocolo{font-size:17px;margin-bottom:12px}.linha{margin:7px 0;line-height:1.4}
-.descricao{background:#f5f7f8;padding:12px;border-radius:8px;margin-top:12px}
-select,button{width:100%;padding:12px;margin-top:12px;border-radius:8px;font-size:16px}
-select{border:1px solid #bbb;background:#fff}button{border:0;background:#0b7a45;color:#fff;font-weight:bold}
-.erro{background:#ffe6e6;color:#8b0000;padding:15px;border-radius:10px}.vazio{text-align:center;background:#fff;padding:30px;border-radius:12px}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Administrativo | Wagner Tomaszewski</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:#f3f6f8;color:#17202a}
+    header{background:#071f31;color:#fff;padding:24px 16px;text-align:center}
+    header h1{margin:0 0 6px;font-size:28px}
+    header p{margin:0;color:#cbd5df}
+    .container{max-width:800px;margin:auto;padding:20px}
+    .titulo{margin:20px 0;font-size:28px}
+    .card{background:#fff;border-radius:14px;padding:18px;margin-bottom:16px;
+      box-shadow:0 3px 12px rgba(0,0,0,.10);border-left:5px solid #0b7a45}
+    .protocolo{color:#0b7a45;font-weight:bold;font-size:17px;margin-bottom:12px}
+    .linha{margin:7px 0;line-height:1.4}
+    .descricao{background:#f5f7f8;padding:12px;border-radius:8px;margin-top:12px;white-space:pre-wrap}
+    select{width:100%;padding:12px;margin-top:12px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
+    button{width:100%;border:0;padding:13px;border-radius:8px;margin-top:10px;font-size:16px;
+      font-weight:bold;background:#0b7a45;color:#fff;cursor:pointer}
+    button:disabled{opacity:.6}
+    .vazio{text-align:center;background:#fff;padding:30px;border-radius:12px}
+    .erro{background:#ffe6e6;color:#8b0000;padding:15px;border-radius:10px;line-height:1.45}
+    .status{font-weight:bold;color:#0b7a45}
+  </style>
 </head>
 <body>
-<header><h1>Painel Administrativo</h1><p>Solicitações recebidas • Wagner Tomaszewski</p></header>
-<main class="container"><h2>Solicitações da comunidade</h2><div id="lista">Carregando solicitações...</div></main>
+<header>
+  <h1>Painel Administrativo</h1>
+  <p>Solicitações recebidas • Wagner Tomaszewski</p>
+</header>
+
+<main class="container">
+  <h2 class="titulo">Solicitações da comunidade</h2>
+  <div id="lista">Carregando solicitações...</div>
+</main>
+
 <script>
-const URL="https://kmttgzraotabxvqmrren.supabase.co";
-const KEY="sb_publishable_vwnOpIVm_uIgQrtGAZaOUw_jWocq4U4";
-const db=supabase.createClient(URL,KEY);
-const esc=v=>String(v??"Não informado").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-async function carregar(){
- const lista=document.getElementById("lista");
- const {data,error}=await db.from("solicitacoes").select("*").order("id",{ascending:false});
- if(error){lista.innerHTML='<div class="erro"><b>Erro:</b> '+esc(error.message)+'</div>';return}
- if(!data?.length){lista.innerHTML='<div class="vazio">Nenhuma solicitação recebida.</div>';return}
- const op=["Recebido","Em análise","Encaminhado","Em andamento","Concluído"];
- lista.innerHTML=data.map(x=>`<section class="card">
- <div class="protocolo">${esc(x.protocolo||"Solicitação #"+x.id)}</div>
- <div class="linha"><b>Nome:</b> ${esc(x.nome)}</div>
- <div class="linha"><b>WhatsApp:</b> ${esc(x.whatsapp)}</div>
- <div class="linha"><b>Localidade:</b> ${esc(x.localidade)}</div>
- <div class="linha"><b>Assunto:</b> ${esc(x.assunto)}</div>
- <div class="descricao"><b>Descrição:</b><br>${esc(x.descricao)}</div>
- <div class="linha"><b>Status atual:</b> <span class="status">${esc(x.status)}</span></div>
- <select id="s-${x.id}">${op.map(o=>`<option ${o===x.status?"selected":""}>${o}</option>`).join("")}</select>
- <button id="b-${x.id}" onclick="salvar(${x.id})">Salvar novo status</button></section>`).join("");
+const SUPABASE_URL = "https://kmttgzraotabxvqmrren.supabase.co";
+const SUPABASE_KEY = "sb_publishable_vwnOpIVm_uIgQrtGAZaOUw_jWocq4U4";
+const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const esc = (v) => {
+  if (v === null || v === undefined || v === "") return "Não informado";
+  return String(v).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+};
+
+async function carregarSolicitacoes(){
+  const lista = document.getElementById("lista");
+  lista.textContent = "Carregando solicitações...";
+
+  try {
+    const { data, error } = await client
+      .from("solicitacoes")
+      .select("*")
+      .order("created_at", { ascending:false });
+
+    if (error) throw error;
+
+    if (!data || data.length === 0){
+      lista.innerHTML = '<div class="vazio">Nenhuma solicitação encontrada.</div>';
+      return;
+    }
+
+    lista.innerHTML = "";
+
+    data.forEach(item => {
+      const id = Number(item.id);
+      const status = item.status || "Recebido";
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <div class="protocolo">${esc(item.protocolo || ("Solicitação #" + id))}</div>
+        <div class="linha"><strong>Nome:</strong> ${esc(item.nome)}</div>
+        <div class="linha"><strong>WhatsApp:</strong> ${esc(item.whatsapp)}</div>
+        <div class="linha"><strong>Localidade:</strong> ${esc(item.localidade)}</div>
+        <div class="linha"><strong>Assunto:</strong> ${esc(item.assunto)}</div>
+        <div class="descricao"><strong>Descrição:</strong><br>${esc(item.descricao)}</div>
+        <div class="linha"><strong>Status atual:</strong> <span class="status">${esc(status)}</span></div>
+        <select id="status-${id}">
+          ${["Recebido","Em análise","Encaminhado","Em andamento","Concluído"]
+            .map(s => `<option value="${s}" ${s===status?"selected":""}>${s}</option>`).join("")}
+        </select>
+        <button id="botao-${id}" onclick="atualizarStatus(${id})">Salvar novo status</button>
+      `;
+      lista.appendChild(card);
+    });
+  } catch (e) {
+    console.error(e);
+    lista.innerHTML = `<div class="erro"><strong>Não foi possível carregar as solicitações.</strong><br>
+    ${esc(e.message || e)}<br><br>Confira a conexão com o Supabase e as permissões da tabela.</div>`;
+  }
 }
-async function salvar(id){
- const b=document.getElementById("b-"+id),status=document.getElementById("s-"+id).value;
- b.disabled=true;b.textContent="Salvando...";
- const {error}=await db.from("solicitacoes").update({status,atualizacao:new Date().toISOString()}).eq("id",id);
- if(error){alert("Erro: "+error.message);b.disabled=false;b.textContent="Salvar novo status";return}
- alert("Status atualizado com sucesso!");carregar();
+
+async function atualizarStatus(id){
+  const seletor = document.getElementById(`status-${id}`);
+  const botao = document.getElementById(`botao-${id}`);
+  if (!seletor || !botao) return;
+
+  botao.disabled = true;
+  botao.textContent = "Salvando...";
+
+  try {
+    const novoStatus = seletor.value;
+    const { error } = await client
+      .from("solicitacoes")
+      .update({
+        status: novoStatus,
+        atualizacao: new Date().toISOString()
+      })
+      .eq("id", id);
+
+    if (error) throw error;
+    alert("Status atualizado com sucesso!");
+    await carregarSolicitacoes();
+  } catch (e) {
+    console.error(e);
+    alert("Erro ao atualizar o status: " + (e.message || e));
+    botao.disabled = false;
+    botao.textContent = "Salvar novo status";
+  }
 }
-carregar();
+
+carregarSolicitacoes();
 </script>
 </body>
 </html>
