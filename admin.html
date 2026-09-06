@@ -108,14 +108,22 @@ async function atualizarStatus(id){
 
   try {
     const novoStatus = seletor.value;
-    const { error } = await client
-      .from("solicitacoes")
-      .update({
-        status: novoStatus,
-        atualizacao: new Date().toISOString()
-      })
-    .eq("id", id);  
+const { data, error } = await client
+  .from("solicitacoes")
+  .update({
+    status: novoStatus,
+    atualizacao: new Date().toISOString()
+  })
+  .eq("id", id)
+  .select();
 
+console.log("RETORNO UPDATE:", data, error);
+
+if (error) throw error;
+
+if (!data || data.length === 0) {
+  throw new Error("O Supabase não permitiu alterar este registro.");
+}
     if (error) throw error;
     alert("Status atualizado com sucesso!");
     await carregarSolicitacoes();
