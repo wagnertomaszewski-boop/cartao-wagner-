@@ -1,124 +1,55 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Painel Administrativo | Wagner Tomaszewski</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f3f6f8;
-      color: #17202a;
-    }
-
-    header {
-      background: #071a2b;
-      color: white;
-      padding: 22px 16px;
-      text-align: center;
-    }
-
-    header h1 {
-      margin: 0 0 5px;
-      font-size: 26px;
-    }
-
-    header p {
-      margin: 0;
-      color: #cbd5df;
-    }
-
-    .container {
-      max-width: 800px;
-      margin: auto;
-      padding: 18px;
-    }
-
-    .titulo {
-      margin-bottom: 18px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 14px;
-      padding: 18px;
-      margin-bottom: 16px;
-      box-shadow: 0 3px 12px rgba(0,0,0,0.10);
-      border-left: 5px solid #0b7a45;
-    }
-
-    .protocolo {
-      color: #0b7a45;
-      font-weight: bold;
-      font-size: 17px;
-      margin-bottom: 12px;
-    }
-
-    .linha {
-      margin: 7px 0;
-      line-height: 1.4;
-    }
-
-    .descricao {
-      background: #f5f7f8;
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 12px;
-    }
-
-    select {
-      width: 100%;
-      padding: 12px;
-      margin-top: 12px;
-      border-radius: 8px;
-      border: 1px solid #bbb;
-      font-size: 16px;
-      background: white;
-    }
-
-    button {
-      width: 100%;
-      border: none;
-      padding: 13px;
-      border-radius: 8px;
-      margin-top: 10px;
-      font-size: 16px;
-      font-weight: bold;
-      background: #0b7a45;
-      color: white;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      opacity: 0.6;
-    }
-
-    .vazio {
-      text-align: center;
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-    }
-
-    .erro {
-      background: #ffe6e6;
-      color: #8b0000;
-      padding: 15px;
-      border-radius: 10px;
-    }
-
-    .status {
-      font-weight: bold;
-      color: #0b7a45;
-    }
-  </style>
-</
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel Administrativo | Wagner Tomaszewski</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f6f8;color:#17202a}
+header{background:#071a2b;color:#fff;padding:22px 16px;text-align:center}header h1{margin:0 0 5px;font-size:26px}
+header p{margin:0;color:#cbd5df}.container{max-width:800px;margin:auto;padding:18px}
+.card{background:#fff;border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px #0002;border-left:5px solid #0b7a45}
+.protocolo,.status{color:#0b7a45;font-weight:bold}.protocolo{font-size:17px;margin-bottom:12px}.linha{margin:7px 0;line-height:1.4}
+.descricao{background:#f5f7f8;padding:12px;border-radius:8px;margin-top:12px}
+select,button{width:100%;padding:12px;margin-top:12px;border-radius:8px;font-size:16px}
+select{border:1px solid #bbb;background:#fff}button{border:0;background:#0b7a45;color:#fff;font-weight:bold}
+.erro{background:#ffe6e6;color:#8b0000;padding:15px;border-radius:10px}.vazio{text-align:center;background:#fff;padding:30px;border-radius:12px}
+</style>
+</head>
+<body>
+<header><h1>Painel Administrativo</h1><p>Solicitações recebidas • Wagner Tomaszewski</p></header>
+<main class="container"><h2>Solicitações da comunidade</h2><div id="lista">Carregando solicitações...</div></main>
+<script>
+const URL="https://kmttgzraotabxvqmrren.supabase.co";
+const KEY="sb_publishable_vwnOpIVm_uIgQrtGAZaOUw_jWocq4U4";
+const db=supabase.createClient(URL,KEY);
+const esc=v=>String(v??"Não informado").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+async function carregar(){
+ const lista=document.getElementById("lista");
+ const {data,error}=await db.from("solicitacoes").select("*").order("id",{ascending:false});
+ if(error){lista.innerHTML='<div class="erro"><b>Erro:</b> '+esc(error.message)+'</div>';return}
+ if(!data?.length){lista.innerHTML='<div class="vazio">Nenhuma solicitação recebida.</div>';return}
+ const op=["Recebido","Em análise","Encaminhado","Em andamento","Concluído"];
+ lista.innerHTML=data.map(x=>`<section class="card">
+ <div class="protocolo">${esc(x.protocolo||"Solicitação #"+x.id)}</div>
+ <div class="linha"><b>Nome:</b> ${esc(x.nome)}</div>
+ <div class="linha"><b>WhatsApp:</b> ${esc(x.whatsapp)}</div>
+ <div class="linha"><b>Localidade:</b> ${esc(x.localidade)}</div>
+ <div class="linha"><b>Assunto:</b> ${esc(x.assunto)}</div>
+ <div class="descricao"><b>Descrição:</b><br>${esc(x.descricao)}</div>
+ <div class="linha"><b>Status atual:</b> <span class="status">${esc(x.status)}</span></div>
+ <select id="s-${x.id}">${op.map(o=>`<option ${o===x.status?"selected":""}>${o}</option>`).join("")}</select>
+ <button id="b-${x.id}" onclick="salvar(${x.id})">Salvar novo status</button></section>`).join("");
+}
+async function salvar(id){
+ const b=document.getElementById("b-"+id),status=document.getElementById("s-"+id).value;
+ b.disabled=true;b.textContent="Salvando...";
+ const {error}=await db.from("solicitacoes").update({status,atualizacao:new Date().toISOString()}).eq("id",id);
+ if(error){alert("Erro: "+error.message);b.disabled=false;b.textContent="Salvar novo status";return}
+ alert("Status atualizado com sucesso!");carregar();
+}
+carregar();
+</script>
+</body>
+</html>
