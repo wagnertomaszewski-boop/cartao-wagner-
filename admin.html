@@ -88,7 +88,7 @@ async function carregarSolicitacoes(){
             .map(s => `<option value="${s}" ${s===status?"selected":""}>${s}</option>`).join("")}
         </select>
         <button id="botao-${id}" onclick="atualizarStatus(${id})">Salvar novo status</button>
-        <a href="https://wa.me/55${String(item.whatsapp).replace(/\D/g,'')}" target="_blank"><button type="button">Falar pelo WhatsApp</button></a>
+    <a <a href="https://wa.me/${String(item.whatsapp).replace(/\D/g,'').replace(/^55/,'').replace(/^/,'55')}" target="_blank"><button type="button">Falar pelo WhatsApp</button></a>
       `;
       lista.appendChild(card);
     });
