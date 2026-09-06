@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Solicitação do Cidadão | Wagner Tomaszewski</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #071a32, #0b2a4a);
+      color: white;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+
+    .topo {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .topo h1 {
+      margin-bottom: 5px;
+      font-size: 28px;
+    }
+
+    .topo p {
+      color: #d6e1ec;
+      line-height: 1.5;
+    }
+
+    .card {
+      background: white;
+      color: #15263a;
+      padding: 24px;
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.25);
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-top: 15px;
+      margin-bottom: 6px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #cbd5df;
+      border-radius: 10px;
+      font-size: 16px;
+      font-family: Arial, sans-serif;
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      padding: 16px;
+      margin-top: 22px;
+      border-radius: 12px;
+      background: #169447;
+      color: white;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .6;
+    }
+
+    #mensagem {
+      display: none;
+      margin-top: 20px;
+      padding: 18px;
+      border-radius: 12px;
+      line-height: 1.5;
+    }
+
+    .sucesso {
+      display: block !important;
+      background: #e7f8ed;
+      color: #126332;
+      border: 1px solid #8dd4a5;
+    }
+
+    .erro {
+      display: block !important;
+      background: #ffe9e9;
+      color: #8b1d1d;
+      border: 1px solid #e6a3a3;
+    }
+
+    .protocolo {
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .rodape {
+      text-align: center;
+      margin-top: 25px;
+      color: #cbd7e4;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="topo">
+    <h1>Solicitação do Cidadão</h1>
+    <p>
+      Envie sua demanda diretamente para o mandato do
+      Vereador Wagner Tomaszewski.
+    </p>
+  </div>
+
+  <div class="card">
+
+    <form id="formSolicitacao">
+
+      <label for="nome">Nome completo *</label>
+      <input
+        type="text"
+        id="nome"
+        required
+        placeholder="Digite seu nome"
+      >
+
+      <label for="whatsapp">WhatsApp *</label>
+      <input
+        type="tel"
+        id="whatsapp"
+        required
+        placeholder="Ex.: 51999999999"
+      >
+
+      <label for="localidade">Localidade *</label>
+      <input
+        type="text"
+        id="localidade"
+        required
+        placeholder="Ex.: Alto Alegre"
+      >
+
+      <label for="assunto">Assunto *</label>
+      <input
+        type="text"
+        id="assunto"
+        required
+        placeholder="Ex.: Estrada, iluminação, ponte..."
+      >
+
+      <label for="descricao">Descreva sua solicitação *</label>
+      <textarea
+        id="descricao"
+        required
+        placeholder="Conte aqui o que está acontecendo..."
+      ></textarea>
+
+      <button id="botaoEnviar" type="submit">
+        ENVIAR SOLICITAÇÃO
+      </button>
+
+    </form>
+
+    <div id="mensagem"></div>
+
+  </div>
+
+  <div class="rodape">
+    Wagner Tomaszewski<br>
+    Vereador de Cristal/RS<br><br>
+    Seu pedido, nossa voz na Câmara.
+  </div>
+
+</div>
+
+
+<script>
+
+const SUPABASE_URL =
+  "https://kmttgzraotabxvqmrren.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_vwnOpIVm_uIgQrtGAZaOUw_jWocq4U4";
+
+
+document
+  .getElementById("formSolicitacao")
+  .addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    const botao = document.getElementById("botaoEnviar");
+    const mensagem = document.getElementById("mensagem");
+
+    botao.disabled = true;
+    botao.textContent = "ENVIANDO...";
+
+    mensagem.className = "";
+    mensagem.style.display = "none";
+
+
+    const dados = {
+
+      nome:
+        document.getElementById("nome").value.trim(),
+
+      whatsapp:
+        document.getElementById("whatsapp").value.trim(),
+
+      localidade:
+        document.getElementById("localidade").value.trim(),
+
+      assunto:
+        document.getElementById("assunto").value.trim(),
+
+      descricao:
+        document.getElementById("descricao").value.trim()
+
+    };
+
+
+    try {
+
+      const resposta = await fetch(
+        SUPABASE_URL + "/rest/v1/solicitacoes",
+        {
+
+          method: "POST",
+
+          headers: {
+
+            "apikey": SUPABASE_KEY,
+
+            "Authorization":
+              "Bearer " + SUPABASE_KEY,
+
+            "Content-Type":
+              "application/json",
+
+            "Prefer":
+              "return=representation"
+
+          },
+
+          body: JSON.stringify(dados)
+
+        }
+      );
+
+
+      const resultado = await resposta.json();
+
+
+      if (!resposta.ok) {
+
+        throw new Error(
+          resultado.message ||
+          resultado.error ||
+          "Não foi possível enviar."
+        );
+
+      }
+
+
+      const protocolo =
+        resultado[0] && resultado[0].protocolo
+        ? resultado[0].protocolo
+        : "Solicitação registrada";
+
+
+      mensagem.className = "sucesso";
+
+      mensagem.innerHTML =
+        "<strong>Solicitação enviada com sucesso!</strong>" +
+        "<br><br>" +
+        "Seu protocolo é:" +
+        "<br>" +
+        '<span class="protocolo">' +
+        protocolo +
+        "</span>" +
+        "<br><br>" +
+        "Guarde este número para acompanhar sua solicitação.";
+
+
+      document
+        .getElementById("formSolicitacao")
+        .reset();
+
+
+    } catch (erro) {
+
+      console.error(erro);
+
+      mensagem.className = "erro";
+
+      mensagem.innerHTML =
+        "<strong>Não foi possível enviar a solicitação.</strong>" +
+        "<br><br>" +
+        erro.message;
+
+    }
+
+
+    botao.disabled = false;
+    botao.textContent = "ENVIAR SOLICITAÇÃO";
+
+  });
+
+</script>
+
+</body>
+</html>
