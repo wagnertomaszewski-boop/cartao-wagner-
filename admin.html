@@ -114,7 +114,7 @@ async function atualizarStatus(id){
         status: novoStatus,
         atualizacao: new Date().toISOString()
       })
-      .eq("id", id);
+    .eq("id", id);  
 
     if (error) throw error;
     alert("Status atualizado com sucesso!");
