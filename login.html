@@ -1,14 +1,16 @@
-<!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login | Wagner Tomaszewski</title>
+  <title>Painel Administrativo | Wagner Tomaszewski</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -25,8 +27,8 @@
       width: 100%;
       max-width: 420px;
       background: white;
-      padding: 30px 24px;
-      border-radius: 18px;
+      padding: 32px 24px;
+      border-radius: 20px;
       box-shadow: 0 10px 35px rgba(0,0,0,.25);
     }
 
@@ -34,39 +36,43 @@
       margin: 0 0 8px;
       color: #071f31;
       text-align: center;
+      font-size: 34px;
     }
 
     .subtitulo {
       text-align: center;
       color: #666;
-      margin-bottom: 25px;
+      margin-bottom: 28px;
+      font-size: 18px;
+      line-height: 1.4;
     }
 
     label {
       display: block;
-      margin-top: 15px;
-      margin-bottom: 6px;
+      margin-top: 16px;
+      margin-bottom: 7px;
       font-weight: bold;
       color: #222;
+      font-size: 17px;
     }
 
     input {
       width: 100%;
-      padding: 14px;
+      padding: 15px;
       border: 1px solid #ccc;
-      border-radius: 10px;
+      border-radius: 11px;
       font-size: 16px;
     }
 
     button {
       width: 100%;
-      margin-top: 22px;
-      padding: 14px;
+      margin-top: 24px;
+      padding: 15px;
       border: 0;
-      border-radius: 10px;
-      background: #0b7a45;
+      border-radius: 11px;
+      background: #087f43;
       color: white;
-      font-size: 17px;
+      font-size: 18px;
       font-weight: bold;
       cursor: pointer;
     }
@@ -76,9 +82,10 @@
     }
 
     #mensagem {
-      margin-top: 16px;
+      margin-top: 18px;
       text-align: center;
       font-weight: bold;
+      line-height: 1.4;
     }
   </style>
 </head>
@@ -86,7 +93,9 @@
 <body>
 
   <div class="login">
-    <h1>Painel Administrativo</h1>
+
+    <h1>Painel<br>Administrativo</h1>
+
     <div class="subtitulo">
       Wagner Tomaszewski<br>
       Vereador de Cristal/RS
@@ -108,10 +117,117 @@
       autocomplete="current-password"
     >
 
-    <button id="botao" onclick="entrar()">Entrar</button>
+    <button id="botao" type="button">
+      Entrar
+    </button>
 
     <div id="mensagem"></div>
+
   </div>
 
-  <script>
-    const SUPABASE_URL = "https://kmttgzraotabxv
+<script>
+
+const SUPABASE_URL =
+"https://kmttgzraotabxvqmrren.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_vwnOpIVm_uIgQrtGAZaOUw_jWocq4U4";
+
+const cliente = supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+const botao = document.getElementById("botao");
+
+botao.addEventListener("click", entrar);
+
+async function entrar() {
+
+  const email =
+    document.getElementById("email").value.trim();
+
+  const senha =
+    document.getElementById("senha").value;
+
+  const mensagem =
+    document.getElementById("mensagem");
+
+  if (!email || !senha) {
+    mensagem.style.color = "red";
+    mensagem.textContent =
+      "Digite seu e-mail e sua senha.";
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = "Entrando...";
+
+  mensagem.style.color = "#555";
+  mensagem.textContent =
+    "Verificando acesso...";
+
+  try {
+
+    const { data, error } =
+      await cliente.auth.signInWithPassword({
+        email: email,
+        password: senha
+      });
+
+    if (error) {
+      throw error;
+    }
+
+    if (data.session) {
+
+      mensagem.style.color = "green";
+      mensagem.textContent =
+        "Login realizado! Abrindo painel...";
+
+      setTimeout(function () {
+        window.location.href = "admin.html";
+      }, 500);
+
+    }
+
+  } catch (erro) {
+
+    console.error(erro);
+
+    mensagem.style.color = "red";
+
+    if (
+      erro.message &&
+      erro.message.toLowerCase()
+        .includes("invalid login")
+    ) {
+      mensagem.textContent =
+        "E-mail ou senha incorretos.";
+    } else {
+      mensagem.textContent =
+        "Erro no login: " + erro.message;
+    }
+
+  } finally {
+
+    botao.disabled = false;
+    botao.textContent = "Entrar";
+
+  }
+}
+
+document
+  .getElementById("senha")
+  .addEventListener("keydown", function(event) {
+
+    if (event.key === "Enter") {
+      entrar();
+    }
+
+  });
+
+</script>
+
+</body>
+</html> 
