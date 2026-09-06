@@ -134,8 +134,17 @@ if (!data || data.length === 0) {
     botao.textContent = "Salvar novo status";
   }
 }
+async function verificarLogin() {
+  const { data: { session } } = await client.auth.getSession();
 
-carregarSolicitacoes();
+  if (!session) {
+    alert("Você precisa fazer login para acessar o painel.");
+    return;
+  }
+
+  carregarSolicitacoes();
+}
+verificarLogin();  
 </script>
 </body>
 </html>
