@@ -58,7 +58,7 @@ async function carregarSolicitacoes(){
     const { data, error } = await client
       .from("solicitacoes")
       .select("*")
-      .order("created_at", { ascending:false });
+      .order("id", { ascending:false })
 
     if (error) throw error;
 
