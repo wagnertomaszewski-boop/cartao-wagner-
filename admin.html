@@ -112,7 +112,9 @@ async function atualizarStatus(id){
 const { data, error } = await client
   .from("solicitacoes")
   .update({
-    status: novoStatus,
+  status: novoStatus,
+  atualizado_em: new Date().toISOString()
+})
     
   })
   .eq("id", id)
