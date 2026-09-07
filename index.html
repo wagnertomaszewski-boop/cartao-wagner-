@@ -137,6 +137,12 @@ footer{
 Wagner Tomaszewski<br>
 Vereador de Cristal/RS
 </footer>
-
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js");
+  });
+}
+</script>
 </body>
 </html>
