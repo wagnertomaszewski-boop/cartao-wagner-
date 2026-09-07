@@ -250,7 +250,8 @@ async function consultarSolicitacao() {
 );
 
     if (!resposta.ok) {
-      throw new Error("Erro na consulta");
+    const detalhe = await resposta.text();
+    throw new Error(detalhe);
     }
 
     const dados = await resposta.json();
@@ -279,10 +280,7 @@ async function consultarSolicitacao() {
     resultado.style.display = "block";
 
   } catch (e) {
-
-    erro.innerText =
-      "Não foi possível consultar agora. Tente novamente em alguns instantes.";
-
+    erro.innerText = "Erro: " + e.message;
     erro.style.display = "block";
   }
 }
