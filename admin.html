@@ -113,7 +113,7 @@ const { data, error } = await client
   .from("solicitacoes")
   .update({
     status: novoStatus,
-    atualizacao: new Date().toISOString()
+    
   })
   .eq("id", id)
   .select();
