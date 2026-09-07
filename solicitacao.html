@@ -293,7 +293,7 @@ if (arquivo) {
               "application/json",
 
             "Prefer":
-              "return=representation"
+              "return=minimal"
 
           },
 
@@ -303,7 +303,7 @@ if (arquivo) {
       );
 
 
-      const resultado = await resposta.json();
+      const resultado = resposta.ok ? [] : await resposta.json();
 
 
       if (!resposta.ok) {
