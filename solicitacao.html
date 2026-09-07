@@ -331,9 +331,10 @@ const protocolo = typeof resultado === "string" ? resultado : resultado.protocol
 mensagem.innerHTML =
   "<strong>Solicitação enviada com sucesso!</strong>" +
   "<br><br>" +
-  "Sua solicitação foi registrada." +
+  "Seu protocolo é:<br>" +
+  "<strong style='font-size:24px'>" + protocolo + "</strong>" +
   "<br><br>" +
-  "Você poderá acompanhar o andamento pela opção <strong>Acompanhar sua solicitação</strong>.";
+  "Guarde este número para acompanhar sua solicitação.";
 
 
       document
