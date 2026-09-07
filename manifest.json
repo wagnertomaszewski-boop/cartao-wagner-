@@ -1,0 +1,11 @@
+{
+  "name": "Wagner Tomaszewski | Vereador",
+  "short_name": "Wagner",
+  "description": "Aplicativo do mandato do Vereador Wagner Tomaszewski - Cristal/RS",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#061c31",
+  "theme_color": "#061c31",
+  "lang": "pt-BR"
+}
