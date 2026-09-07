@@ -317,24 +317,17 @@ if (arquivo) {
       }
 
 
-      const protocolo =
-        resultado[0] && resultado[0].protocolo
-        ? resultado[0].protocolo
-        : "Solicitação registrada";
+      
 
 
       mensagem.className = "sucesso";
 
-      mensagem.innerHTML =
-        "<strong>Solicitação enviada com sucesso!</strong>" +
-        "<br><br>" +
-        "Seu protocolo é:" +
-        "<br>" +
-        '<span class="protocolo">' +
-        protocolo +
-        "</span>" +
-        "<br><br>" +
-        "Guarde este número para acompanhar sua solicitação.";
+mensagem.innerHTML =
+  "<strong>Solicitação enviada com sucesso!</strong>" +
+  "<br><br>" +
+  "Sua solicitação foi registrada." +
+  "<br><br>" +
+  "Você poderá acompanhar o andamento pela opção <strong>Acompanhar sua solicitação</strong>.";
 
 
       document
