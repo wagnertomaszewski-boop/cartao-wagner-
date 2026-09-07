@@ -277,7 +277,7 @@ if (arquivo) {
     }
 }
       const resposta = await fetch(
-        SUPABASE_URL + "/rest/v1/solicitacoes",
+        SUPABASE_URL + "/rest/v1/rpc/criar_solicitacao",
         {
 
           method: "POST",
@@ -293,17 +293,23 @@ if (arquivo) {
               "application/json",
 
             "Prefer":
-              "return=minimal"
+  "return=representation"
 
           },
 
-          body: JSON.stringify(dados)
+          body: JSON.stringify({
+  p_nome: dados.nome,
+  p_whatsapp: dados.whatsapp,
+  p_localidade: dados.localidade,
+  p_assunto: dados.assunto,
+  p_descricao: dados.descricao
+})
 
         }
       );
 
 
-      const resultado = resposta.ok ? [] : await resposta.json();
+      const resultado = await resposta.json();
 
 
       if (!resposta.ok) {
@@ -319,7 +325,7 @@ if (arquivo) {
 
       
 
-
+const protocolo = typeof resultado === "string" ? resultado : resultado.protocolo;
       mensagem.className = "sucesso";
 
 mensagem.innerHTML =
