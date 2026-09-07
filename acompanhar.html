@@ -235,7 +235,7 @@ async function consultarSolicitacao() {
   try {
 
     const resposta = await fetch(
-  consulta_publica_protocolo
+  SUPABASE_URL + "/rest/v1/rpc/consulta_publica_protocolo",
   {
     method: "POST",
     headers: {
