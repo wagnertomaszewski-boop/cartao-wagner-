@@ -13,6 +13,10 @@
 <body>
   <script>
     window.location.replace("../admin.html");
+  if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./
+service-worker.js");
+  }
   </script>
 </body>
 </html>
