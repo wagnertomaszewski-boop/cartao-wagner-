@@ -36,8 +36,18 @@
 </header>
 
 <main class="container">
-  <h2 class="titulo">Solicitações da comunidade</h2>
-  <div id="lista">Carregando solicitações...</div>
+    <h2 class="titulo">Solicitações da comunidade</h2>
+
+    <select id="filtroStatus">
+        <option value="Todos">Todos os status</option>
+        <option value="Recebida">Recebida</option>
+        <option value="Em análise">Em análise</option>
+        <option value="Encaminhado">Encaminhado</option>
+        <option value="Em andamento">Em andamento</option>
+        <option value="Concluído">Concluído</option>
+    </select>
+
+    <div id="lista">Carregando solicitações...</div>
 </main>
 
 <script>
@@ -57,10 +67,18 @@ async function carregarSolicitacoes(){
   lista.textContent = "Carregando solicitações...";
 
   try {
-    const { data, error } = await client
-      .from("solicitacoes")
-      .select("*")
-      .order("id", { ascending:false })
+   const filtroStatus = document.getElementById("filtroStatus").value;
+
+let consulta = client
+  .from("solicitacoes")
+  .select("*")
+  .order("id", { ascending: false });
+
+if (filtroStatus !== "Todos") {
+  consulta = consulta.eq("status", filtroStatus);
+}
+
+const { data, error } = await consulta; 
 
     if (error) throw error;
 
