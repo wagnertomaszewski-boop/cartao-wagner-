@@ -37,9 +37,10 @@
   <button id="btnLogin">ENTRAR</button>
   <p id="erroLogin"></p>
   </div>
-<header>
+  <header>
   <h1>Painel Administrativo</h1>
   <p>Solicitações recebidas • Wagner Tomaszewski</p>
+    <button id="btnSair" type="button">Sair</button>
 </header>
 
 <main class="container">
@@ -201,6 +202,10 @@ async function verificarLogin() {
 });
 document.getElementById("filtroBusca").addEventListener("input", () => {
   carregarSolicitacoes();
+});
+  document.getElementById("btnSair").addEventListener("click", async () => {
+  await client.auth.signOut();
+  document.getElementById("telaLogin").style.display = "block";
 });
   verificarLogin();  
 </script>
