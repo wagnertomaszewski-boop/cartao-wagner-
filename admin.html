@@ -80,10 +80,7 @@ async function fazerLogin() {
     return;
   }
 
-  document.getElementById("telaLogin").style.display = "none";
-document.querySelector("header").style.display = "block";
-document.querySelector("main").style.display = "block";
-await carregarSolicitacoes();
+  window.location.reload();
 }
 
 document.getElementById("btnLogin").addEventListener("click", fazerLogin);
