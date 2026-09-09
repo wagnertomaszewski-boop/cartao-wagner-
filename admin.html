@@ -37,7 +37,7 @@
 
 <main class="container">
     <h2 class="titulo">Solicitações da comunidade</h2>
-
+<input id="filtroBusca" type="text" placeholder="Buscar por nome ou protocolo">
     <select id="filtroStatus">
         <option value="Todos">Todos os status</option>
         <option value="Recebida">Recebida</option>
@@ -170,7 +170,10 @@ async function verificarLogin() {
   document.getElementById("filtroStatus").addEventListener("change", () => {
   carregarSolicitacoes();
 });
-verificarLogin();  
+document.getElementById("filtroBusca").addEventListener("input", () => {
+  carregarSolicitacoes();
+});
+  verificarLogin();  
 </script>
 </body>
 </html>
