@@ -166,6 +166,10 @@ async function verificarLogin() {
 
   carregarSolicitacoes();
 }
+
+  document.getElementById("filtroStatus").addEventListener("change", () => {
+  carregarSolicitacoes();
+});
 verificarLogin();  
 </script>
 </body>
