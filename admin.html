@@ -210,7 +210,7 @@ document.getElementById("filtroBusca").addEventListener("input", () => {
 });
   document.getElementById("btnSair").addEventListener("click", async () => {
   await client.auth.signOut();
-  document.getElementById("telaLogin").style.display = "block";
+  await verificarLogin();
 });
   verificarLogin();  
 </script>
