@@ -30,6 +30,13 @@
   </style>
 </head>
 <body>
+  <div id="telaLogin">
+  <h2>Acesso ao Painel</h2>
+  <input id="emailLogin" type="email" placeholder="E-mail">
+  <input id="senhaLogin" type="password" placeholder="Senha">
+  <button id="btnLogin">ENTRAR</button>
+  <p id="erroLogin"></p>
+  </div>
 <header>
   <h1>Painel Administrativo</h1>
   <p>Solicitações recebidas • Wagner Tomaszewski</p>
@@ -54,7 +61,28 @@
 const SUPABASE_URL = "https://pmmsdjozyyxkbuqlkfpb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+async function fazerLogin() {
+  const email = document.getElementById("emailLogin").value.trim();
+  const senha = document.getElementById("senhaLogin").value;
+  const erro = document.getElementById("erroLogin");
 
+  erro.textContent = "";
+
+  const { error } = await client.auth.signInWithPassword({
+    email: email,
+    password: senha
+  });
+
+  if (error) {
+    erro.textContent = "E-mail ou senha incorretos.";
+    return;
+  }
+
+  document.getElementById("telaLogin").style.display = "none";
+  carregarSolicitacoes();
+}
+
+document.getElementById("btnLogin").addEventListener("click", fazerLogin);
 const esc = (v) => {
   if (v === null || v === undefined || v === "") return "Não informado";
   return String(v).replace(/[&<>"']/g, c => ({
@@ -160,10 +188,11 @@ async function verificarLogin() {
   const { data: { session } } = await client.auth.getSession();
 
   if (!session) {
-    alert("Você precisa fazer login para acessar o painel.");
+    document.getElementById("telaLogin").style.display = "block";
     return;
   }
 
+  document.getElementById("telaLogin").style.display = "none";
   carregarSolicitacoes();
 }
 
