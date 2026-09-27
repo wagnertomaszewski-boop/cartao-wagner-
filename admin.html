@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <link rel="manifest" href="./manifest-admin.json">
-<meta name="theme-color" content="#061c31"> 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="theme-color" content="#061c31">
+  <link rel="manifest" href="./manifest-admin.json">
   <title>Painel Administrativo | Wagner Tomaszewski</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -15,62 +18,67 @@
     header p{margin:0;color:#cbd5df}
     .container{max-width:800px;margin:auto;padding:20px}
     .titulo{margin:20px 0;font-size:28px}
-    .card{background:#fff;border-radius:14px;padding:18px;margin-bottom:16px;
-      box-shadow:0 3px 12px rgba(0,0,0,.10);border-left:5px solid #0b7a45}
+    .card{background:#fff;border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px rgba(0,0,0,.10);border-left:5px solid #0b7a45}
     .protocolo{color:#0b7a45;font-weight:bold;font-size:17px;margin-bottom:12px}
     .linha{margin:7px 0;line-height:1.4}
     .descricao{background:#f5f7f8;padding:12px;border-radius:8px;margin-top:12px;white-space:pre-wrap}
-    select,#filtroBusca{width:100%;padding:12px;margin-top:12px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
-    button{width:100%;border:0;padding:13px;border-radius:8px;margin-top:10px;font-size:16px;
-      font-weight:bold;background:#0b7a45;color:#fff;cursor:pointer}
+    select,#filtroBusca,#telaLogin input{width:100%;padding:12px;margin-top:12px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
+    button{width:100%;border:0;padding:13px;border-radius:8px;margin-top:10px;font-size:16px;font-weight:bold;background:#0b7a45;color:#fff;cursor:pointer}
     button:disabled{opacity:.6}
     .vazio{text-align:center;background:#fff;padding:30px;border-radius:12px}
-    .erro{background:#ffe6e6;color:#8b0000;padding:15px;border-radius:10px;line-height:1.45}
+    .erro{background:#ffe6e6;color:#8b0000;padding:15px;border-radius:10px;line-height:1.45;margin-top:12px}
+    .erro button{max-width:260px}
     .status{font-weight:bold;color:#0b7a45}
-  #telaLogin{display:none;}
+    #telaLogin{display:none;padding:24px;max-width:520px;margin:30px auto;background:#fff;border-radius:14px}
+    #erroLogin{line-height:1.4;color:#8b0000}
   </style>
 </head>
 <body>
   <div id="telaLogin">
-  <h2>Acesso ao Painel</h2>
-  <input id="emailLogin" type="email" placeholder="E-mail" autocomplete="email">
-  <input id="senhaLogin" type="password" placeholder="Senha" autocomplete="current-password">
-  <button id="btnLogin">ENTRAR</button>
-  <p id="erroLogin"></p>
+    <h2>Acesso ao Painel</h2>
+    <input id="emailLogin" type="email" placeholder="E-mail" autocomplete="email">
+    <input id="senhaLogin" type="password" placeholder="Senha" autocomplete="current-password">
+    <button id="btnLogin" type="button">ENTRAR</button>
+    <p id="erroLogin"></p>
   </div>
-  <header>
-  <h1>Painel Administrativo</h1>
-  <p>Solicitações recebidas • Wagner Tomaszewski</p>
-    <button id="btnSair" type="button">Sair</button>
-</header>
 
-<main class="container">
+  <header>
+    <h1>Painel Administrativo</h1>
+    <p>Solicitações recebidas • Wagner Tomaszewski</p>
+    <button id="btnSair" type="button">Sair</button>
+  </header>
+
+  <main class="container">
     <h2 class="titulo">Solicitações da comunidade</h2>
-<input id="filtroBusca" type="text" placeholder="Buscar por nome ou protocolo">
+
+    <input id="filtroBusca" type="text" placeholder="Buscar por nome ou protocolo">
+
     <select id="filtroStatus">
-        <option value="Todos">Todos os status</option>
-        <option value="Recebida">Recebida</option>
-        <option value="Em análise">Em análise</option>
-        <option value="Encaminhado">Encaminhado</option>
-        <option value="Em andamento">Em andamento</option>
-        <option value="Concluído">Concluído</option>
+      <option value="Todos">Todos os status</option>
+      <option value="Recebida">Recebida</option>
+      <option value="Recebido">Recebido</option>
+      <option value="Em análise">Em análise</option>
+      <option value="Encaminhado">Encaminhado</option>
+      <option value="Em andamento">Em andamento</option>
+      <option value="Concluído">Concluído</option>
     </select>
 
     <div id="lista">Carregando solicitações...</div>
-</main>
+  </main>
 
 <script>
 const SUPABASE_URL = "https://pmmsdjozyyxkbuqlkfpb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 const TEMPO_LIMITE_MS = 12000;
+
 const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 function comTempoLimite(promessa, ms = TEMPO_LIMITE_MS) {
   return Promise.race([
     Promise.resolve(promessa),
-    new Promise((_, rejeitar) =>
-      setTimeout(() => rejeitar(new Error("Tempo esgotado ao conectar com o servidor.")), ms)
-    )
+    new Promise((_, rejeitar) => {
+      setTimeout(() => rejeitar(new Error("Tempo esgotado ao conectar com o servidor.")), ms);
+    })
   ]);
 }
 
@@ -93,16 +101,31 @@ function mensagemDeErro(erro) {
   return "Não foi possível concluir a operação. Tente novamente.";
 }
 
+function esc(v) {
+  if (v === null || v === undefined || v === "") return "Não informado";
+  return String(v).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+
+function normalizar(v) {
+  return String(v || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 async function fazerLogin() {
   const email = document.getElementById("emailLogin").value.trim();
   const senha = document.getElementById("senhaLogin").value;
-  const erro = document.getElementById("erroLogin");
+  const erroEl = document.getElementById("erroLogin");
   const botao = document.getElementById("btnLogin");
 
-  erro.textContent = "";
+  erroEl.textContent = "";
 
   if (!email || !senha) {
-    erro.textContent = "Digite seu e-mail e sua senha.";
+    erroEl.textContent = "Digite seu e-mail e sua senha.";
     return;
   }
 
@@ -117,35 +140,23 @@ async function fazerLogin() {
     if (error) throw error;
     if (!data || !data.session) throw new Error("Sessão não foi criada.");
 
-    window.location.reload();
+    await verificarLogin();
   } catch (e) {
     console.error("Erro de login:", e);
-    erro.textContent = mensagemDeErro(e);
+    erroEl.textContent = mensagemDeErro(e);
   } finally {
     botao.disabled = false;
     botao.textContent = "ENTRAR";
   }
 }
 
-document.getElementById("btnLogin").addEventListener("click", fazerLogin);
-document.getElementById("senhaLogin").addEventListener("keydown", e => {
-  if (e.key === "Enter") fazerLogin();
-});
-const esc = (v) => {
-  if (v === null || v === undefined || v === "") return "Não informado";
-  return String(v).replace(/[&<>"']/g, c => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[c]));
-};
-
-async function carregarSolicitacoes(){
+async function carregarSolicitacoes() {
   const lista = document.getElementById("lista");
   lista.textContent = "Carregando solicitações...";
 
   try {
     const filtroStatus = document.getElementById("filtroStatus").value;
-    const termoBusca = String(document.getElementById("filtroBusca").value || "")
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const termoBusca = normalizar(document.getElementById("filtroBusca").value);
 
     let consulta = client
       .from("solicitacoes")
@@ -157,19 +168,19 @@ async function carregarSolicitacoes(){
     }
 
     const { data, error } = await comTempoLimite(consulta);
+
     if (error) throw error;
 
     let dados = Array.isArray(data) ? data : [];
 
     if (termoBusca) {
-      dados = dados.filter(item => {
-        const nome = String(item.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        const protocolo = String(item.protocolo || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        return nome.includes(termoBusca) || protocolo.includes(termoBusca);
-      });
+      dados = dados.filter(item =>
+        normalizar(item.nome).includes(termoBusca) ||
+        normalizar(item.protocolo).includes(termoBusca)
+      );
     }
 
-    if (dados.length === 0){
+    if (dados.length === 0) {
       lista.innerHTML = '<div class="vazio">Nenhuma solicitação encontrada.</div>';
       return;
     }
@@ -181,6 +192,7 @@ async function carregarSolicitacoes(){
       const status = item.status || "Recebida";
       const telefone = String(item.whatsapp || "").replace(/\D/g, "");
       const whatsapp = telefone.startsWith("55") ? telefone : "55" + telefone;
+
       const card = document.createElement("div");
       card.className = "card";
 
@@ -192,23 +204,34 @@ async function carregarSolicitacoes(){
         <div class="linha"><strong>Assunto:</strong> ${esc(item.assunto)}</div>
         <div class="descricao"><strong>Descrição:</strong><br>${esc(item.descricao)}</div>
         <div class="linha"><strong>Status atual:</strong> <span class="status">${esc(status)}</span></div>
+
         <select id="status-${id}">
           ${["Recebida","Recebido","Em análise","Encaminhado","Em andamento","Concluído"]
-            .map(s => `<option value="${s}" ${s===status?"selected":""}>${s}</option>`).join("")}
+            .map(s => `<option value="${s}" ${s === status ? "selected" : ""}>${s}</option>`)
+            .join("")}
         </select>
-        <button id="botao-${id}" onclick="atualizarStatus(${id})">Salvar novo status</button>
-        ${whatsapp.length > 2 ? `<a href="https://wa.me/${whatsapp}" target="_blank" rel="noopener"><button type="button">Falar pelo WhatsApp</button></a>` : ""}
+
+        <button id="botao-${id}" type="button" onclick="atualizarStatus(${id})">Salvar novo status</button>
+        ${whatsapp.length > 2
+          ? `<a href="https://wa.me/${whatsapp}" target="_blank" rel="noopener"><button type="button">Falar pelo WhatsApp</button></a>`
+          : ""}
       `;
+
       lista.appendChild(card);
     });
   } catch (e) {
     console.error("Erro ao carregar solicitações:", e);
-    lista.innerHTML = `<div class="erro"><strong>Não foi possível carregar as solicitações.</strong><br>
-    ${esc(mensagemDeErro(e))}<br><button type="button" onclick="carregarSolicitacoes()">Tentar novamente</button></div>`;
+    lista.innerHTML = `
+      <div class="erro">
+        <strong>Não foi possível carregar as solicitações.</strong><br>
+        ${esc(mensagemDeErro(e))}<br>
+        <button type="button" onclick="carregarSolicitacoes()">Tentar novamente</button>
+      </div>
+    `;
   }
 }
 
-async function atualizarStatus(id){
+async function atualizarStatus(id) {
   const seletor = document.getElementById(`status-${id}`);
   const botao = document.getElementById(`botao-${id}`);
   if (!seletor || !botao) return;
@@ -218,34 +241,35 @@ async function atualizarStatus(id){
 
   try {
     const novoStatus = seletor.value;
-const { data, error } = await comTempoLimite(
-  client
-    .from("solicitacoes")
-    .update({ status: novoStatus })
-    .eq("id", id)
-    .select()
-);
 
-console.log("RETORNO UPDATE:", data, error);
+    const { data, error } = await comTempoLimite(
+      client
+        .from("solicitacoes")
+        .update({ status: novoStatus })
+        .eq("id", id)
+        .select()
+    );
 
-if (error) throw error;
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new Error("O servidor não permitiu alterar este registro.");
+    }
 
-if (!data || data.length === 0) {
-  throw new Error("O Supabase não permitiu alterar este registro.");
-}
-    
     alert("Status atualizado com sucesso!");
     await carregarSolicitacoes();
   } catch (e) {
-    console.error(e);
+    console.error("Erro ao atualizar status:", e);
     alert(mensagemDeErro(e));
+  } finally {
     botao.disabled = false;
     botao.textContent = "Salvar novo status";
   }
 }
+
 async function verificarLogin() {
   try {
-    const { data: { session } } = await comTempoLimite(client.auth.getSession());
+    const { data: { session }, error } = await comTempoLimite(client.auth.getSession());
+    if (error) throw error;
 
     if (!session) {
       document.getElementById("telaLogin").style.display = "block";
@@ -257,6 +281,7 @@ async function verificarLogin() {
     document.getElementById("telaLogin").style.display = "none";
     document.querySelector("header").style.display = "block";
     document.querySelector("main").style.display = "block";
+
     await carregarSolicitacoes();
   } catch (e) {
     console.error("Erro ao verificar sessão:", e);
@@ -267,135 +292,47 @@ async function verificarLogin() {
   }
 }
 
-document.getElementById("filtroStatus").value;
-    const termoBusca = String(document.getElementById("filtroBusca").value || "")
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-
-    let consulta = client
-      .from("solicitacoes")
-      .select("*")
-      .order("id", { ascending: false });
-
-    if (filtroStatus !== "Todos") {
-      consulta = consulta.eq("status", filtroStatus);
-    }
-
-    const { data, error } = await comTempoLimite(consulta);
-    if (error) throw error;
-
-    let dados = Array.isArray(data) ? data : [];
-
-    if (termoBusca) {
-      dados = dados.filter(item => {
-        const nome = String(item.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        const protocolo = String(item.protocolo || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        return nome.includes(termoBusca) || protocolo.includes(termoBusca);
-      });
-    }
-
-    if (dados.length === 0){
-      lista.innerHTML = '<div class="vazio">Nenhuma solicitação encontrada.</div>';
-      return;
-    }
-
-    lista.innerHTML = "";
-
-    dados.forEach(item => {
-      const id = Number(item.id);
-      const status = item.status || "Recebida";
-      const telefone = String(item.whatsapp || "").replace(/\D/g, "");
-      const whatsapp = telefone.startsWith("55") ? telefone : "55" + telefone;
-      const card = document.createElement("div");
-      card.className = "card";
-
-      card.innerHTML = `
-        <div class="protocolo">${esc(item.protocolo || ("Solicitação #" + id))}</div>
-        <div class="linha"><strong>Nome:</strong> ${esc(item.nome)}</div>
-        <div class="linha"><strong>WhatsApp:</strong> ${esc(item.whatsapp)}</div>
-        <div class="linha"><strong>Localidade:</strong> ${esc(item.localidade)}</div>
-        <div class="linha"><strong>Assunto:</strong> ${esc(item.assunto)}</div>
-        <div class="descricao"><strong>Descrição:</strong><br>${esc(item.descricao)}</div>
-        <div class="linha"><strong>Status atual:</strong> <span class="status">${esc(status)}</span></div>
-        <select id="status-${id}">
-          ${["Recebida","Recebido","Em análise","Encaminhado","Em andamento","Concluído"]
-            .map(s => `<option value="${s}" ${s===status?"selected":""}>${s}</option>`).join("")}
-        </select>
-        <button id="botao-${id}" onclick="atualizarStatus(${id})">Salvar novo status</button>
-        ${whatsapp.length > 2 ? `<a href="https://wa.me/${whatsapp}" target="_blank" rel="noopener"><button type="button">Falar pelo WhatsApp</button></a>` : ""}
-      `;
-      lista.appendChild(card);
-    });
-  } catch (e) {
-    console.error("Erro ao carregar solicitações:", e);
-    lista.innerHTML = `<div class="erro"><strong>Não foi possível carregar as solicitações.</strong><br>
-    ${esc(mensagemDeErro(e))}<br><button type="button" onclick="carregarSolicitacoes()">Tentar novamente</button></div>`;
-  }
-}
-
-async function atualizarStatus(id){
-  const seletor = document.getElementById(`status-${id}`);
-  const botao = document.getElementById(`botao-${id}`);
-  if (!seletor || !botao) return;
-
+async function sair() {
+  const botao = document.getElementById("btnSair");
   botao.disabled = true;
-  botao.textContent = "Salvando...";
+  botao.textContent = "Saindo...";
 
   try {
-    const novoStatus = seletor.value;
-const { data, error } = await comTempoLimite(
-  client
-    .from("solicitacoes")
-    .update({ status: novoStatus })
-    .eq("id", id)
-    .select()
-);
-
-console.log("RETORNO UPDATE:", data, error);
-
-if (error) throw error;
-
-if (!data || data.length === 0) {
-  throw new Error("O Supabase não permitiu alterar este registro.");
-}
-    
-    alert("Status atualizado com sucesso!");
-    await carregarSolicitacoes();
+    await comTempoLimite(client.auth.signOut({ scope: "local" }));
   } catch (e) {
-    console.error(e);
-    alert(mensagemDeErro(e));
-    botao.disabled = false;
-    botao.textContent = "Salvar novo status";
-  }
-}
-async function verificarLogin() {
-  const { data: { session } } = await client.auth.getSession();
+    console.error("Erro ao sair:", e);
+  } finally {
+    try {
+      const projeto = "pmmsdjozyyxkbuqlkfpb";
+      localStorage.removeItem("sb-" + projeto + "-auth-token");
+    } catch (e) {}
 
-  if (!session) {
     document.getElementById("telaLogin").style.display = "block";
     document.querySelector("header").style.display = "none";
     document.querySelector("main").style.display = "none";
-    return;
+    document.getElementById("senhaLogin").value = "";
+    document.getElementById("erroLogin").textContent = "";
+    botao.disabled = false;
+    botao.textContent = "Sair";
   }
-
-  document.getElementById("telaLogin").style.display = "none";
-  document.querySelector("header").style.display = "block";
-  document.querySelector("main").style.display = "block";
-  carregarSolicitacoes();
 }
 
-  document.getElementById("filtroStatus").addEventListener("change", () => {
-  carregarSolicitacoes();
+document.getElementById("btnLogin").addEventListener("click", fazerLogin);
+document.getElementById("senhaLogin").addEventListener("keydown", e => {
+  if (e.key === "Enter") fazerLogin();
 });
+
+document.getElementById("filtroStatus").addEventListener("change", carregarSolicitacoes);
+
 let atrasoBusca;
 document.getElementById("filtroBusca").addEventListener("input", () => {
   clearTimeout(atrasoBusca);
   atrasoBusca = setTimeout(carregarSolicitacoes, 350);
 });
-  document.getElementById("btnSair").addEventListener("click", async () => {
-  try { await comTempoLimite(client.auth.signOut()); } catch (e) { console.error("Erro ao sair:", e); }
-  await verificarLogin();
-});
-  verificarLogin();  
+
+document.getElementById("btnSair").addEventListener("click", sair);
+
+verificarLogin();
 </script>
 </body>
 </html>
