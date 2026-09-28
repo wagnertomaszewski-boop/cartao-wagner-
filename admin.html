@@ -9,13 +9,13 @@
   <meta name="theme-color" content="#061c31">
   <link rel="manifest" href="./manifest-admin.json">
   <title>Painel Administrativo | Wagner Tomaszewski</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *{box-sizing:border-box}
     body{margin:0;font-family:Arial,sans-serif;background:#f3f6f8;color:#17202a}
-    header{background:#071f31;color:#fff;padding:24px 16px;text-align:center}
+    header{display:none;background:#071f31;color:#fff;padding:24px 16px;text-align:center}
     header h1{margin:0 0 6px;font-size:28px}
     header p{margin:0;color:#cbd5df}
+    main{display:none}
     .container{max-width:800px;margin:auto;padding:20px}
     .titulo{margin:20px 0;font-size:28px}
     .card{background:#fff;border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px rgba(0,0,0,.10);border-left:5px solid #0b7a45}
@@ -29,7 +29,7 @@
     .erro{background:#ffe6e6;color:#8b0000;padding:15px;border-radius:10px;line-height:1.45;margin-top:12px}
     .erro button{max-width:260px}
     .status{font-weight:bold;color:#0b7a45}
-    #telaLogin{display:none;padding:24px;max-width:520px;margin:30px auto;background:#fff;border-radius:14px}
+    #telaLogin{display:block;padding:24px;max-width:520px;margin:30px auto;background:#fff;border-radius:14px}
     #erroLogin{line-height:1.4;color:#8b0000}
   </style>
 </head>
@@ -69,23 +69,50 @@
 <script>
 const SUPABASE_URL = "https://pmmsdjozyyxkbuqlkfpb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
-const TEMPO_LIMITE_MS = 12000;
+const STORAGE_KEY = "wagner_admin_session_v2";
+const TEMPO_LIMITE_MS = 15000;
 
-const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+function salvarSessao(sessao){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessao));
+}
 
-function comTempoLimite(promessa, ms = TEMPO_LIMITE_MS) {
-  return Promise.race([
-    Promise.resolve(promessa),
-    new Promise((_, rejeitar) => {
-      setTimeout(() => rejeitar(new Error("Tempo esgotado ao conectar com o servidor.")), ms);
-    })
-  ]);
+function lerSessao(){
+  try{
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+  }catch(e){
+    return null;
+  }
+}
+
+function limparSessao(){
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem("sb-pmmsdjozyyxkbuqlkfpb-auth-token");
+}
+
+async function requisicao(url, opcoes = {}) {
+  const controlador = new AbortController();
+  const timer = setTimeout(() => controlador.abort(), TEMPO_LIMITE_MS);
+
+  try {
+    return await fetch(url, { ...opcoes, signal: controlador.signal });
+  } catch (e) {
+    if (e && e.name === "AbortError") {
+      throw new Error("Tempo esgotado ao conectar com o servidor.");
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function mensagemDeErro(erro) {
   const msg = String((erro && erro.message) || erro || "").toLowerCase();
 
-  if (msg.includes("invalid login credentials") || msg.includes("invalid login")) {
+  if (
+    msg.includes("invalid login credentials") ||
+    msg.includes("invalid_credentials") ||
+    msg.includes("email or password")
+  ) {
     return "E-mail ou senha incorretos.";
   }
 
@@ -98,7 +125,7 @@ function mensagemDeErro(erro) {
     return "Não foi possível conectar ao servidor. Confira sua internet e tente novamente.";
   }
 
-  return "Não foi possível concluir a operação. Tente novamente.";
+  return (erro && erro.message) ? erro.message : "Não foi possível concluir a operação. Tente novamente.";
 }
 
 function esc(v) {
@@ -114,6 +141,58 @@ function normalizar(v) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+}
+
+function mostrarLogin(mensagem = "") {
+  document.getElementById("telaLogin").style.display = "block";
+  document.querySelector("header").style.display = "none";
+  document.querySelector("main").style.display = "none";
+  document.getElementById("erroLogin").textContent = mensagem;
+}
+
+function mostrarPainel() {
+  document.getElementById("telaLogin").style.display = "none";
+  document.querySelector("header").style.display = "block";
+  document.querySelector("main").style.display = "block";
+}
+
+async function renovarSessao(refreshToken) {
+  const resposta = await requisicao(
+    SUPABASE_URL + "/auth/v1/token?grant_type=refresh_token",
+    {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    }
+  );
+
+  const dados = await resposta.json().catch(() => ({}));
+
+  if (!resposta.ok) {
+    throw new Error(dados.msg || dados.message || dados.error_description || "Sessão expirada.");
+  }
+
+  const sessao = {
+    access_token: dados.access_token,
+    refresh_token: dados.refresh_token || refreshToken,
+    expires_at: Date.now() + ((dados.expires_in || 3600) * 1000)
+  };
+  salvarSessao(sessao);
+  return sessao;
+}
+
+async function obterSessaoValida() {
+  let sessao = lerSessao();
+  if (!sessao || !sessao.access_token) return null;
+
+  if (sessao.expires_at && Date.now() > sessao.expires_at - 60000) {
+    if (!sessao.refresh_token) return null;
+    sessao = await renovarSessao(sessao.refresh_token);
+  }
+  return sessao;
 }
 
 async function fazerLogin() {
@@ -133,14 +212,34 @@ async function fazerLogin() {
   botao.textContent = "ENTRANDO...";
 
   try {
-    const { data, error } = await comTempoLimite(
-      client.auth.signInWithPassword({ email, password: senha })
+    const resposta = await requisicao(
+      SUPABASE_URL + "/auth/v1/token?grant_type=password",
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email: email, password: senha })
+      }
     );
 
-    if (error) throw error;
-    if (!data || !data.session) throw new Error("Sessão não foi criada.");
+    const dados = await resposta.json().catch(() => ({}));
 
-    await verificarLogin();
+    if (!resposta.ok) {
+      throw new Error(dados.msg || dados.message || dados.error_description || "Não foi possível entrar.");
+    }
+
+    salvarSessao({
+      access_token: dados.access_token,
+      refresh_token: dados.refresh_token,
+      expires_at: Date.now() + ((dados.expires_in || 3600) * 1000)
+    });
+
+    document.getElementById("senhaLogin").value = "";
+    mostrarPainel();
+    await carregarSolicitacoes();
+
   } catch (e) {
     console.error("Erro de login:", e);
     erroEl.textContent = mensagemDeErro(e);
@@ -155,23 +254,46 @@ async function carregarSolicitacoes() {
   lista.textContent = "Carregando solicitações...";
 
   try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) {
+      limparSessao();
+      mostrarLogin("Sua sessão expirou. Entre novamente.");
+      return;
+    }
+
     const filtroStatus = document.getElementById("filtroStatus").value;
     const termoBusca = normalizar(document.getElementById("filtroBusca").value);
 
-    let consulta = client
-      .from("solicitacoes")
-      .select("*")
-      .order("id", { ascending: false });
-
+    let url = SUPABASE_URL + "/rest/v1/solicitacoes?select=*&order=id.desc";
     if (filtroStatus !== "Todos") {
-      consulta = consulta.eq("status", filtroStatus);
+      url += "&status=eq." + encodeURIComponent(filtroStatus);
     }
 
-    const { data, error } = await comTempoLimite(consulta);
+    const resposta = await requisicao(url, {
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + sessao.access_token
+      }
+    });
 
-    if (error) throw error;
+    const dadosResposta = await resposta.json().catch(() => ([]));
 
-    let dados = Array.isArray(data) ? data : [];
+    if (resposta.status === 401) {
+      limparSessao();
+      mostrarLogin("Sua sessão expirou. Entre novamente.");
+      return;
+    }
+
+    if (!resposta.ok) {
+      throw new Error(
+        dadosResposta.message ||
+        dadosResposta.hint ||
+        dadosResposta.details ||
+        "Não foi possível carregar as solicitações."
+      );
+    }
+
+    let dados = Array.isArray(dadosResposta) ? dadosResposta : [];
 
     if (termoBusca) {
       dados = dados.filter(item =>
@@ -219,6 +341,7 @@ async function carregarSolicitacoes() {
 
       lista.appendChild(card);
     });
+
   } catch (e) {
     console.error("Erro ao carregar solicitações:", e);
     lista.innerHTML = `
@@ -240,23 +363,41 @@ async function atualizarStatus(id) {
   botao.textContent = "Salvando...";
 
   try {
-    const novoStatus = seletor.value;
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
 
-    const { data, error } = await comTempoLimite(
-      client
-        .from("solicitacoes")
-        .update({ status: novoStatus })
-        .eq("id", id)
-        .select()
+    const resposta = await requisicao(
+      SUPABASE_URL + "/rest/v1/solicitacoes?id=eq." + encodeURIComponent(id),
+      {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({ status: seletor.value })
+      }
     );
 
-    if (error) throw error;
-    if (!data || data.length === 0) {
+    const dados = await resposta.json().catch(() => ([]));
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.message ||
+        dados.hint ||
+        dados.details ||
+        "Não foi possível atualizar o status."
+      );
+    }
+
+    if (!Array.isArray(dados) || dados.length === 0) {
       throw new Error("O servidor não permitiu alterar este registro.");
     }
 
     alert("Status atualizado com sucesso!");
     await carregarSolicitacoes();
+
   } catch (e) {
     console.error("Erro ao atualizar status:", e);
     alert(mensagemDeErro(e));
@@ -268,53 +409,25 @@ async function atualizarStatus(id) {
 
 async function verificarLogin() {
   try {
-    const { data: { session }, error } = await comTempoLimite(client.auth.getSession());
-    if (error) throw error;
-
-    if (!session) {
-      document.getElementById("telaLogin").style.display = "block";
-      document.querySelector("header").style.display = "none";
-      document.querySelector("main").style.display = "none";
+    const sessao = await obterSessaoValida();
+    if (!sessao) {
+      mostrarLogin("");
       return;
     }
 
-    document.getElementById("telaLogin").style.display = "none";
-    document.querySelector("header").style.display = "block";
-    document.querySelector("main").style.display = "block";
-
+    mostrarPainel();
     await carregarSolicitacoes();
+
   } catch (e) {
-    console.error("Erro ao verificar sessão:", e);
-    document.getElementById("telaLogin").style.display = "block";
-    document.querySelector("header").style.display = "none";
-    document.querySelector("main").style.display = "none";
-    document.getElementById("erroLogin").textContent = mensagemDeErro(e);
+    limparSessao();
+    mostrarLogin(mensagemDeErro(e));
   }
 }
 
-async function sair() {
-  const botao = document.getElementById("btnSair");
-  botao.disabled = true;
-  botao.textContent = "Saindo...";
-
-  try {
-    await comTempoLimite(client.auth.signOut({ scope: "local" }));
-  } catch (e) {
-    console.error("Erro ao sair:", e);
-  } finally {
-    try {
-      const projeto = "pmmsdjozyyxkbuqlkfpb";
-      localStorage.removeItem("sb-" + projeto + "-auth-token");
-    } catch (e) {}
-
-    document.getElementById("telaLogin").style.display = "block";
-    document.querySelector("header").style.display = "none";
-    document.querySelector("main").style.display = "none";
-    document.getElementById("senhaLogin").value = "";
-    document.getElementById("erroLogin").textContent = "";
-    botao.disabled = false;
-    botao.textContent = "Sair";
-  }
+function sair() {
+  limparSessao();
+  document.getElementById("senhaLogin").value = "";
+  mostrarLogin("");
 }
 
 document.getElementById("btnLogin").addEventListener("click", fazerLogin);
