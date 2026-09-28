@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Teste de conexão</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f3f6f8;color:#17202a;margin:0;padding:20px}
+.box{max-width:700px;margin:auto;background:#fff;border-radius:16px;padding:20px;box-shadow:0 3px 12px rgba(0,0,0,.08)}
+h1{font-size:26px}
+.item{margin:14px 0;padding:14px;border-radius:10px;background:#f5f7f8;white-space:pre-wrap;word-break:break-word}
+.ok{border-left:5px solid #0b7a45}
+.erro{border-left:5px solid #b42318}
+button{width:100%;padding:14px;border:0;border-radius:10px;background:#0b7a45;color:white;font-size:17px;font-weight:bold}
+small{color:#5c6770}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>Teste de conexão do painel</h1>
+<p>Esta página não altera nenhuma solicitação. Ela apenas testa se o celular consegue alcançar o servidor.</p>
+<button onclick="testar()">TESTAR AGORA</button>
+<div id="rede" class="item">Internet do navegador: aguardando teste...</div>
+<div id="auth" class="item">Servidor de autenticação: aguardando teste...</div>
+<div id="api" class="item">Banco de solicitações: aguardando teste...</div>
+<small>Se algum teste ficar em vermelho, tire uma captura desta tela.</small>
+</div>
+<script>
+const URL="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
+const KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+
+function set(id, ok, texto){
+  const el=document.getElementById(id);
+  el.className="item "+(ok?"ok":"erro");
+  el.textContent=texto;
+}
+
+async function fetchComTempo(url, opcoes={}){
+  const c=new AbortController();
+  const t=setTimeout(()=>c.abort(),10000);
+  try{
+    return await fetch(url,{...opcoes,signal:c.signal,cache:"no-store"});
+  }finally{
+    clearTimeout(t);
+  }
+}
+
+async function testar(){
+  set("rede", navigator.onLine, "Internet do navegador: "+(navigator.onLine?"ONLINE":"OFFLINE"));
+
+  try{
+    const r=await fetchComTempo(URL+"/auth/v1/health");
+    const txt=await r.text();
+    set("auth", r.ok, "Servidor de autenticação: HTTP "+r.status+"\n"+txt.slice(0,300));
+  }catch(e){
+    set("auth", false, "Servidor de autenticação: FALHOU\n"+e.name+": "+e.message);
+  }
+
+  try{
+    const r=await fetchComTempo(URL+"/rest/v1/rpc/consulta_publica_protocolo",{
+      method:"POST",
+      headers:{
+        "apikey":KEY,
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({p_protocolo:"TESTE-CONEXAO-000"})
+    });
+    const txt=await r.text();
+    set("api", r.ok, "Banco de solicitações: HTTP "+r.status+"\n"+txt.slice(0,500));
+  }catch(e){
+    set("api", false, "Banco de solicitações: FALHOU\n"+e.name+": "+e.message);
+  }
+}
+testar();
+</script>
+</body>
+</html>
