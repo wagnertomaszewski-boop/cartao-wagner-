@@ -1,4 +1,4 @@
-const CACHE_NAME = "painel-mandato-v1";
+const CACHE_NAME = "painel-mandato-v2";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
