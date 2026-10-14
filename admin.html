@@ -37,6 +37,11 @@
     .resposta-texto{white-space:pre-wrap;line-height:1.45}
     .anexos{margin-top:8px}
     .anexos a{display:inline-block;margin:4px 8px 0 0;color:#075985;font-weight:bold;text-decoration:none}
+    .arquivos-pendentes{margin-top:10px}
+    .arquivo-pendente{display:flex;gap:8px;align-items:center;justify-content:space-between;background:#fff;border:1px solid #d8dee4;border-radius:8px;padding:9px 10px;margin-top:7px}
+    .arquivo-pendente span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+    .arquivo-pendente button{width:auto;margin:0;padding:7px 10px;font-size:13px;background:#b42318}
+    .dica-anexo{font-size:13px;color:#667085;margin-top:6px;line-height:1.35}
     .nova-resposta{margin-top:16px;padding-top:12px;border-top:1px solid #d8dee4}
     .sem-resposta{color:#667085;font-size:14px}
     #telaLogin{display:block;padding:24px;max-width:520px;margin:30px auto;background:#fff;border-radius:14px}
@@ -81,6 +86,7 @@ const SUPABASE_URL = "https://pmmsdjozyyxkbuqlkfpb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 const STORAGE_KEY = "wagner_admin_session_v2";
 const TEMPO_LIMITE_MS = 15000;
+const arquivosPendentesPorSolicitacao = new Map();
 
 function salvarSessao(sessao){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(sessao));
@@ -174,6 +180,84 @@ function normalizarAnexos(v) {
 function caminhoPublicoStorage(bucket, caminho) {
   const partes = String(caminho || "").split("/").filter(Boolean).map(encodeURIComponent);
   return SUPABASE_URL + "/storage/v1/object/public/" + encodeURIComponent(bucket) + "/" + partes.join("/");
+}
+
+function arquivosPendentes(id) {
+  return arquivosPendentesPorSolicitacao.get(Number(id)) || [];
+}
+
+function renderArquivosPendentes(id) {
+  const alvo = document.getElementById(`pendentes-${id}`);
+  if (!alvo) return;
+
+  const arquivos = arquivosPendentes(id);
+
+  if (arquivos.length === 0) {
+    alvo.innerHTML = '<div class="dica-anexo">Nenhum arquivo selecionado ainda.</div>';
+    return;
+  }
+
+  alvo.innerHTML = arquivos.map((arquivo, indice) => {
+    const nome = esc(arquivo.name);
+    const tamanhoMb = (arquivo.size / (1024 * 1024)).toFixed(2);
+    return `
+      <div class="arquivo-pendente">
+        <span>📎 ${nome} (${tamanhoMb} MB)</span>
+        <button type="button" onclick="removerDocumentoPendente(${id}, ${indice})">Remover</button>
+      </div>
+    `;
+  }).join("");
+}
+
+function adicionarDocumentos(id) {
+  const input = document.getElementById(`documentos-${id}`);
+  if (!input) return;
+
+  const atuais = arquivosPendentes(id);
+  const novos = Array.from(input.files || []);
+
+  for (const arquivo of novos) {
+    if (arquivo.size > 10 * 1024 * 1024) {
+      alert("O arquivo " + arquivo.name + " ultrapassa o limite de 10 MB.");
+      input.value = "";
+      return;
+    }
+  }
+
+  const combinados = [...atuais];
+
+  for (const arquivo of novos) {
+    const duplicado = combinados.some(a =>
+      a.name === arquivo.name &&
+      a.size === arquivo.size &&
+      a.lastModified === arquivo.lastModified
+    );
+
+    if (!duplicado) combinados.push(arquivo);
+  }
+
+  if (combinados.length > 5) {
+    alert("Você pode anexar no máximo 5 documentos por resposta.");
+    input.value = "";
+    return;
+  }
+
+  arquivosPendentesPorSolicitacao.set(Number(id), combinados);
+  input.value = "";
+  renderArquivosPendentes(id);
+}
+
+function removerDocumentoPendente(id, indice) {
+  const arquivos = [...arquivosPendentes(id)];
+  arquivos.splice(indice, 1);
+
+  if (arquivos.length === 0) {
+    arquivosPendentesPorSolicitacao.delete(Number(id));
+  } else {
+    arquivosPendentesPorSolicitacao.set(Number(id), arquivos);
+  }
+
+  renderArquivosPendentes(id);
 }
 
 function mostrarLogin(mensagem = "") {
@@ -425,9 +509,14 @@ async function carregarSolicitacoes() {
             <input
               type="file"
               id="documentos-${id}"
-              multiple
               accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.odt,.ods"
+              onchange="adicionarDocumentos(${id})"
             >
+            <div class="dica-anexo">
+              Escolha um arquivo. Para adicionar outro, toque novamente em “Escolher arquivo”.
+              Os arquivos ficarão na lista abaixo até você enviar a resposta.
+            </div>
+            <div id="pendentes-${id}" class="arquivos-pendentes"></div>
 
             <button id="btn-resposta-${id}" type="button" onclick="enviarResposta(${id})">
               Enviar resposta / documentos
@@ -441,6 +530,7 @@ async function carregarSolicitacoes() {
       `;
 
       lista.appendChild(card);
+      renderArquivosPendentes(id);
     });
 
   } catch (e) {
@@ -462,7 +552,7 @@ async function enviarResposta(id) {
   if (!campo || !arquivosEl || !botao) return;
 
   const mensagem = campo.value.trim();
-  const arquivos = Array.from(arquivosEl.files || []);
+  const arquivos = [...arquivosPendentes(id)];
 
   if (!mensagem && arquivos.length === 0) {
     alert("Digite uma resposta ou selecione pelo menos um documento.");
@@ -554,6 +644,7 @@ async function enviarResposta(id) {
     alert("Resposta enviada com sucesso!");
     campo.value = "";
     arquivosEl.value = "";
+    arquivosPendentesPorSolicitacao.delete(Number(id));
     await carregarSolicitacoes();
 
   } catch (e) {
