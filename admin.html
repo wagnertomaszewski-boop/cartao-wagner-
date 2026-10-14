@@ -22,13 +22,23 @@
     .protocolo{color:#0b7a45;font-weight:bold;font-size:17px;margin-bottom:12px}
     .linha{margin:7px 0;line-height:1.4}
     .descricao{background:#f5f7f8;padding:12px;border-radius:8px;margin-top:12px;white-space:pre-wrap}
-    select,#filtroBusca,#telaLogin input{width:100%;padding:12px;margin-top:12px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
+    select,#filtroBusca,#telaLogin input,textarea,input[type="file"]{width:100%;padding:12px;margin-top:12px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
+    textarea{min-height:105px;resize:vertical;font-family:Arial,sans-serif}
     button{width:100%;border:0;padding:13px;border-radius:8px;margin-top:10px;font-size:16px;font-weight:bold;background:#0b7a45;color:#fff;cursor:pointer}
     button:disabled{opacity:.6}
     .vazio{text-align:center;background:#fff;padding:30px;border-radius:12px}
     .erro{background:#ffe6e6;color:#8b0000;padding:15px;border-radius:10px;line-height:1.45;margin-top:12px}
     .erro button{max-width:260px}
     .status{font-weight:bold;color:#0b7a45}
+    .respostas-box{margin-top:16px;padding:14px;border-radius:10px;background:#eef6f1;border:1px solid #c9e3d2}
+    .respostas-box h4{margin:0 0 10px;color:#0b7a45}
+    .resposta-item{background:#fff;border-radius:9px;padding:12px;margin-top:9px;border-left:4px solid #0b7a45}
+    .resposta-data{font-size:12px;color:#667085;margin-bottom:6px}
+    .resposta-texto{white-space:pre-wrap;line-height:1.45}
+    .anexos{margin-top:8px}
+    .anexos a{display:inline-block;margin:4px 8px 0 0;color:#075985;font-weight:bold;text-decoration:none}
+    .nova-resposta{margin-top:16px;padding-top:12px;border-top:1px solid #d8dee4}
+    .sem-resposta{color:#667085;font-size:14px}
     #telaLogin{display:block;padding:24px;max-width:520px;margin:30px auto;background:#fff;border-radius:14px}
     #erroLogin{line-height:1.4;color:#8b0000}
   </style>
@@ -141,6 +151,29 @@ function normalizar(v) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+}
+
+function formatarData(v) {
+  if (!v) return "";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("pt-BR");
+}
+
+function normalizarAnexos(v) {
+  if (Array.isArray(v)) return v;
+  if (!v) return [];
+  try {
+    const p = JSON.parse(v);
+    return Array.isArray(p) ? p : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function caminhoPublicoStorage(bucket, caminho) {
+  const partes = String(caminho || "").split("/").filter(Boolean).map(encodeURIComponent);
+  return SUPABASE_URL + "/storage/v1/object/public/" + encodeURIComponent(bucket) + "/" + partes.join("/");
 }
 
 function mostrarLogin(mensagem = "") {
@@ -295,6 +328,32 @@ async function carregarSolicitacoes() {
 
     let dados = Array.isArray(dadosResposta) ? dadosResposta : [];
 
+    const respostasPorSolicitacao = {};
+    try {
+      const respostaRespostas = await requisicao(
+        SUPABASE_URL + "/rest/v1/respostas_solicitacoes?select=*&order=criado_em.desc",
+        {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + sessao.access_token
+          }
+        }
+      );
+
+      if (respostaRespostas.ok) {
+        const respostas = await respostaRespostas.json().catch(() => []);
+        (Array.isArray(respostas) ? respostas : []).forEach(r => {
+          const chave = Number(r.solicitacao_id);
+          if (!respostasPorSolicitacao[chave]) respostasPorSolicitacao[chave] = [];
+          respostasPorSolicitacao[chave].push(r);
+        });
+      } else {
+        console.warn("Histórico de respostas ainda não está disponível.");
+      }
+    } catch (e) {
+      console.warn("Não foi possível carregar respostas:", e);
+    }
+
     if (termoBusca) {
       dados = dados.filter(item =>
         normalizar(item.nome).includes(termoBusca) ||
@@ -318,6 +377,25 @@ async function carregarSolicitacoes() {
       const card = document.createElement("div");
       card.className = "card";
 
+      const respostas = respostasPorSolicitacao[id] || [];
+      const historicoRespostas = respostas.length
+        ? respostas.map(r => {
+            const anexos = normalizarAnexos(r.anexos);
+            const links = anexos.length
+              ? '<div class="anexos">' + anexos.map(a => {
+                  const nome = esc(a.nome || "Documento");
+                  const url = esc(a.url || "");
+                  return url ? '<a href="' + url + '" target="_blank" rel="noopener">📎 ' + nome + '</a>' : "";
+                }).join("") + '</div>'
+              : "";
+            return '<div class="resposta-item">' +
+              '<div class="resposta-data">' + esc(formatarData(r.criado_em)) + '</div>' +
+              (r.mensagem ? '<div class="resposta-texto">' + esc(r.mensagem) + '</div>' : '') +
+              links +
+            '</div>';
+          }).join("")
+        : '<div class="sem-resposta">Nenhuma resposta enviada ainda.</div>';
+
       card.innerHTML = `
         <div class="protocolo">${esc(item.protocolo || ("Solicitação #" + id))}</div>
         <div class="linha"><strong>Nome:</strong> ${esc(item.nome)}</div>
@@ -334,6 +412,29 @@ async function carregarSolicitacoes() {
         </select>
 
         <button id="botao-${id}" type="button" onclick="atualizarStatus(${id})">Salvar novo status</button>
+
+        <div class="respostas-box">
+          <h4>Respostas ao cidadão</h4>
+          ${historicoRespostas}
+
+          <div class="nova-resposta">
+            <label for="resposta-${id}"><strong>Nova resposta</strong></label>
+            <textarea id="resposta-${id}" placeholder="Digite a resposta que ficará visível para o cidadão ao consultar o protocolo."></textarea>
+
+            <label for="documentos-${id}"><strong>Anexar documentos (opcional)</strong></label>
+            <input
+              type="file"
+              id="documentos-${id}"
+              multiple
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.odt,.ods"
+            >
+
+            <button id="btn-resposta-${id}" type="button" onclick="enviarResposta(${id})">
+              Enviar resposta / documentos
+            </button>
+          </div>
+        </div>
+
         ${whatsapp.length > 2
           ? `<a href="https://wa.me/${whatsapp}" target="_blank" rel="noopener"><button type="button">Falar pelo WhatsApp</button></a>`
           : ""}
@@ -351,6 +452,116 @@ async function carregarSolicitacoes() {
         <button type="button" onclick="carregarSolicitacoes()">Tentar novamente</button>
       </div>
     `;
+  }
+}
+
+async function enviarResposta(id) {
+  const campo = document.getElementById(`resposta-${id}`);
+  const arquivosEl = document.getElementById(`documentos-${id}`);
+  const botao = document.getElementById(`btn-resposta-${id}`);
+  if (!campo || !arquivosEl || !botao) return;
+
+  const mensagem = campo.value.trim();
+  const arquivos = Array.from(arquivosEl.files || []);
+
+  if (!mensagem && arquivos.length === 0) {
+    alert("Digite uma resposta ou selecione pelo menos um documento.");
+    return;
+  }
+
+  if (arquivos.length > 5) {
+    alert("Envie no máximo 5 documentos por resposta.");
+    return;
+  }
+
+  for (const arquivo of arquivos) {
+    if (arquivo.size > 10 * 1024 * 1024) {
+      alert("O arquivo " + arquivo.name + " ultrapassa o limite de 10 MB.");
+      return;
+    }
+  }
+
+  botao.disabled = true;
+  botao.textContent = "Enviando...";
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const anexos = [];
+
+    for (const arquivo of arquivos) {
+      const nomeSeguro = arquivo.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const caminho = id + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "-" + nomeSeguro;
+
+      const upload = await requisicao(
+        SUPABASE_URL + "/storage/v1/object/documentos-respostas/" +
+          caminho.split("/").map(encodeURIComponent).join("/"),
+        {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + sessao.access_token,
+            "Content-Type": arquivo.type || "application/octet-stream",
+            "x-upsert": "false"
+          },
+          body: arquivo
+        }
+      );
+
+      if (!upload.ok) {
+        const detalhe = await upload.text().catch(() => "");
+        throw new Error("Não foi possível enviar o documento " + arquivo.name + ". " + detalhe);
+      }
+
+      anexos.push({
+        nome: arquivo.name,
+        tipo: arquivo.type || "",
+        caminho: caminho,
+        url: caminhoPublicoStorage("documentos-respostas", caminho)
+      });
+    }
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/rest/v1/respostas_solicitacoes",
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({
+          solicitacao_id: id,
+          mensagem: mensagem || null,
+          anexos: anexos
+        })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => []);
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.message ||
+        dados.hint ||
+        dados.details ||
+        "Não foi possível registrar a resposta."
+      );
+    }
+
+    alert("Resposta enviada com sucesso!");
+    campo.value = "";
+    arquivosEl.value = "";
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    console.error("Erro ao enviar resposta:", e);
+    alert(mensagemDeErro(e));
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Enviar resposta / documentos";
   }
 }
 
