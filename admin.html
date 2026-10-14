@@ -19,6 +19,8 @@
     .container{max-width:800px;margin:auto;padding:20px}
     .titulo{margin:20px 0;font-size:28px}
     .card{background:#fff;border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px rgba(0,0,0,.10);border-left:5px solid #0b7a45}
+    .card.lembrete-hoje{border-left-color:#b7791f}
+    .card.lembrete-atrasado{border-left-color:#b42318}
     .protocolo{color:#0b7a45;font-weight:bold;font-size:17px;margin-bottom:12px}
     .linha{margin:7px 0;line-height:1.4}
     .descricao{background:#f5f7f8;padding:12px;border-radius:8px;margin-top:12px;white-space:pre-wrap}
@@ -34,6 +36,11 @@
     .anotacao-box h4{margin:0 0 6px;color:#8a5a00}
     .anotacao-ajuda{font-size:13px;color:#7a6850;line-height:1.35}
     .anotacao-box button{background:#8a5a00}
+    .anotacao-box input[type="date"]{width:100%;padding:12px;margin-top:8px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
+    .lembrete-alerta{margin:0 0 12px;padding:11px 12px;border-radius:9px;font-weight:bold;line-height:1.35}
+    .lembrete-alerta.hoje{background:#fff3cd;color:#7a5200;border:1px solid #ecd27a}
+    .lembrete-alerta.atrasado{background:#ffe8e6;color:#8b1e16;border:1px solid #efb2ad}
+    .lembrete-alerta.futuro{background:#eef6f1;color:#235b3b;border:1px solid #c9e3d2}
     .respostas-box{margin-top:16px;padding:14px;border-radius:10px;background:#eef6f1;border:1px solid #c9e3d2}
     .respostas-box h4{margin:0 0 10px;color:#0b7a45}
     .resposta-item{background:#fff;border-radius:9px;padding:12px;margin-top:9px;border-left:4px solid #0b7a45}
@@ -175,6 +182,28 @@ function formatarData(v) {
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleString("pt-BR");
+}
+
+function dataHojeISO() {
+  const d = new Date();
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
+function formatarDataCurta(v) {
+  const partes = String(v || "").split("-");
+  if (partes.length !== 3) return String(v || "");
+  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+function estadoLembrete(v) {
+  if (!v) return "";
+  const hoje = dataHojeISO();
+  if (v < hoje) return "atrasado";
+  if (v === hoje) return "hoje";
+  return "futuro";
 }
 
 function normalizarAnexos(v) {
@@ -470,7 +499,22 @@ async function carregarSolicitacoes() {
       const whatsapp = telefone.startsWith("55") ? telefone : "55" + telefone;
 
       const card = document.createElement("div");
-      card.className = "card";
+      const estadoDoLembrete = estadoLembrete(item.lembrete_em);
+      card.className = "card" +
+        (estadoDoLembrete === "hoje" ? " lembrete-hoje" : "") +
+        (estadoDoLembrete === "atrasado" ? " lembrete-atrasado" : "");
+
+      let lembreteHtml = "";
+      if (item.lembrete_em) {
+        const dataLegivel = esc(formatarDataCurta(item.lembrete_em));
+        if (estadoDoLembrete === "hoje") {
+          lembreteHtml = '<div class="lembrete-alerta hoje">⏰ Lembrete para hoje — ' + dataLegivel + '</div>';
+        } else if (estadoDoLembrete === "atrasado") {
+          lembreteHtml = '<div class="lembrete-alerta atrasado">⚠️ Lembrete atrasado — ' + dataLegivel + '</div>';
+        } else {
+          lembreteHtml = '<div class="lembrete-alerta futuro">📅 Próximo lembrete — ' + dataLegivel + '</div>';
+        }
+      }
 
       const respostas = respostasPorSolicitacao[id] || [];
       const historicoRespostas = respostas.length
@@ -492,6 +536,7 @@ async function carregarSolicitacoes() {
         : '<div class="sem-resposta">Nenhuma resposta enviada ainda.</div>';
 
       card.innerHTML = `
+        ${lembreteHtml}
         <div class="protocolo">${esc(item.protocolo || ("Solicitação #" + id))}</div>
         <div class="linha"><strong>Nome:</strong> ${esc(item.nome)}</div>
         <div class="linha"><strong>WhatsApp:</strong> ${esc(item.whatsapp)}</div>
@@ -500,10 +545,13 @@ async function carregarSolicitacoes() {
         <div class="descricao"><strong>Descrição:</strong><br>${esc(item.descricao)}</div>
 
         <div class="anotacao-box">
-          <h4>📝 Anotação interna</h4>
-          <div class="anotacao-ajuda">Somente você vê esta anotação. Ela não aparece para o cidadão.</div>
+          <h4>📝 Anotação interna e lembrete</h4>
+          <div class="anotacao-ajuda">Somente você vê estas informações. Elas não aparecem para o cidadão.</div>
           <textarea id="anotacao-${id}" placeholder="Ex.: cobrar retorno da Secretaria de Obras na próxima semana.">${escCampo(item.anotacao_interna)}</textarea>
-          <button id="btn-anotacao-${id}" type="button" onclick="salvarAnotacaoInterna(${id})">Salvar anotação interna</button>
+          <label for="lembrete-${id}"><strong>Data do lembrete</strong></label>
+          <input id="lembrete-${id}" type="date" value="${escCampo(item.lembrete_em)}">
+          <div class="anotacao-ajuda">Se não quiser mais o lembrete, apague a data e salve novamente.</div>
+          <button id="btn-anotacao-${id}" type="button" onclick="salvarAnotacaoInterna(${id})">Salvar anotação e lembrete</button>
         </div>
 
         <div class="linha"><strong>Status atual:</strong> <span class="status">${esc(status)}</span></div>
@@ -677,8 +725,9 @@ async function enviarResposta(id) {
 
 async function salvarAnotacaoInterna(id) {
   const campo = document.getElementById(`anotacao-${id}`);
+  const lembrete = document.getElementById(`lembrete-${id}`);
   const botao = document.getElementById(`btn-anotacao-${id}`);
-  if (!campo || !botao) return;
+  if (!campo || !lembrete || !botao) return;
 
   botao.disabled = true;
   botao.textContent = "Salvando...";
@@ -699,6 +748,7 @@ async function salvarAnotacaoInterna(id) {
         },
         body: JSON.stringify({
           anotacao_interna: campo.value.trim() || null,
+          lembrete_em: lembrete.value || null,
           atualizado_em: new Date().toISOString()
         })
       }
@@ -715,14 +765,15 @@ async function salvarAnotacaoInterna(id) {
       );
     }
 
-    alert("Anotação interna salva!");
+    alert("Anotação e lembrete salvos!");
+    await carregarSolicitacoes();
 
   } catch (e) {
     console.error("Erro ao salvar anotação interna:", e);
     alert(mensagemDeErro(e));
   } finally {
     botao.disabled = false;
-    botao.textContent = "Salvar anotação interna";
+    botao.textContent = "Salvar anotação e lembrete";
   }
 }
 
