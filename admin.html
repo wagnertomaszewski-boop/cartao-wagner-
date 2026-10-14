@@ -36,7 +36,7 @@
     .anotacao-box h4{margin:0 0 6px;color:#8a5a00}
     .anotacao-ajuda{font-size:13px;color:#7a6850;line-height:1.35}
     .anotacao-box button{background:#8a5a00}
-    .anotacao-box input[type="date"]{width:100%;padding:12px;margin-top:8px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
+    .anotacao-box input.lembrete-data{width:100%;padding:12px;margin-top:8px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
     .lembrete-alerta{margin:0 0 12px;padding:11px 12px;border-radius:9px;font-weight:bold;line-height:1.35}
     .lembrete-alerta.hoje{background:#fff3cd;color:#7a5200;border:1px solid #ecd27a}
     .lembrete-alerta.atrasado{background:#ffe8e6;color:#8b1e16;border:1px solid #efb2ad}
@@ -196,6 +196,29 @@ function formatarDataCurta(v) {
   const partes = String(v || "").split("-");
   if (partes.length !== 3) return String(v || "");
   return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+function dataBrParaIso(v) {
+  const valor = String(v || "").trim();
+  if (!valor) return null;
+
+  const m = valor.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) throw new Error("Digite a data no formato DD/MM/AAAA.");
+
+  const dia = Number(m[1]);
+  const mes = Number(m[2]);
+  const ano = Number(m[3]);
+  const d = new Date(Date.UTC(ano, mes - 1, dia));
+
+  if (
+    d.getUTCFullYear() !== ano ||
+    d.getUTCMonth() !== mes - 1 ||
+    d.getUTCDate() !== dia
+  ) {
+    throw new Error("Digite uma data válida.");
+  }
+
+  return `${String(ano).padStart(4, "0")}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
 }
 
 function estadoLembrete(v) {
@@ -549,8 +572,15 @@ async function carregarSolicitacoes() {
           <div class="anotacao-ajuda">Somente você vê estas informações. Elas não aparecem para o cidadão.</div>
           <textarea id="anotacao-${id}" placeholder="Ex.: cobrar retorno da Secretaria de Obras na próxima semana.">${escCampo(item.anotacao_interna)}</textarea>
           <label for="lembrete-${id}"><strong>Data do lembrete</strong></label>
-          <input id="lembrete-${id}" type="date" value="${escCampo(item.lembrete_em)}">
-          <div class="anotacao-ajuda">Se não quiser mais o lembrete, apague a data e salve novamente.</div>
+          <input
+            id="lembrete-${id}"
+            class="lembrete-data"
+            type="text"
+            inputmode="numeric"
+            placeholder="DD/MM/AAAA"
+            value="${escCampo(formatarDataCurta(item.lembrete_em))}"
+          >
+          <div class="anotacao-ajuda">Digite a data como DD/MM/AAAA. Se não quiser mais o lembrete, apague a data e salve novamente.</div>
           <button id="btn-anotacao-${id}" type="button" onclick="salvarAnotacaoInterna(${id})">Salvar anotação e lembrete</button>
         </div>
 
@@ -729,6 +759,14 @@ async function salvarAnotacaoInterna(id) {
   const botao = document.getElementById(`btn-anotacao-${id}`);
   if (!campo || !lembrete || !botao) return;
 
+  let lembreteIso = null;
+  try {
+    lembreteIso = dataBrParaIso(lembrete.value);
+  } catch (e) {
+    alert(e.message);
+    return;
+  }
+
   botao.disabled = true;
   botao.textContent = "Salvando...";
 
@@ -748,7 +786,7 @@ async function salvarAnotacaoInterna(id) {
         },
         body: JSON.stringify({
           anotacao_interna: campo.value.trim() || null,
-          lembrete_em: lembrete.value || null,
+          lembrete_em: lembreteIso,
           atualizado_em: new Date().toISOString()
         })
       }
