@@ -3,7 +3,7 @@
   "name": "Painel do Mandato | Wagner Tomaszewski",
   "short_name": "Painel Mandato",
   "description": "Painel Administrativo do Vereador Wagner Tomaszewski",
-  "start_url": "./",
+  "start_url": "./?v=20261014-2345",
   "scope": "./",
   "display": "standalone",
   "background_color": "#061c31",
