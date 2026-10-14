@@ -124,6 +124,47 @@ button:active {
   font-weight: bold;
 }
 
+#blocoRespostas {
+  margin-top: 22px;
+}
+
+.resposta-item {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #b9dec7;
+  color: #173d2a;
+}
+
+.resposta-data {
+  font-size: 13px;
+  color: #5f6b64;
+  margin-bottom: 7px;
+}
+
+.resposta-texto {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.anexos-resposta {
+  margin-top: 10px;
+}
+
+.anexos-resposta a {
+  display: block;
+  margin-top: 7px;
+  color: #075985;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.sem-resposta {
+  margin-top: 10px;
+  color: #5f6b64;
+}
+
 .voltar {
   display: block;
   text-align: center;
@@ -187,6 +228,11 @@ CONSULTAR SOLICITAÇÃO
     <strong>Localidade:</strong><br>
     <span id="rLocalidade"></span>
   </div>
+
+  <div class="info" id="blocoRespostas">
+    <strong>Respostas do mandato:</strong>
+    <div id="rRespostas"></div>
+  </div>
 </div>
 
 <div id="erro">
@@ -214,6 +260,99 @@ const SUPABASE_URL =
 
 const SUPABASE_KEY =
 "sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+
+function formatarData(v) {
+  if (!v) return "";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("pt-BR");
+}
+
+function normalizarAnexos(v) {
+  if (Array.isArray(v)) return v;
+  if (!v) return [];
+  try {
+    const p = JSON.parse(v);
+    return Array.isArray(p) ? p : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+async function carregarRespostasPublicas(protocolo) {
+  const alvo = document.getElementById("rRespostas");
+  alvo.innerHTML = "";
+
+  try {
+    const resposta = await fetch(
+      SUPABASE_URL + "/rest/v1/rpc/consulta_publica_respostas_protocolo",
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + SUPABASE_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ p_protocolo: protocolo })
+      }
+    );
+
+    if (!resposta.ok) {
+      alvo.innerHTML = '<div class="sem-resposta">As respostas ainda não estão disponíveis.</div>';
+      return;
+    }
+
+    const dados = await resposta.json();
+
+    if (!Array.isArray(dados) || dados.length === 0) {
+      alvo.innerHTML = '<div class="sem-resposta">Ainda não há resposta registrada. Acompanhe o status da solicitação por aqui.</div>';
+      return;
+    }
+
+    dados.forEach(r => {
+      const item = document.createElement("div");
+      item.className = "resposta-item";
+
+      if (r.criado_em) {
+        const data = document.createElement("div");
+        data.className = "resposta-data";
+        data.textContent = formatarData(r.criado_em);
+        item.appendChild(data);
+      }
+
+      if (r.mensagem) {
+        const texto = document.createElement("div");
+        texto.className = "resposta-texto";
+        texto.textContent = r.mensagem;
+        item.appendChild(texto);
+      }
+
+      const anexos = normalizarAnexos(r.anexos);
+      if (anexos.length) {
+        const bloco = document.createElement("div");
+        bloco.className = "anexos-resposta";
+
+        anexos.forEach(a => {
+          if (!a || !a.url) return;
+          const link = document.createElement("a");
+          link.href = a.url;
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.textContent = "📎 " + (a.nome || "Abrir documento");
+          bloco.appendChild(link);
+        });
+
+        item.appendChild(bloco);
+      }
+
+      alvo.appendChild(item);
+    });
+
+  } catch (e) {
+    console.error("Erro ao carregar respostas:", e);
+    alvo.innerHTML = '<div class="sem-resposta">Não foi possível carregar as respostas agora.</div>';
+  }
+}
 
 async function consultarSolicitacao() {
 
@@ -278,6 +417,7 @@ async function consultarSolicitacao() {
       s.localidade || "Não informada";
 
     resultado.style.display = "block";
+    await carregarRespostasPublicas(s.protocolo || protocolo);
 
   } catch (e) {
     erro.innerText = "Erro: " + e.message;
