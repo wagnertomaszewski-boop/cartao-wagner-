@@ -1,4 +1,4 @@
-const CACHE_NAME = "wagner-app-v3";
+const CACHE_NAME = "wagner-app-v4";
 
 const ARQUIVOS = [
   "./",
