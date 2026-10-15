@@ -24,6 +24,9 @@
     .protocolo{color:#0b7a45;font-weight:bold;font-size:17px;margin-bottom:12px}
     .linha{margin:7px 0;line-height:1.4}
     .descricao{background:#f5f7f8;padding:12px;border-radius:8px;margin-top:12px;white-space:pre-wrap}
+    .anexos-cidadao-box{margin-top:12px;padding:12px;border-radius:10px;background:#eef4ff;border:1px solid #c8d8f5}
+    .anexos-cidadao-box strong{display:block;margin-bottom:8px;color:#174a7e}
+    .btn-anexo-cidadao{background:#174a7e;margin-top:7px}
     select,#filtroBusca,#telaLogin input,textarea,input[type="file"]{width:100%;padding:12px;margin-top:12px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
     textarea{min-height:105px;resize:vertical;font-family:Arial,sans-serif}
     button{width:100%;border:0;padding:13px;border-radius:8px;margin-top:10px;font-size:16px;font-weight:bold;background:#0b7a45;color:#fff;cursor:pointer}
@@ -243,6 +246,73 @@ function normalizarAnexos(v) {
 function caminhoPublicoStorage(bucket, caminho) {
   const partes = String(caminho || "").split("/").filter(Boolean).map(encodeURIComponent);
   return SUPABASE_URL + "/storage/v1/object/public/" + encodeURIComponent(bucket) + "/" + partes.join("/");
+}
+
+async function abrirAnexoCidadao(caminho, botao) {
+  if (!caminho) return;
+
+  const textoOriginal = botao ? botao.textContent : "";
+  const novaJanela = window.open("about:blank", "_blank");
+
+  if (botao) {
+    botao.disabled = true;
+    botao.textContent = "Abrindo...";
+  }
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const caminhoCodificado = String(caminho)
+      .split("/")
+      .filter(Boolean)
+      .map(encodeURIComponent)
+      .join("/");
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/storage/v1/object/sign/anexos-solicitacoes/" + caminhoCodificado,
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ expiresIn: 3600 })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => ({}));
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.message ||
+        dados.error ||
+        "Não foi possível abrir o anexo."
+      );
+    }
+
+    let url = dados.signedURL || dados.signedUrl || "";
+    if (!url) throw new Error("O servidor não retornou o link do anexo.");
+
+    if (url.startsWith("/")) {
+      url = SUPABASE_URL + "/storage/v1" + url;
+    }
+
+    if (novaJanela) {
+      novaJanela.location.href = url;
+    } else {
+      window.location.href = url;
+    }
+  } catch (e) {
+    if (novaJanela) novaJanela.close();
+    alert(mensagemDeErro(e));
+  } finally {
+    if (botao) {
+      botao.disabled = false;
+      botao.textContent = textoOriginal || "Abrir anexo";
+    }
+  }
 }
 
 function arquivosPendentes(id) {
@@ -539,6 +609,23 @@ async function carregarSolicitacoes() {
         }
       }
 
+      const anexosCidadao = Array.isArray(item.anexos)
+        ? item.anexos.filter(Boolean)
+        : [];
+
+      const anexosCidadaoHtml = anexosCidadao.length
+        ? '<div class="anexos-cidadao-box">' +
+            '<strong>📷 Anexos enviados pelo cidadão</strong>' +
+            anexosCidadao.map((caminho, indice) =>
+              '<button type="button" class="btn-anexo-cidadao" ' +
+              'data-caminho="' + escCampo(caminho) + '" ' +
+              'onclick="abrirAnexoCidadao(this.dataset.caminho, this)">' +
+              '📎 Abrir anexo ' + (indice + 1) +
+              '</button>'
+            ).join("") +
+          '</div>'
+        : "";
+
       const respostas = respostasPorSolicitacao[id] || [];
       const historicoRespostas = respostas.length
         ? respostas.map(r => {
@@ -566,6 +653,7 @@ async function carregarSolicitacoes() {
         <div class="linha"><strong>Localidade:</strong> ${esc(item.localidade)}</div>
         <div class="linha"><strong>Assunto:</strong> ${esc(item.assunto)}</div>
         <div class="descricao"><strong>Descrição:</strong><br>${esc(item.descricao)}</div>
+        ${anexosCidadaoHtml}
 
         <div class="anotacao-box">
           <h4>📝 Anotação interna e lembrete</h4>
