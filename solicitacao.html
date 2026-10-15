@@ -250,6 +250,7 @@ document
 
     try {
 const arquivo = document.getElementById("anexo").files[0];
+let caminhoAnexo = null;
 
 if (arquivo) {
     const nomeArquivo =
@@ -275,9 +276,11 @@ if (arquivo) {
         const erroUpload = await upload.text();
         throw new Error("Erro ao enviar o anexo: " + erroUpload);
     }
+
+    caminhoAnexo = nomeArquivo;
 }
       const resposta = await fetch(
-        SUPABASE_URL + "/rest/v1/rpc/criar_solicitacao",
+        SUPABASE_URL + "/rest/v1/rpc/criar_solicitacao_com_anexos",
         {
 
           method: "POST",
@@ -302,7 +305,8 @@ if (arquivo) {
   p_whatsapp: dados.whatsapp,
   p_localidade: dados.localidade,
   p_assunto: dados.assunto,
-  p_descricao: dados.descricao
+  p_descricao: dados.descricao,
+  p_anexos: caminhoAnexo ? [caminhoAnexo] : []
 })
 
         }
