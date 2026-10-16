@@ -1,99 +1,38 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Acompanhar protocolo | Mandato em Ação</title>
-  <meta name="theme-color" content="#071a32">
-  <link rel="stylesheet" href="./styles.css">
-</head>
-<body>
-<div class="app">
-  <header class="topbar">
-    <a href="./index.html">‹ Voltar ao início</a>
-    <h1>Acompanhar protocolo</h1>
-    <p>Consulte o status atual e veja as respostas e documentos já enviados pelo mandato.</p>
-  </header>
-
-  <main class="panel">
-    <label for="protocolo">Número do protocolo</label>
-    <input id="protocolo" type="text" autocomplete="off" placeholder="Ex.: 2026-000021">
-    <button class="primary-btn" id="consultar" type="button">CONSULTAR SOLICITAÇÃO</button>
-
-    <div id="resultado" class="result">
-      <h2>Solicitação encontrada</h2>
-      <div class="kv"><small>Protocolo</small><strong id="rProtocolo"></strong></div>
-      <div class="kv"><small>Status atual</small><span class="status-pill" id="rStatus"></span></div>
-      <div class="kv"><small>Assunto</small><strong id="rAssunto"></strong></div>
-      <div class="kv"><small>Localidade</small><strong id="rLocalidade"></strong></div>
-      <div class="kv"><small>Respostas do mandato</small><div id="rRespostas"></div></div>
-    </div>
-    <div id="erro" class="notice err"></div>
-  </main>
-
-  <div class="footer-note">Guarde seu protocolo. Ele é a chave para acompanhar sua solicitação.</div>
-
-  <nav class="bottom-nav">
-    <a class="nav-item" href="./index.html"><b>⌂</b>Início</a>
-    <a class="nav-item" href="./solicitacao.html"><b>＋</b>Solicitar</a>
-    <a class="nav-item active" href="./acompanhar.html"><b>⌕</b>Acompanhar</a>
-    <a class="nav-item" href="../index.html"><b>•••</b>Mais</a>
-  </nav>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b63ad"><style>
+:root{--blue:#0868bd;--blue2:#064a85;--green:#18a458;--gold:#e5a916;--bg:#f5f7fb;--text:#102542;--muted:#748396;--line:#dde5ee}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#e9eef4;color:var(--text)}button,input,textarea{font:inherit}.app{max-width:720px;margin:auto;min-height:100vh;background:var(--bg);padding-bottom:82px}
+.top{background:linear-gradient(180deg,#0b69bb,#075392);color:#fff;padding:14px 18px 22px;border-radius:0 0 28px 28px}.brand{display:flex;align-items:center;justify-content:space-between}.brand strong{font-size:13px;letter-spacing:.08em}.back{color:#fff;text-decoration:none;font-size:14px}.top h1{margin:18px 0 4px;font-size:27px}.top p{margin:0;color:#eaf2f8;line-height:1.45;font-size:14px}
+.wrap{padding:14px}.card{background:#fff;border:1px solid #e8edf3;border-radius:22px;padding:16px;box-shadow:0 10px 24px rgba(14,42,75,.07);margin-bottom:12px}
+label{display:block;font-weight:700;margin:13px 0 6px;font-size:14px}input,textarea{width:100%;border:1.5px solid var(--line);border-radius:13px;padding:13px 14px;background:#fff;color:var(--text);outline:none}textarea{min-height:110px;resize:vertical}
+.primary{width:100%;border:0;border-radius:14px;background:var(--blue);color:#fff;font-weight:800;padding:15px;margin-top:16px}.primary:disabled{opacity:.6}
+.section-title{font-size:16px;font-weight:800;margin:2px 0 10px}.muted{color:var(--muted);font-size:12px;line-height:1.4}
+.notice{display:none;margin-top:14px;padding:14px;border-radius:13px;line-height:1.45}.ok{display:block;background:#e9f8ef;border:1px solid #b7dfc5;color:#17643a}.err{display:block;background:#fff0f0;border:1px solid #efb5b5;color:#8c2424}
+.bottom{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(720px,100%);display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid #e3e8ee;z-index:20;padding:8px 3px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -7px 22px rgba(12,43,77,.07)}.bottom a{text-align:center;text-decoration:none;color:#7a899a;font-size:11px}.bottom b{display:block;font-size:19px;margin-bottom:2px}.bottom .active{color:var(--blue);font-weight:700}
+</style><title>Acompanhar solicitação | Mandato em Ação</title><style>
+.search{display:grid;grid-template-columns:1fr 48px;gap:8px}.search button{border:0;border-radius:13px;background:var(--blue);color:#fff;font-size:20px}
+.tabs{display:flex;gap:8px;margin:14px 0 10px}.tab{flex:1;border:0;border-radius:12px;padding:10px;background:#eef2f6;color:#6f7d8d;font-weight:700;font-size:12px}.tab.active{background:#e8f2fb;color:#0860a8}
+.req{display:none}.req.show{display:block}.title-row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.pill{padding:6px 9px;border-radius:999px;background:#e8f7ee;color:#197044;font-size:12px;font-weight:800;white-space:nowrap}.meta{color:var(--muted);font-size:12px;margin-top:4px}.issue{margin-top:14px;padding:13px;border-radius:15px;background:#f8fafc;border:1px solid #edf1f5}.issue strong{display:block;margin-bottom:5px}.timeline{margin-top:15px}.step{position:relative;padding:0 0 18px 34px}.step:before{content:"";position:absolute;left:10px;top:18px;bottom:-2px;width:2px;background:#d8e0e8}.step:last-child:before{display:none}.dot{position:absolute;left:3px;top:0;width:17px;height:17px;border-radius:50%;border:2px solid #b6c2cf;background:#fff}.done .dot{background:#27ae60;border-color:#27ae60}.current .dot{background:#0b69bb;border-color:#0b69bb}.step b{display:block;font-size:14px}.step span{font-size:12px;color:var(--muted);line-height:1.4}.reply{margin-top:10px;padding:12px;border:1px solid #dce5ed;border-radius:14px;background:#fff}.reply time{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.reply a{display:block;color:#0864ad;font-weight:700;margin-top:7px;font-size:13px}
+</style></head><body><div class="app">
+<header class="top"><div class="brand"><a class="back" href="./index.html">‹ Voltar</a><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Acompanhar solicitação</h1><p>Consulte o andamento pelo número do protocolo.</p></header>
+<main class="wrap"><div class="card"><div class="search"><input id="protocolo" placeholder="Digite seu número de protocolo"><button id="consultar">⌕</button></div>
+<div class="tabs"><button class="tab active" data-tab="det">Detalhes</button><button class="tab" data-tab="and">Andamento</button><button class="tab" data-tab="msg">Mensagens</button></div>
+<div id="erro" class="notice"></div>
+<div id="resultado" class="req">
+<section id="det" class="pane"><div class="title-row"><div><div class="meta">Protocolo <strong id="rProtocolo"></strong></div><h2 id="rAssunto" style="font-size:19px;margin:6px 0 0"></h2></div><span class="pill" id="rStatus"></span></div><div class="issue"><div class="muted">Localidade</div><strong id="rLocalidade"></strong></div></section>
+<section id="and" class="pane" style="display:none"><div class="timeline" id="timeline"></div></section>
+<section id="msg" class="pane" style="display:none"><div id="rRespostas"></div></section>
+</div></div></main>
+<nav class="bottom"><a href="./index.html"><b>⌂</b>Início</a><a href="./solicitacao.html"><b>✎</b>Solicitações</a><a href="./enquetes.html"><b>▥</b>Enquetes</a><a href="./noticias.html"><b>▤</b>Notícias</a></nav>
 </div>
-
 <script>
-const SUPABASE_URL="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
-const SUPABASE_KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
-
-function dataPt(v){if(!v)return"";const d=new Date(v);return isNaN(d)?"":d.toLocaleString("pt-BR")}
-function anexos(v){if(Array.isArray(v))return v;if(!v)return[];try{const p=JSON.parse(v);return Array.isArray(p)?p:[]}catch{return[]}}
-
-async function carregarRespostas(protocolo){
-  const alvo=document.getElementById("rRespostas"); alvo.innerHTML="";
-  try{
-    const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_respostas_protocolo",{
-      method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},
-      body:JSON.stringify({p_protocolo:protocolo})
-    });
-    if(!r.ok) throw new Error();
-    const dados=await r.json();
-    if(!Array.isArray(dados)||!dados.length){alvo.innerHTML='<div class="empty">Ainda não há resposta registrada.</div>';return}
-    dados.forEach(item=>{
-      const box=document.createElement("div"); box.className="reply";
-      if(item.criado_em){const t=document.createElement("time");t.textContent=dataPt(item.criado_em);box.appendChild(t)}
-      if(item.mensagem){const p=document.createElement("div");p.textContent=item.mensagem;p.style.whiteSpace="pre-wrap";box.appendChild(p)}
-      anexos(item.anexos).forEach(a=>{if(!a||!a.url)return;const link=document.createElement("a");link.href=a.url;link.target="_blank";link.rel="noopener";link.textContent="📎 "+(a.nome||"Abrir documento");box.appendChild(link)});
-      alvo.appendChild(box);
-    });
-  }catch{alvo.innerHTML='<div class="empty">Não foi possível carregar as respostas agora.</div>'}
-}
-
-async function consultar(){
-  const protocolo=document.getElementById("protocolo").value.trim();
-  const resultado=document.getElementById("resultado"),erro=document.getElementById("erro");
-  resultado.style.display="none";erro.className="notice err";erro.style.display="none";
-  if(!protocolo){erro.textContent="Digite o número do protocolo.";erro.style.display="block";return}
-  const btn=document.getElementById("consultar");btn.disabled=true;btn.textContent="CONSULTANDO...";
-  try{
-    const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_protocolo",{
-      method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},
-      body:JSON.stringify({p_protocolo:protocolo})
-    });
-    if(!r.ok)throw new Error("Não foi possível consultar agora.");
-    const dados=await r.json();
-    if(!dados.length)throw new Error("Protocolo não encontrado. Confira o número e tente novamente.");
-    const s=dados[0];
-    document.getElementById("rProtocolo").textContent=s.protocolo||protocolo;
-    document.getElementById("rStatus").textContent=s.status||"Recebida";
-    document.getElementById("rAssunto").textContent=s.assunto||"Não informado";
-    document.getElementById("rLocalidade").textContent=s.localidade||"Não informada";
-    resultado.style.display="block";
-    await carregarRespostas(s.protocolo||protocolo);
-  }catch(e){erro.textContent=e.message;erro.style.display="block"}
-  finally{btn.disabled=false;btn.textContent="CONSULTAR SOLICITAÇÃO"}
-}
-document.getElementById("consultar").addEventListener("click",consultar);
-document.getElementById("protocolo").addEventListener("keydown",e=>{if(e.key==="Enter")consultar()});
-</script>
-</body>
-</html>
+const SUPABASE_URL="https://pmmsdjozyyxkbuqlkfpb.supabase.co",SUPABASE_KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+const steps=["Recebida","Em análise","Encaminhada","Em andamento","Concluída"];
+function norm(s){return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
+function stepIndex(s){const n=norm(s);if(n.includes("concl"))return 4;if(n.includes("andamento"))return 3;if(n.includes("encamin"))return 2;if(n.includes("anal"))return 1;return 0}
+function renderTimeline(status){const ix=stepIndex(status),el=document.getElementById("timeline");el.innerHTML="";steps.forEach((s,i)=>{const d=document.createElement("div");d.className="step "+(i<ix?"done":i===ix?"current":"");d.innerHTML='<span class="dot"></span><b>'+s+'</b><span>'+(i===ix?"Etapa atual da sua solicitação.":i<ix?"Etapa concluída.":"Aguardando andamento.")+'</span>';el.appendChild(d)})}
+function dt(v){if(!v)return"";let d=new Date(v);return isNaN(d)?"":d.toLocaleString("pt-BR")}function ax(v){if(Array.isArray(v))return v;if(!v)return[];try{let p=JSON.parse(v);return Array.isArray(p)?p:[]}catch{return[]}}
+async function respostas(p){const a=document.getElementById("rRespostas");a.innerHTML="";try{const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_respostas_protocolo",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({p_protocolo:p})});const d=await r.json();if(!r.ok||!d.length){a.innerHTML='<div class="muted">Ainda não há resposta registrada.</div>';return}d.forEach(x=>{const e=document.createElement("div");e.className="reply";if(x.criado_em){const t=document.createElement("time");t.textContent=dt(x.criado_em);e.appendChild(t)}if(x.mensagem){const q=document.createElement("div");q.textContent=x.mensagem;e.appendChild(q)}ax(x.anexos).forEach(z=>{if(z&&z.url){const l=document.createElement("a");l.href=z.url;l.target="_blank";l.textContent="📎 "+(z.nome||"Abrir documento");e.appendChild(l)}});a.appendChild(e)})}catch{a.innerHTML='<div class="muted">Não foi possível carregar as respostas agora.</div>'}}
+async function consultar(){const p=document.getElementById("protocolo").value.trim(),res=document.getElementById("resultado"),er=document.getElementById("erro"),b=document.getElementById("consultar");res.classList.remove("show");er.className="notice";er.style.display="none";if(!p){er.className="notice err";er.textContent="Digite o número do protocolo.";return}b.disabled=true;try{const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_protocolo",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({p_protocolo:p})});const d=await r.json();if(!r.ok||!d.length)throw new Error("Protocolo não encontrado.");const s=d[0];document.getElementById("rProtocolo").textContent=s.protocolo||p;document.getElementById("rStatus").textContent=s.status||"Recebida";document.getElementById("rAssunto").textContent=s.assunto||"Solicitação";document.getElementById("rLocalidade").textContent=s.localidade||"Não informada";renderTimeline(s.status||"Recebida");await respostas(s.protocolo||p);res.classList.add("show")}catch(e){er.className="notice err";er.textContent=e.message}finally{b.disabled=false}}
+document.getElementById("consultar").onclick=consultar;document.getElementById("protocolo").addEventListener("keydown",e=>{if(e.key==="Enter")consultar()});
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));t.classList.add("active");document.querySelectorAll(".pane").forEach(x=>x.style.display="none");document.getElementById(t.dataset.tab).style.display="block"});
+</script></body></html>
