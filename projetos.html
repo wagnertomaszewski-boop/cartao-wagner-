@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0868bd"><title>Projetos e ações | Wagner Tomaszewski</title>
+<style>
+:root{--blue:#0868bd;--dark:#102542;--muted:#718197;--bg:#f5f7fb;--line:#dfe7f0}
+*{box-sizing:border-box}body{margin:0;background:#eaf0f6;color:var(--dark);font:16px/1.5 Arial,Helvetica,sans-serif}
+#app{max-width:720px;margin:auto;background:var(--bg);min-height:100vh;padding-bottom:83px}
+header{background:linear-gradient(160deg,#0d72c9,#07508e);color:white;padding:17px 19px 26px;border-radius:0 0 30px 30px}
+header a{color:#fff;text-decoration:none;font-weight:700}header h1{font-size:27px;line-height:1.2;margin:21px 0 7px}header p{margin:0;color:#e8f2fc}
+main{padding:17px 14px}.panel{background:white;border:1px solid #e8edf3;border-radius:25px;padding:17px;box-shadow:0 9px 24px #1d4f7a14;margin-bottom:15px}
+h2{font-size:23px;margin:0 0 8px}h3{font-size:20px;margin:0 0 6px}p{margin:6px 0 12px}.muted{color:var(--muted)}
+.filters{display:flex;gap:9px;overflow:auto;margin:14px -4px 14px;padding:3px 4px 6px}
+.filters button{flex:none;border:1px solid #dce6f0;background:white;color:#516375;border-radius:30px;padding:10px 15px;font-weight:700}
+.filters button.active{background:var(--blue);color:white;border-color:var(--blue)}
+.project{display:block;width:100%;text-align:left;border:1px solid #dfe6ed;border-radius:22px;padding:17px;margin:12px 0;background:#fff;color:inherit;box-shadow:0 8px 19px #24496d0d;cursor:pointer}
+.project:focus-visible,.btn:focus-visible{outline:3px solid #63aff5;outline-offset:2px}.project h3{font-size:21px}.project p{color:var(--muted);line-height:1.5}
+.project img{width:100%;height:165px;object-fit:cover;border-radius:13px;margin:0 0 10px}
+.tag{display:inline-block;border-radius:24px;background:#eaf3fe;color:#0a5ca4;padding:6px 11px;font-size:12px;font-weight:800;margin-bottom:10px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:13px;color:#66788c;margin-top:12px}
+.status{display:inline-block;color:#0a5798;background:#eaf4ff;border-radius:20px;padding:8px 12px;font-size:13px;font-weight:700}
+.cover{width:100%;height:235px;object-fit:cover;border-radius:19px 19px 0 0;display:block}
+.caption{font-size:11px;color:#73869a;padding:4px 0 8px}
+.detailpanel{padding:0;overflow:hidden}.detailbody{padding:19px}
+.detailbody h2{font-size:25px;line-height:1.16;margin:0 0 12px}.detailbody .meta{margin-bottom:13px}
+.section{padding:15px 0;border-top:1px solid #e5eaf0}.section h3{font-size:18px;color:#123353}
+.section p{line-height:1.57;color:#5c7086;white-space:pre-wrap}
+.steps{border-left:2px solid #bcdaf8;margin:16px 0 0 10px}
+.step{position:relative;padding:0 0 18px 19px}.step:before{position:absolute;content:"";width:13px;height:13px;background:var(--blue);border-radius:50%;left:-8px;top:4px}.step strong{display:block}
+.step small{display:block;color:#73869b}.step span{color:#66788c;font-size:14px}
+.doc{display:block;border:1px solid #dfe7f0;border-radius:12px;padding:12px 13px;margin:9px 0;color:#065caa;font-weight:700;text-decoration:none}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}.btn{border:1px solid #0868bd;border-radius:24px;background:white;color:#0868bd;padding:13px 15px;font:700 14px Arial;cursor:pointer;text-align:center;text-decoration:none;flex:1}.btn.primary{background:#0868bd;color:white}
+.notice{padding:15px;border-radius:12px;background:#edf4fa;color:#365573;line-height:1.5}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:720px;width:100%;background:white;border-top:1px solid #e4eaf0;display:grid;grid-template-columns:repeat(5,1fr);z-index:20;padding:8px 2px calc(8px + env(safe-area-inset-bottom))}
+nav a{text-align:center;font-size:11px;color:#748496;text-decoration:none}nav a b{display:block;font-size:22px;font-weight:400}nav a.selected{color:#0966b7;font-weight:700}
+@media(min-width:580px){.cover{height:295px}.project img{height:220px}}
+</style></head>
+<body><div id="app"><header><a href="./index.html" id="back">‹ Voltar</a><h1 id="head">Projetos e ações</h1><p id="sub">Acompanhe o trabalho do mandato do início ao resultado.</p></header>
+<main id="main"><div class="panel"><p>Carregando informações públicas...</p></div></main>
+<nav><a href="./index.html"><b>⌂</b>Início</a><a href="./solicitacao.html"><b>✎</b>Solicitações</a><a class="selected" href="./projetos.html"><b>🏛</b>Projetos</a><a href="./index.html"><b>▥</b>Enquetes</a><a href="./index.html"><b>▤</b>Notícias</a></nav></div>
+<script>
+"use strict";
+const BASE="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
+const KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+const $=id=>document.getElementById(id);
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function validImage(u){try{const p=new URL(u);return (p.protocol==="https:"||p.protocol==="http:")?p.href:""}catch{return ""}}
+function validDoc(u){try{const p=new URL(u);return p.protocol==="https:"?p.href:""}catch{return ""}}
+async function rpc(name,arg){const r=await fetch(BASE+"/rest/v1/rpc/"+name,{method:"POST",headers:{apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/json"},body:JSON.stringify(arg)});if(!r.ok)throw Error("Não foi possível consultar as informações agora.");return r.json()}
+function datept(s){if(!s)return"";const d=new Date(s+"T12:00:00");return isNaN(d)?"":new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"}).format(d)}
+let projects=[],currentFilter="todos";
+const types={projeto:"PROJETO / LEI",pedido:"PEDIDO",emenda:"EMENDA",resultado:"RESULTADO"};
+function renderList(){
+ $("head").textContent="Projetos e ações";$("sub").textContent="Acompanhe o trabalho do mandato do início ao resultado.";$("back").href="./index.html";
+ const shown=projects.filter(p=>currentFilter==="todos"||p.tipo===currentFilter||(currentFilter==="resultado"&&/entreg|conclu|resultado|executad|adquirid/i.test(p.situacao||"")));
+ const buttons=[["todos","Todos"],["projeto","Projetos de lei"],["pedido","Pedidos"],["emenda","Emendas"],["resultado","Resultados"]];
+ let html='<div class="panel"><h2>Transparência do mandato</h2><p class="muted">Projetos de lei, pedidos, emendas e ações organizados em um só lugar.</p><div class="filters">';
+ buttons.forEach(x=>html+='<button type="button" class="'+(currentFilter===x[0]?"active":"")+'" data-filter="'+x[0]+'">'+x[1]+'</button>');
+ html+='</div><div id="cards">';
+ shown.forEach(p=>{
+ let im=validImage(p.foto_url);
+ html+='<button class="project" type="button" data-id="'+Number(p.id)+'">'+(im?'<img loading="lazy" src="'+esc(im)+'" alt="Imagem ilustrativa do projeto">':'')+
+ '<span class="tag">'+esc(types[p.tipo]||"AÇÃO")+(p.destaque?" · DESTAQUE":"")+'</span><h3>'+esc(p.titulo)+'</h3><p>'+esc(p.resumo)+'</p><div class="meta"><span>📄 '+esc(p.referencia||"")+'</span><span>🏛 '+esc(p.area||"")+'</span></div><div class="meta"><span>🔵 '+esc(p.situacao||"Em acompanhamento")+'</span></div><div class="meta" style="color:#085ca7;font-weight:bold">Toque para ver detalhes ›</div></button>';
+ });
+ html+=(shown.length?"":'<div class="notice">Nenhuma ação publicada nesta categoria.</div>')+'</div></div>';
+ $("main").innerHTML=html;
+ document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{currentFilter=b.dataset.filter;renderList()});
+ document.querySelectorAll(".project[data-id]").forEach(b=>b.onclick=()=>{location.href="./projetos.html?id="+encodeURIComponent(b.dataset.id)});
+}
+async function renderDetail(id){
+ $("back").href="./projetos.html";$("head").textContent="Detalhes do projeto";$("sub").textContent="Transparência e acompanhamento do mandato.";
+ const x=await rpc("consulta_publica_detalhe_projeto",{p_id:id});
+ if(!x||!x.id){$("main").innerHTML='<div class="panel notice">Projeto não encontrado ou não publicado.</div>';return}
+ const cover=validImage(x.foto_url);
+ let html='<article class="panel detailpanel">'+(cover?'<img class="cover" src="'+esc(cover)+'" alt="Estudantes em atividade escolar — imagem ilustrativa">':'')+'<div class="detailbody">'+(cover?'<div class="caption">Imagem ilustrativa — não representa necessariamente estudantes de Cristal.</div>':'')+
+ '<span class="tag">'+esc(types[x.tipo]||"AÇÃO")+'</span><h2>'+esc(x.titulo)+'</h2><div class="meta"><span>📄 '+esc(x.referencia||"")+'</span><span>🏛 '+esc(x.area||"")+'</span></div><div class="status">🔵 '+esc(x.situacao||"Em acompanhamento")+'</div>';
+ function section(title,value){return value?'<section class="section"><h3>'+title+'</h3><p>'+esc(value)+'</p></section>':''}
+ html+=section("📄 Sobre o projeto",x.resumo)+section("🎯 Objetivo",x.objetivo)+section("📊 Situação atual",x.situacao)+section("✅ O que já foi feito",x.feito)+section("🕒 O que falta fazer",x.falta);
+ const steps=Array.isArray(x.etapas)?x.etapas:[];
+ html+='<section class="section"><h3>🗓 Linha do tempo</h3>';
+ if(steps.length){html+='<div class="steps">';steps.forEach(s=>html+='<div class="step"><strong>'+esc(s.titulo)+'</strong>'+(s.data?'<small>📅 '+datept(s.data)+'</small>':'')+'<span>'+esc(s.descricao)+'</span></div>');html+='</div>'}else html+='<p>O histórico será publicado conforme houver informações oficiais.</p>';
+ html+='</section><section class="section"><h3>📎 Documentos</h3>';
+ const docs=Array.isArray(x.documentos)?x.documentos:[],validDocs=docs.filter(d=>validDoc(d.url));
+ if(validDocs.length){validDocs.forEach(d=>html+='<a class="doc" href="'+esc(validDoc(d.url))+'" target="_blank" rel="noopener noreferrer">📄 '+esc(d.nome||"Abrir documento")+' ↗</a>')}
+ else html+='<p>Documentos ainda não disponibilizados para consulta nesta página.</p>';
+ html+='</section><div class="actions"><button class="btn primary" type="button" id="share">↗ Compartilhar</button><a class="btn" href="./solicitacao.html">✉ Solicitar informação</a></div></div></article>';
+ $("main").innerHTML=html;
+ $("share").onclick=async()=>{const url=location.href,data={title:x.titulo,text:"Conheça este projeto do mandato",url};try{if(navigator.share)await navigator.share(data);else if(navigator.clipboard){await navigator.clipboard.writeText(url);alert("Link do projeto copiado!")}else prompt("Copie o link para compartilhar:",url)}catch(e){if(e.name!=="AbortError")prompt("Copie o link do projeto:",url)}};
+}
+async function init(){try{const id=Number(new URLSearchParams(location.search).get("id"));if(Number.isSafeInteger(id)&&id>0)await renderDetail(id);else{projects=await rpc("consulta_publica_projetos_acoes",{p_tipo:null});if(!Array.isArray(projects))throw Error("Resposta inválida");renderList()}}catch(e){$("main").innerHTML='<div class="panel"><h2>Informações indisponíveis</h2><p class="muted">Não conseguimos carregar os projetos. Confira sua conexão e tente novamente.</p><button type="button" class="btn primary" onclick="location.reload()">Tentar novamente</button></div>';}}
+init();
+</script></body></html>
