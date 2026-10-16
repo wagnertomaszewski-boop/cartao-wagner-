@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta name="version" content="20261016-1205">
+  <meta name="theme-color" content="#061c31">
+  <link rel="manifest" href="./manifest-admin.json">
+  <title>Painel do Mandato | Wagner Tomaszewski</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:#f3f6f8;color:#17202a}
+    header{display:none;background:#071f31;color:#fff;padding:24px 16px;text-align:center}
+    header h1{margin:0 0 6px;font-size:28px}
+    header p{margin:0;color:#cbd5df}
+    main{display:none}
+    .container{max-width:800px;margin:auto;padding:20px}
+    .titulo{margin:20px 0;font-size:28px}
+    .card{background:#fff;border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px rgba(0,0,0,.10);border-left:5px solid #0b7a45}
+    .card.lembrete-hoje{border-left-color:#b7791f}
+    .card.lembrete-atrasado{border-left-color:#b42318}
+    .protocolo{color:#0b7a45;font-weight:bold;font-size:17px;margin-bottom:12px}
+    .linha{margin:7px 0;line-height:1.4}
+    .descricao{background:#f5f7f8;padding:12px;border-radius:8px;margin-top:12px;white-space:pre-wrap}
+    .anexos-cidadao-box{margin-top:12px;padding:12px;border-radius:10px;background:#eef4ff;border:1px solid #c8d8f5}
+    .anexos-cidadao-box strong{display:block;margin-bottom:8px;color:#174a7e}
+    .btn-anexo-cidadao{background:#174a7e;margin-top:7px}
+    .card > a{display:inline-block;width:auto;margin-top:10px}.card > a button{width:auto;min-width:190px;max-width:230px;padding:10px 13px;font-size:13px;margin:0}
+    select,#filtroBusca,#telaLogin input,textarea,input[type="file"]{width:100%;padding:12px;margin-top:12px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
+    textarea{min-height:105px;resize:vertical;font-family:Arial,sans-serif}
+    button{width:100%;border:0;padding:13px;border-radius:8px;margin-top:10px;font-size:16px;font-weight:bold;background:#0b7a45;color:#fff;cursor:pointer}
+    button:disabled{opacity:.6}
+    .vazio{text-align:center;background:#fff;padding:30px;border-radius:12px}
+    .erro{background:#ffe6e6;color:#8b0000;padding:15px;border-radius:10px;line-height:1.45;margin-top:12px}
+    .erro button{max-width:260px}
+    .status{font-weight:bold;color:#0b7a45}
+    .anotacao-box{margin-top:14px;padding:14px;border-radius:10px;background:#fff7e6;border:1px solid #f1c97a}
+    .anotacao-box h4{margin:0 0 6px;color:#8a5a00}
+    .anotacao-ajuda{font-size:13px;color:#7a6850;line-height:1.35}
+    .anotacao-box button{background:#8a5a00}
+    .anotacao-box input.lembrete-data{width:100%;padding:12px;margin-top:8px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
+    .lembrete-alerta{margin:0 0 12px;padding:11px 12px;border-radius:9px;font-weight:bold;line-height:1.35}
+    .lembrete-alerta.hoje{background:#fff3cd;color:#7a5200;border:1px solid #ecd27a}
+    .lembrete-alerta.atrasado{background:#ffe8e6;color:#8b1e16;border:1px solid #efb2ad}
+    .lembrete-alerta.futuro{background:#eef6f1;color:#235b3b;border:1px solid #c9e3d2}
+    .respostas-box{margin-top:16px;padding:14px;border-radius:10px;background:#eef6f1;border:1px solid #c9e3d2}
+    .respostas-box h4{margin:0 0 10px;color:#0b7a45}
+    .resposta-item{background:#fff;border-radius:9px;padding:12px;margin-top:9px;border-left:4px solid #0b7a45}
+    .resposta-data{font-size:12px;color:#667085;margin-bottom:6px}
+    .resposta-texto{white-space:pre-wrap;line-height:1.45}
+    .anexos{margin-top:8px}
+    .anexos a{display:inline-block;margin:4px 8px 0 0;color:#075985;font-weight:bold;text-decoration:none}
+    .arquivos-pendentes{margin-top:10px}
+    .arquivo-pendente{display:flex;gap:8px;align-items:center;justify-content:space-between;background:#fff;border:1px solid #d8dee4;border-radius:8px;padding:9px 10px;margin-top:7px}
+    .arquivo-pendente span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+    .arquivo-pendente button{width:auto;margin:0;padding:7px 10px;font-size:13px;background:#b42318}
+    .dica-anexo{font-size:13px;color:#667085;margin-top:6px;line-height:1.35}
+    .nova-resposta{margin-top:16px;padding-top:12px;border-top:1px solid #d8dee4}
+    .sem-resposta{color:#667085;font-size:14px}
+    #telaLogin{display:block;padding:24px;max-width:520px;margin:30px auto;background:#fff;border-radius:14px}
+    #erroLogin{line-height:1.4;color:#8b0000}
+  
+    /* Painel do Mandato V2 — camada visual de teste */
+    body{background:#f4f7fb;color:#14263d;padding-bottom:82px}
+    header{background:linear-gradient(155deg,#0a3158,#0a67ad);padding:20px 18px 24px;text-align:left;border-radius:0 0 28px 28px;box-shadow:0 8px 24px rgba(8,47,84,.18)}
+    .painel-topo{max-width:800px;margin:auto}
+    .painel-marca{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .painel-marca small{display:block;color:#cfe4f5;font-size:12px;font-weight:700;letter-spacing:.05em}
+    .painel-marca h1{font-size:27px;margin:3px 0 0}
+    #btnSair{width:auto;margin:0;padding:9px 13px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);font-size:13px}
+    header p{margin-top:10px;color:#dcebf7}
+    .container{padding:16px 14px;max-width:800px}
+    .titulo{font-size:22px;margin:20px 2px 12px}
+    .resumo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:-2px;margin-bottom:16px}
+    .resumo-card{background:#fff;border:1px solid #e4eaf0;border-radius:18px;padding:14px;box-shadow:0 7px 20px rgba(11,49,88,.07)}
+    .resumo-card span{display:block;color:#728196;font-size:12px;margin-bottom:6px}
+    .resumo-card strong{font-size:27px;color:#0a3158}
+    .resumo-card.alerta strong{color:#b7791f}
+    .resumo-card.ok strong{color:#11824a}
+    .resumo-card.azul strong{color:#0b70c9}
+    .filtros-box{background:#fff;border:1px solid #e5eaf0;border-radius:18px;padding:12px;margin-bottom:14px;box-shadow:0 6px 18px rgba(11,49,88,.05)}
+    .filtros-box #filtroBusca,.filtros-box #filtroStatus{margin-top:8px}
+    .card{border-left:0;border:1px solid #e4eaf0;border-radius:19px;padding:16px;box-shadow:0 7px 20px rgba(11,49,88,.07)}
+    .protocolo{display:inline-block;background:#eaf3fb;color:#0a62a5;padding:6px 9px;border-radius:999px;font-size:13px;margin-bottom:11px}
+    .anexos-cidadao-box{background:#eef6ff;border-color:#cfe1f5}
+    .painel-bottom{position:fixed;z-index:50;left:50%;bottom:0;transform:translateX(-50%);width:min(800px,100%);display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:1px solid #e0e6ed;box-shadow:0 -6px 22px rgba(11,49,88,.08);padding:7px 3px calc(7px + env(safe-area-inset-bottom))}
+    .painel-bottom button{margin:0;padding:4px 2px;background:transparent;color:#7b8999;font-size:10px;border-radius:0}
+    .painel-bottom button b{display:block;font-size:19px;color:#607286;margin-bottom:2px}
+    .painel-bottom button.ativo,.painel-bottom button.ativo b{color:#0b70c9}
+    .painel-view{display:none}
+    .painel-view.ativa{display:block}
+    .view-card{background:#fff;border:1px solid #e4eaf0;border-radius:18px;padding:18px;box-shadow:0 7px 20px rgba(11,49,88,.07);margin-bottom:14px}
+    .view-card h3{margin:0 0 7px;font-size:18px}
+    .view-card p{margin:0;color:#718095;line-height:1.45}
+    .atalhos-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 18px}
+    .atalho{background:#fff;border:1px solid #e4eaf0;border-radius:17px;padding:14px;box-shadow:0 6px 18px rgba(11,49,88,.06);cursor:pointer}
+    .atalho b{display:block;font-size:23px;margin-bottom:8px}
+    .atalho strong{display:block;font-size:14px}
+    .atalho span{display:block;color:#7a8998;font-size:11px;margin-top:4px;line-height:1.3}
+    #lista .card{padding:14px}
+    #lista .card .linha{display:block}
+    #lista .card .detalhes-expandido{display:none}
+    #lista .card.expandido .detalhes-expandido{display:block}
+    #lista.modo-lembretes .card{padding:14px}
+    .anexo-modal{position:fixed;inset:0;z-index:1000;background:rgba(3,18,32,.92);display:none;align-items:center;justify-content:center;padding:14px}
+    .anexo-modal.aberto{display:flex}
+    .anexo-modal-box{width:min(760px,100%);height:min(88vh,900px);background:#fff;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+    .anexo-modal-top{display:flex;align-items:center;gap:8px;padding:10px;background:#0a3158;color:#fff}
+    .anexo-modal-top strong{flex:1;font-size:14px}
+    .anexo-modal-top button,.anexo-modal-top a{width:auto;margin:0;padding:8px 11px;border-radius:9px;background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.2);font-size:12px;font-weight:700;text-decoration:none}
+    .anexo-modal-conteudo{flex:1;min-height:0;background:#101820;display:flex;align-items:center;justify-content:center}
+    .anexo-modal-conteudo img{max-width:100%;max-height:100%;object-fit:contain}
+    .anexo-modal-conteudo iframe{width:100%;height:100%;border:0;background:#fff}
+    /* Organização moderna das solicitações */
+    #telaLogin{border:1px solid #e5ebf1;box-shadow:0 14px 36px rgba(11,49,88,.10);border-radius:22px;margin-top:70px;padding:24px}
+    #telaLogin h2{margin:0 0 8px;color:#0a3158}
+    #telaLogin:before{content:"WT · MANDATO EM AÇÃO";display:block;color:#0b70c9;font-size:11px;font-weight:800;letter-spacing:.08em;margin-bottom:8px}
+    #telaLogin input{border:1px solid #d7e0e8;border-radius:13px;background:#f9fbfd}
+    #btnLogin{border-radius:13px;background:linear-gradient(135deg,#0b70c9,#095793)}
+
+    .solicitacao-resumo{display:grid;gap:7px}
+    .linha-resumo{display:flex;gap:7px;align-items:flex-start;line-height:1.35}
+    .linha-resumo strong{color:#1a2d44}
+    .status-chip{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#eaf6ef;color:#167143;font-size:12px;font-weight:800}
+    .status-chip.analise{background:#fff4d8;color:#8a6200}
+    .status-chip.andamento{background:#eaf3ff;color:#1767a8}
+    .status-chip.concluido{background:#e7f8ee;color:#147a45}
+
+    .detalhes-expandido{display:none;margin-top:14px}
+    #lista .card.expandido .detalhes-expandido{display:block}
+    #lista .card .abrir-topo{display:block;background:linear-gradient(135deg,#0b70c9,#095793);margin-top:12px}
+    #lista .card.expandido .abrir-topo{display:none}
+    #lista .card .fechar-final{display:none}
+    #lista .card.expandido .fechar-final{display:block;background:#5f6f80;margin-top:14px}
+
+    .bloco-painel{border:1px solid #e4eaf0;background:#fff;border-radius:16px;padding:14px;margin-top:12px}
+    .bloco-painel.cinza{background:#f7f9fc}
+    .bloco-painel.azul{background:#f2f7fd;border-color:#d7e5f5}
+    .bloco-painel.amarelo{background:#fffaf0;border-color:#f0dfb7}
+    .bloco-painel.verde{background:#f2f9f5;border-color:#d4eadc}
+    .bloco-titulo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:#17304e;margin-bottom:10px}
+    .bloco-titulo span{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:#eaf2fb}
+    .dados-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .dado{background:#fff;border:1px solid #e8edf2;border-radius:12px;padding:10px}
+    .dado small{display:block;color:#7a8998;font-size:11px;margin-bottom:4px}
+    .dado strong{font-size:14px;color:#1b3048}
+    .descricao-moderna{background:#fff;border:1px solid #e8edf2;border-radius:12px;padding:11px;margin-top:9px;white-space:pre-wrap;line-height:1.45}
+    .descricao-moderna small{display:block;color:#7a8998;font-size:11px;margin-bottom:5px}
+    .acoes-rapidas{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .acoes-rapidas a{text-decoration:none}
+    .acoes-rapidas button{width:auto;margin:0;padding:10px 13px;font-size:13px;border-radius:11px}
+    .btn-whatsapp{background:#168b4d!important}
+    .status-area select{margin-top:0;border:1px solid #d6e0e8;border-radius:12px}
+    .status-area button{border-radius:12px}
+    .respostas-box{margin-top:0;background:transparent;border:0;padding:0}
+    .respostas-box h4{display:none}
+    .nova-resposta{border-top:1px solid #dbe4eb;margin-top:12px;padding-top:12px}
+    .nova-resposta textarea{border-radius:12px;border:1px solid #d6e0e8;background:#fff}
+    .anotacao-box{margin:0;padding:0;border:0;background:transparent}
+    .anotacao-box h4{display:none}
+    .anotacao-box textarea,.anotacao-box input.lembrete-data{border-radius:12px;border:1px solid #e4d6a8;background:#fff}
+    .anotacao-box button{border-radius:12px}
+    .anexos-cidadao-box{margin:0;padding:0;border:0;background:transparent}
+    .anexos-cidadao-box strong{display:none}
+    .btn-anexo-cidadao{border-radius:11px;background:#205b91;margin-top:5px}
+    .lembretes-lista{display:grid;gap:11px}
+    .lembrete-card{background:#fff;border:1px solid #e4eaf0;border-radius:17px;padding:14px;box-shadow:0 6px 18px rgba(11,49,88,.06)}
+    .lembrete-card.atrasado{border-left:4px solid #c63d32}
+    .lembrete-card.hoje{border-left:4px solid #d39a18}
+    .lembrete-card.futuro{border-left:4px solid #2b7a55}
+    .lembrete-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .lembrete-data-pill{display:inline-flex;padding:6px 9px;border-radius:999px;background:#f1f5f9;color:#42566d;font-size:11px;font-weight:800}
+    .lembrete-card.atrasado .lembrete-data-pill{background:#fff0ef;color:#9b2e26}
+    .lembrete-card.hoje .lembrete-data-pill{background:#fff6dc;color:#8a6200}
+    .lembrete-card.futuro .lembrete-data-pill{background:#eaf7ef;color:#17653d}
+    .lembrete-protocolo{font-size:12px;font-weight:800;color:#0b70c9;margin-top:8px}
+    .lembrete-titulo{font-size:16px;font-weight:800;color:#1a2d44;margin-top:6px}
+    .lembrete-pessoa{font-size:13px;color:#66778a;margin-top:4px}
+    .lembrete-nota{margin-top:10px;background:#fffaf0;border:1px solid #f0dfb7;border-radius:12px;padding:10px;color:#664b00;line-height:1.4;font-size:13px;white-space:pre-wrap}
+    .lembrete-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+    .lembrete-acoes button{width:auto;margin:0;padding:9px 12px;font-size:12px;border-radius:10px}
+    .lembrete-acoes .secundario{background:#eef3f7;color:#31465d}
+    .secao-lembrete-titulo{font-size:13px;font-weight:800;color:#5e7084;text-transform:uppercase;letter-spacing:.05em;margin:18px 2px 8px}
+    @media(max-width:520px){.dados-grid{grid-template-columns:1fr}.bloco-painel{padding:12px}.painel-marca{align-items:flex-start}.painel-marca h1{font-size:23px}}
+    @media(max-width:420px){.resumo-card strong{font-size:24px}.painel-marca h1{font-size:23px}}
+</style>
+</head>
+<body>
+  <div id="telaLogin">
+    <h2>Acesso ao Painel</h2>
+    <input id="emailLogin" type="email" placeholder="E-mail" autocomplete="email">
+    <input id="senhaLogin" type="password" placeholder="Senha" autocomplete="current-password">
+    <button id="btnLogin" type="button">ENTRAR</button>
+    <p id="erroLogin"></p>
+  </div>
+
+  <header>
+    <div class="painel-topo">
+      <div class="painel-marca">
+        <div><small>WT · MANDATO EM AÇÃO</small><h1>Painel do Mandato</h1></div>
+        <div style="display:flex;gap:7px"><button type="button" onclick="recarregarSemCache()" style="width:auto;margin:0;padding:9px 11px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);font-size:13px">↻ Atualizar</button><button id="btnSair" type="button">Sair</button></div>
+      </div>
+      <p>Organize atendimentos, lembretes, respostas e resultados do mandato.</p><div style="margin-top:7px;font-size:11px;color:#bcd9ee">Versão de teste 16/10 · 13:52</div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="viewInicio" class="painel-view ativa">
+      <h2 class="titulo">Visão geral</h2>
+      <section class="resumo-grid">
+        <div class="resumo-card azul"><span>Total de solicitações</span><strong id="resumoTotal">—</strong></div>
+        <div class="resumo-card alerta"><span>Em aberto</span><strong id="resumoAbertas">—</strong></div>
+        <div class="resumo-card"><span>Lembretes hoje/atrasados</span><strong id="resumoLembretes">—</strong></div>
+        <div class="resumo-card ok"><span>Concluídas</span><strong id="resumoConcluidas">—</strong></div>
+      </section>
+
+      <div class="atalhos-grid">
+        <div class="atalho" onclick="irPainel('solicitacoes')"><b>☷</b><strong>Solicitações</strong><span>Abrir atendimentos recebidos</span></div>
+        <div class="atalho" onclick="irPainel('lembretes')"><b>⏰</b><strong>Lembretes</strong><span>Ver o que precisa de retorno</span></div>
+        <div class="atalho" onclick="irPainel('resultados')"><b>✓</b><strong>Resultados</strong><span>Ver solicitações concluídas</span></div>
+        <div class="atalho" onclick="irPainel('mais')"><b>•••</b><strong>Mais</strong><span>Outras áreas do mandato</span></div>
+      </div>
+      <div class="view-card"><h3>Painel interno do mandato</h3><p>Use as abas abaixo para separar solicitações, lembretes e resultados. As fotos e anexos enviados pelos cidadãos continuam disponíveis somente aqui no painel.</p></div>
+    </section>
+
+    <section id="viewSolicitacoes" class="painel-view">
+      <h2 class="titulo" id="secSolicitacoes">Solicitações da comunidade</h2>
+      <div class="filtros-box">
+        <input id="filtroBusca" type="text" placeholder="Buscar por nome ou protocolo">
+        <select id="filtroStatus">
+          <option value="Todos">Todos os status</option>
+          <option value="Recebida">Recebida</option>
+          <option value="Recebido">Recebido</option>
+          <option value="Em análise">Em análise</option>
+          <option value="Encaminhado">Encaminhado</option>
+          <option value="Em andamento">Em andamento</option>
+          <option value="Concluído">Concluído</option>
+        </select>
+      </div>
+      <div id="lista">Carregando solicitações...</div>
+    </section>
+
+    <section id="viewLembretes" class="painel-view">
+      <h2 class="titulo">Lembretes</h2>
+      <div class="view-card" style="padding:14px;margin-bottom:12px"><h3 style="font-size:16px">Acompanhamentos do mandato</h3><p>Aqui aparecem somente os lembretes. Para ver todos os detalhes, abra a solicitação correspondente.</p></div>
+      <div id="listaLembretes" class="lembretes-lista">Carregando lembretes...</div>
+    </section>
+
+    <section id="viewMais" class="painel-view">
+      <h2 class="titulo">Mais</h2>
+      <div class="atalhos-grid">
+        <div class="atalho"><b>🏛️</b><strong>Projetos e ações</strong><span>Gerenciar conteúdos do mandato</span></div>
+        <div class="atalho"><b>📅</b><strong>Agenda</strong><span>Compromissos e atividades públicas</span></div>
+        <div class="atalho"><b>📰</b><strong>Notícias</strong><span>Publicações do mandato</span></div>
+        <div class="atalho"><b>📊</b><strong>Enquetes</strong><span>Criar e acompanhar consultas</span></div>
+        <div class="atalho"><b>📁</b><strong>Documentos</strong><span>Arquivos e materiais do mandato</span></div>
+        <div class="atalho"><b>⚙️</b><strong>Configurações</strong><span>Preferências do painel</span></div>
+      </div>
+    </section>
+  </main>
+
+<div id="anexoModal" class="anexo-modal" onclick="if(event.target===this)fecharAnexoModal()">
+  <div class="anexo-modal-box">
+    <div class="anexo-modal-top">
+      <strong id="anexoModalTitulo">Anexo recebido</strong>
+      <a id="anexoModalExterno" href="#" target="_blank" rel="noopener">Abrir fora</a>
+      <button type="button" onclick="fecharAnexoModal()">Fechar</button>
+    </div>
+    <div id="anexoModalConteudo" class="anexo-modal-conteudo"></div>
+  </div>
+</div>
+
+<nav class="painel-bottom" id="painelBottom">
+    <button class="ativo" type="button" onclick="irPainel('inicio',this,true)"><b>⌂</b>Início</button>
+    <button type="button" onclick="irPainel('solicitacoes',this,true)"><b>☷</b>Solicitações</button>
+    <button type="button" onclick="irPainel('lembretes',this,true)"><b>⏰</b>Lembretes</button>
+    <button type="button" onclick="irPainel('resultados',this,true)"><b>✓</b>Resultados</button>
+    <button type="button" onclick="irPainel('mais',this,true)"><b>•••</b>Mais</button>
+  </nav>
+
+<script>
+const SUPABASE_URL = "https://pmmsdjozyyxkbuqlkfpb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+const STORAGE_KEY = "wagner_admin_session_v2";
+const TEMPO_LIMITE_MS = 15000;
+const arquivosPendentesPorSolicitacao = new Map();
+
+function recarregarSemCache(){
+  const base=location.href.split("?")[0].split("#")[0];
+  const hash=location.hash||"#inicio";
+  location.replace(base+"?v="+Date.now()+hash);
+}
+
+
+function irPainel(destino, botao, alterarHash=true){
+  const destinoSeguro=["inicio","solicitacoes","lembretes","resultados","mais"].includes(destino)?destino:"inicio";
+
+  document.querySelectorAll(".painel-view").forEach(v=>v.classList.remove("ativa"));
+  document.querySelectorAll(".painel-bottom button").forEach(b=>b.classList.remove("ativo"));
+
+  const mapaViews={
+    inicio:"viewInicio",
+    solicitacoes:"viewSolicitacoes",
+    lembretes:"viewLembretes",
+    resultados:"viewSolicitacoes",
+    mais:"viewMais"
+  };
+  document.getElementById(mapaViews[destinoSeguro])?.classList.add("ativa");
+
+  const botoes=[...document.querySelectorAll(".painel-bottom button")];
+  const indice={inicio:0,solicitacoes:1,lembretes:2,resultados:3,mais:4}[destinoSeguro];
+  if(botoes[indice]) botoes[indice].classList.add("ativo");
+
+  const titulo=document.getElementById("secSolicitacoes");
+  const filtro=document.getElementById("filtroStatus");
+
+  const lista=document.getElementById("lista");
+  if(lista) lista.classList.remove("modo-lembretes");
+
+  if(destinoSeguro==="solicitacoes"){
+    if(titulo) titulo.textContent="Solicitações da comunidade";
+    if(filtro) filtro.value="Todos";
+    carregarSolicitacoes().then(()=>{
+      document.querySelectorAll("#lista .card").forEach(card=>{
+        card.style.display="block";
+        card.classList.remove("expandido");
+
+      });
+    });
+  } else if(destinoSeguro==="lembretes"){
+    carregarLembretes();
+  } else if(destinoSeguro==="resultados"){
+    if(titulo) titulo.textContent="Resultados concluídos";
+    if(filtro) filtro.value="Concluído";
+    carregarSolicitacoes().then(()=>{
+      document.querySelectorAll("#lista .card").forEach(card=>{
+        card.style.display="block";
+        card.classList.remove("expandido");
+
+      });
+    });
+  }
+
+  if(alterarHash){
+    const novo="#"+destinoSeguro;
+    if(location.hash!==novo) history.pushState({painel:destinoSeguro},"",novo);
+  }
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function atualizarResumoPainel(itens){
+  const todos=Array.isArray(itens)?itens:[];
+  const total=todos.length;
+  const concluidas=todos.filter(x=>normalizar(x.status)==="concluido").length;
+  const abertas=total-concluidas;
+  const hoje=dataHojeISO();
+  const lembretes=todos.filter(x=>x.lembrete_em && x.lembrete_em<=hoje).length;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set("resumoTotal",total);
+  set("resumoAbertas",abertas);
+  set("resumoLembretes",lembretes);
+  set("resumoConcluidas",concluidas);
+}
+
+function salvarSessao(sessao){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessao));
+}
+
+function lerSessao(){
+  try{
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+  }catch(e){
+    return null;
+  }
+}
+
+function limparSessao(){
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem("sb-pmmsdjozyyxkbuqlkfpb-auth-token");
+}
+
+async function requisicao(url, opcoes = {}) {
+  const controlador = new AbortController();
+  const timer = setTimeout(() => controlador.abort(), TEMPO_LIMITE_MS);
+
+  try {
+    return await fetch(url, { ...opcoes, signal: controlador.signal });
+  } catch (e) {
+    if (e && e.name === "AbortError") {
+      throw new Error("Tempo esgotado ao conectar com o servidor.");
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function mensagemDeErro(erro) {
+  const msg = String((erro && erro.message) || erro || "").toLowerCase();
+
+  if (
+    msg.includes("invalid login credentials") ||
+    msg.includes("invalid_credentials") ||
+    msg.includes("email or password")
+  ) {
+    return "E-mail ou senha incorretos.";
+  }
+
+  if (
+    msg.includes("failed to fetch") ||
+    msg.includes("network") ||
+    msg.includes("tempo esgotado") ||
+    msg.includes("load failed")
+  ) {
+    return "Não foi possível conectar ao servidor. Confira sua internet e tente novamente.";
+  }
+
+  return (erro && erro.message) ? erro.message : "Não foi possível concluir a operação. Tente novamente.";
+}
+
+function esc(v) {
+  if (v === null || v === undefined || v === "") return "Não informado";
+  return String(v).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+
+function escCampo(v) {
+  if (v === null || v === undefined) return "";
+  return String(v).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+
+function normalizar(v) {
+  return String(v || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function formatarData(v) {
+  if (!v) return "";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("pt-BR");
+}
+
+function dataHojeISO() {
+  const d = new Date();
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
+function formatarDataCurta(v) {
+  const partes = String(v || "").split("-");
+  if (partes.length !== 3) return String(v || "");
+  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+function dataBrParaIso(v) {
+  const valor = String(v || "").trim();
+  if (!valor) return null;
+
+  const m = valor.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) throw new Error("Digite a data no formato DD/MM/AAAA.");
+
+  const dia = Number(m[1]);
+  const mes = Number(m[2]);
+  const ano = Number(m[3]);
+  const d = new Date(Date.UTC(ano, mes - 1, dia));
+
+  if (
+    d.getUTCFullYear() !== ano ||
+    d.getUTCMonth() !== mes - 1 ||
+    d.getUTCDate() !== dia
+  ) {
+    throw new Error("Digite uma data válida.");
+  }
+
+  return `${String(ano).padStart(4, "0")}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+}
+
+function estadoLembrete(v) {
+  if (!v) return "";
+  const hoje = dataHojeISO();
+  if (v < hoje) return "atrasado";
+  if (v === hoje) return "hoje";
+  return "futuro";
+}
+
+function normalizarAnexos(v) {
+  if (Array.isArray(v)) return v;
+  if (!v) return [];
+  try {
+    const p = JSON.parse(v);
+    return Array.isArray(p) ? p : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function caminhoPublicoStorage(bucket, caminho) {
+  const partes = String(caminho || "").split("/").filter(Boolean).map(encodeURIComponent);
+  return SUPABASE_URL + "/storage/v1/object/public/" + encodeURIComponent(bucket) + "/" + partes.join("/");
+}
+
+function fecharAnexoModal(){
+  const modal=document.getElementById("anexoModal");
+  const conteudo=document.getElementById("anexoModalConteudo");
+  if(conteudo) conteudo.innerHTML="";
+  if(modal) modal.classList.remove("aberto");
+}
+
+function mostrarAnexoNoPainel(url, caminho){
+  const modal=document.getElementById("anexoModal");
+  const conteudo=document.getElementById("anexoModalConteudo");
+  const externo=document.getElementById("anexoModalExterno");
+  const titulo=document.getElementById("anexoModalTitulo");
+  if(!modal||!conteudo) return;
+
+  const nome=String(caminho||"Anexo").split("/").pop()||"Anexo";
+  if(titulo) titulo.textContent=nome;
+  if(externo) externo.href=url;
+
+  const ext=(nome.split(".").pop()||"").toLowerCase();
+  const imagem=["jpg","jpeg","png","webp","gif","bmp","avif"].includes(ext);
+  conteudo.innerHTML=imagem
+    ? '<img src="'+url+'" alt="Anexo recebido">'
+    : '<iframe src="'+url+'" title="Anexo recebido"></iframe>';
+  modal.classList.add("aberto");
+}
+
+async function abrirAnexoCidadao(caminho, botao) {
+  if (!caminho) return;
+
+  const textoOriginal = botao ? botao.textContent : "";
+  if (botao) {
+    botao.disabled = true;
+    botao.textContent = "Abrindo...";
+  }
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const caminhoCodificado = String(caminho)
+      .split("/")
+      .filter(Boolean)
+      .map(encodeURIComponent)
+      .join("/");
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/storage/v1/object/sign/anexos-solicitacoes/" + caminhoCodificado,
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ expiresIn: 3600 })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => ({}));
+    if (!resposta.ok) throw new Error(dados.message || dados.error || "Não foi possível abrir o anexo.");
+
+    let url = dados.signedURL || dados.signedUrl || "";
+    if (!url) throw new Error("O servidor não retornou o link do anexo.");
+    if (url.startsWith("/")) url = SUPABASE_URL + "/storage/v1" + url;
+
+    mostrarAnexoNoPainel(url, caminho);
+  } catch (e) {
+    alert(mensagemDeErro(e));
+  } finally {
+    if (botao) {
+      botao.disabled = false;
+      botao.textContent = textoOriginal || "Abrir anexo";
+    }
+  }
+}
+
+function arquivosPendentes(id) {
+  return arquivosPendentesPorSolicitacao.get(Number(id)) || [];
+}
+
+function renderArquivosPendentes(id) {
+  const alvo = document.getElementById(`pendentes-${id}`);
+  if (!alvo) return;
+
+  const arquivos = arquivosPendentes(id);
+
+  if (arquivos.length === 0) {
+    alvo.innerHTML = '<div class="dica-anexo">Nenhum arquivo selecionado ainda.</div>';
+    return;
+  }
+
+  alvo.innerHTML = arquivos.map((arquivo, indice) => {
+    const nome = esc(arquivo.name);
+    const tamanhoMb = (arquivo.size / (1024 * 1024)).toFixed(2);
+    return `
+      <div class="arquivo-pendente">
+        <span>📎 ${nome} (${tamanhoMb} MB)</span>
+        <button type="button" onclick="removerDocumentoPendente(${id}, ${indice})">Remover</button>
+      </div>
+    `;
+  }).join("");
+}
+
+function adicionarDocumentos(id) {
+  const input = document.getElementById(`documentos-${id}`);
+  if (!input) return;
+
+  const atuais = arquivosPendentes(id);
+  const novos = Array.from(input.files || []);
+
+  for (const arquivo of novos) {
+    if (arquivo.size > 10 * 1024 * 1024) {
+      alert("O arquivo " + arquivo.name + " ultrapassa o limite de 10 MB.");
+      input.value = "";
+      return;
+    }
+  }
+
+  const combinados = [...atuais];
+
+  for (const arquivo of novos) {
+    const duplicado = combinados.some(a =>
+      a.name === arquivo.name &&
+      a.size === arquivo.size &&
+      a.lastModified === arquivo.lastModified
+    );
+
+    if (!duplicado) combinados.push(arquivo);
+  }
+
+  if (combinados.length > 5) {
+    alert("Você pode anexar no máximo 5 documentos por resposta.");
+    input.value = "";
+    return;
+  }
+
+  arquivosPendentesPorSolicitacao.set(Number(id), combinados);
+  input.value = "";
+  renderArquivosPendentes(id);
+}
+
+function removerDocumentoPendente(id, indice) {
+  const arquivos = [...arquivosPendentes(id)];
+  arquivos.splice(indice, 1);
+
+  if (arquivos.length === 0) {
+    arquivosPendentesPorSolicitacao.delete(Number(id));
+  } else {
+    arquivosPendentesPorSolicitacao.set(Number(id), arquivos);
+  }
+
+  renderArquivosPendentes(id);
+}
+
+function mostrarLogin(mensagem = "") {
+  document.getElementById("telaLogin").style.display = "block";
+  document.querySelector("header").style.display = "none";
+  document.querySelector("main").style.display = "none";
+  const nav = document.getElementById("painelBottom"); if(nav) nav.style.display = "none";
+  document.getElementById("erroLogin").textContent = mensagem;
+}
+
+function mostrarPainel() {
+  document.getElementById("telaLogin").style.display = "none";
+  document.querySelector("header").style.display = "block";
+  document.querySelector("main").style.display = "block";
+  const nav = document.getElementById("painelBottom"); if(nav) nav.style.display = "grid";
+  irPainel((location.hash || "#inicio").slice(1), null, false);
+}
+
+async function renovarSessao(refreshToken) {
+  const resposta = await requisicao(
+    SUPABASE_URL + "/auth/v1/token?grant_type=refresh_token",
+    {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    }
+  );
+
+  const dados = await resposta.json().catch(() => ({}));
+
+  if (!resposta.ok) {
+    throw new Error(dados.msg || dados.message || dados.error_description || "Sessão expirada.");
+  }
+
+  const sessao = {
+    access_token: dados.access_token,
+    refresh_token: dados.refresh_token || refreshToken,
+    expires_at: Date.now() + ((dados.expires_in || 3600) * 1000)
+  };
+  salvarSessao(sessao);
+  return sessao;
+}
+
+async function obterSessaoValida() {
+  let sessao = lerSessao();
+  if (!sessao || !sessao.access_token) return null;
+
+  if (sessao.expires_at && Date.now() > sessao.expires_at - 60000) {
+    if (!sessao.refresh_token) return null;
+    sessao = await renovarSessao(sessao.refresh_token);
+  }
+  return sessao;
+}
+
+async function fazerLogin() {
+  const email = document.getElementById("emailLogin").value.trim();
+  const senha = document.getElementById("senhaLogin").value;
+  const erroEl = document.getElementById("erroLogin");
+  const botao = document.getElementById("btnLogin");
+
+  erroEl.textContent = "";
+
+  if (!email || !senha) {
+    erroEl.textContent = "Digite seu e-mail e sua senha.";
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = "ENTRANDO...";
+
+  try {
+    const resposta = await requisicao(
+      SUPABASE_URL + "/auth/v1/token?grant_type=password",
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email: email, password: senha })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => ({}));
+
+    if (!resposta.ok) {
+      throw new Error(dados.msg || dados.message || dados.error_description || "Não foi possível entrar.");
+    }
+
+    salvarSessao({
+      access_token: dados.access_token,
+      refresh_token: dados.refresh_token,
+      expires_at: Date.now() + ((dados.expires_in || 3600) * 1000)
+    });
+
+    document.getElementById("senhaLogin").value = "";
+    mostrarPainel();
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    console.error("Erro de login:", e);
+    erroEl.textContent = mensagemDeErro(e);
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "ENTRAR";
+  }
+}
+
+function alternarSolicitacaoLembrete(botao){
+  const card=botao?.closest(".card");
+  if(!card) return;
+  const aberto=card.classList.toggle("expandido");
+  if(!aberto){
+    card.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+}
+
+async function carregarLembretes(){
+  const alvo=document.getElementById("listaLembretes");
+  if(!alvo) return;
+  alvo.innerHTML="Carregando lembretes...";
+
+  try{
+    const sessao=await obterSessaoValida();
+    if(!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const resposta=await requisicao(
+      SUPABASE_URL + "/rest/v1/solicitacoes?select=id,protocolo,nome,assunto,lembrete_em,anotacao_interna,status,whatsapp&lembrete_em=not.is.null&order=lembrete_em.asc",
+      {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token}}
+    );
+    const dados=await resposta.json().catch(()=>[]);
+    if(!resposta.ok) throw new Error(dados.message||"Não foi possível carregar os lembretes.");
+
+    const hoje=dataHojeISO();
+    const itens=(Array.isArray(dados)?dados:[]);
+    if(!itens.length){
+      alvo.innerHTML='<div class="vazio">Nenhum lembrete cadastrado.</div>';
+      return;
+    }
+
+    const grupo=(tipo)=>itens.filter(x=>{
+      if(!x.lembrete_em) return false;
+      if(tipo==="atrasado") return x.lembrete_em<hoje;
+      if(tipo==="hoje") return x.lembrete_em===hoje;
+      return x.lembrete_em>hoje;
+    });
+
+    const renderItem=(item,tipo)=>{
+      const nota=String(item.anotacao_interna||"").trim();
+      return `
+        <article class="lembrete-card ${tipo}">
+          <div class="lembrete-top">
+            <div>
+              <div class="lembrete-data-pill">${tipo==="atrasado"?"⚠️ Atrasado":tipo==="hoje"?"⏰ Hoje":"📅 Próximo"} · ${esc(formatarDataCurta(item.lembrete_em))}</div>
+              <div class="lembrete-protocolo">${esc(item.protocolo||("Solicitação #"+item.id))}</div>
+              <div class="lembrete-titulo">${esc(item.assunto)}</div>
+              <div class="lembrete-pessoa">${esc(item.nome)} · ${esc(item.status||"Recebida")}</div>
+            </div>
+          </div>
+          ${nota?'<div class="lembrete-nota">'+esc(nota)+'</div>':""}
+          <div class="lembrete-acoes">
+            <button type="button" onclick="abrirSolicitacaoPorId(${Number(item.id)})">Abrir solicitação</button>
+            ${String(item.whatsapp||"").replace(/\D/g,"").length>2
+              ? '<a href="https://wa.me/'+(String(item.whatsapp||"").replace(/\D/g,"").startsWith("55")?String(item.whatsapp||"").replace(/\D/g,""):"55"+String(item.whatsapp||"").replace(/\D/g,""))+'" target="_blank" rel="noopener"><button type="button" class="secundario">WhatsApp</button></a>'
+              : ""}
+          </div>
+        </article>`;
+    };
+
+    let html="";
+    const atrasados=grupo("atrasado"), hojeItens=grupo("hoje"), futuros=grupo("futuro");
+    if(atrasados.length) html+='<div class="secao-lembrete-titulo">Atrasados</div>'+atrasados.map(x=>renderItem(x,"atrasado")).join("");
+    if(hojeItens.length) html+='<div class="secao-lembrete-titulo">Hoje</div>'+hojeItens.map(x=>renderItem(x,"hoje")).join("");
+    if(futuros.length) html+='<div class="secao-lembrete-titulo">Próximos</div>'+futuros.map(x=>renderItem(x,"futuro")).join("");
+    alvo.innerHTML=html||'<div class="vazio">Nenhum lembrete cadastrado.</div>';
+  }catch(e){
+    alvo.innerHTML='<div class="erro"><strong>Não foi possível carregar os lembretes.</strong><br>'+esc(mensagemDeErro(e))+'<br><button type="button" onclick="carregarLembretes()">Tentar novamente</button></div>';
+  }
+}
+
+async function abrirSolicitacaoPorId(id){
+  irPainel("solicitacoes",null,true);
+  await carregarSolicitacoes();
+  const card=document.querySelector('#lista .card[data-id="'+id+'"]');
+  if(!card) return;
+  card.classList.add("expandido");
+  card.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function carregarSolicitacoes() {
+  const lista = document.getElementById("lista");
+  lista.textContent = "Carregando solicitações...";
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) {
+      limparSessao();
+      mostrarLogin("Sua sessão expirou. Entre novamente.");
+      return;
+    }
+
+    const filtroStatus = document.getElementById("filtroStatus").value;
+    const termoBusca = normalizar(document.getElementById("filtroBusca").value);
+
+    let url = SUPABASE_URL + "/rest/v1/solicitacoes?select=*&order=id.desc";
+    if (filtroStatus !== "Todos") {
+      url += "&status=eq." + encodeURIComponent(filtroStatus);
+    }
+
+    const resposta = await requisicao(url, {
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + sessao.access_token
+      }
+    });
+
+    const dadosResposta = await resposta.json().catch(() => ([]));
+
+    if (resposta.status === 401) {
+      limparSessao();
+      mostrarLogin("Sua sessão expirou. Entre novamente.");
+      return;
+    }
+
+    if (!resposta.ok) {
+      throw new Error(
+        dadosResposta.message ||
+        dadosResposta.hint ||
+        dadosResposta.details ||
+        "Não foi possível carregar as solicitações."
+      );
+    }
+
+    let dados = Array.isArray(dadosResposta) ? dadosResposta : [];
+
+    const respostasPorSolicitacao = {};
+    try {
+      const respostaRespostas = await requisicao(
+        SUPABASE_URL + "/rest/v1/respostas_solicitacoes?select=*&order=criado_em.desc",
+        {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + sessao.access_token
+          }
+        }
+      );
+
+      if (respostaRespostas.ok) {
+        const respostas = await respostaRespostas.json().catch(() => []);
+        (Array.isArray(respostas) ? respostas : []).forEach(r => {
+          const chave = Number(r.solicitacao_id);
+          if (!respostasPorSolicitacao[chave]) respostasPorSolicitacao[chave] = [];
+          respostasPorSolicitacao[chave].push(r);
+        });
+      } else {
+        console.warn("Histórico de respostas ainda não está disponível.");
+      }
+    } catch (e) {
+      console.warn("Não foi possível carregar respostas:", e);
+    }
+
+    atualizarResumoPainel(dados);
+
+    if (termoBusca) {
+      dados = dados.filter(item =>
+        normalizar(item.nome).includes(termoBusca) ||
+        normalizar(item.protocolo).includes(termoBusca)
+      );
+    }
+
+    if (dados.length === 0) {
+      lista.innerHTML = '<div class="vazio">Nenhuma solicitação encontrada.</div>';
+      return;
+    }
+
+    lista.innerHTML = "";
+
+    dados.forEach(item => {
+      const id = Number(item.id);
+      const status = item.status || "Recebida";
+      const telefone = String(item.whatsapp || "").replace(/\D/g, "");
+      const whatsapp = telefone.startsWith("55") ? telefone : "55" + telefone;
+
+      const card = document.createElement("div");
+      card.dataset.id = String(id);
+      const estadoDoLembrete = estadoLembrete(item.lembrete_em);
+      card.className = "card" +
+        (estadoDoLembrete === "hoje" ? " lembrete-hoje" : "") +
+        (estadoDoLembrete === "atrasado" ? " lembrete-atrasado" : "");
+
+      let lembreteHtml = "";
+      if (item.lembrete_em) {
+        const dataLegivel = esc(formatarDataCurta(item.lembrete_em));
+        if (estadoDoLembrete === "hoje") {
+          lembreteHtml = '<div class="lembrete-alerta hoje">⏰ Lembrete para hoje — ' + dataLegivel + '</div>';
+        } else if (estadoDoLembrete === "atrasado") {
+          lembreteHtml = '<div class="lembrete-alerta atrasado">⚠️ Lembrete atrasado — ' + dataLegivel + '</div>';
+        } else {
+          lembreteHtml = '<div class="lembrete-alerta futuro">📅 Próximo lembrete — ' + dataLegivel + '</div>';
+        }
+      }
+
+      const anexosCidadao = Array.isArray(item.anexos)
+        ? item.anexos.filter(Boolean)
+        : [];
+
+      const anexosCidadaoHtml = anexosCidadao.length
+        ? '<div class="anexos-cidadao-box">' +
+            '<strong>📷 Anexos enviados pelo cidadão</strong>' +
+            anexosCidadao.map((caminho, indice) =>
+              '<button type="button" class="btn-anexo-cidadao" ' +
+              'data-caminho="' + escCampo(caminho) + '" ' +
+              'onclick="abrirAnexoCidadao(this.dataset.caminho, this)">' +
+              '📎 Abrir anexo ' + (indice + 1) +
+              '</button>'
+            ).join("") +
+          '</div>'
+        : "";
+
+      const respostas = respostasPorSolicitacao[id] || [];
+      const historicoRespostas = respostas.length
+        ? respostas.map(r => {
+            const anexos = normalizarAnexos(r.anexos);
+            const links = anexos.length
+              ? '<div class="anexos">' + anexos.map(a => {
+                  const nome = esc(a.nome || "Documento");
+                  const url = esc(a.url || "");
+                  return url ? '<a href="' + url + '" target="_blank" rel="noopener">📎 ' + nome + '</a>' : "";
+                }).join("") + '</div>'
+              : "";
+            return '<div class="resposta-item">' +
+              '<div class="resposta-data">' + esc(formatarData(r.criado_em)) + '</div>' +
+              (r.mensagem ? '<div class="resposta-texto">' + esc(r.mensagem) + '</div>' : '') +
+              links +
+            '</div>';
+          }).join("")
+        : '<div class="sem-resposta">Nenhuma resposta enviada ainda.</div>';
+
+      const statusNorm = normalizar(status);
+      const statusClasse = statusNorm.includes("concluido") ? "concluido" :
+        statusNorm.includes("andamento") || statusNorm.includes("encaminhado") ? "andamento" :
+        statusNorm.includes("analise") ? "analise" : "";
+
+      card.innerHTML = `
+        ${lembreteHtml}
+        <div class="protocolo">${esc(item.protocolo || ("Solicitação #" + id))}</div>
+
+        <div class="solicitacao-resumo">
+          <div class="linha-resumo"><strong>Nome:</strong> <span>${esc(item.nome)}</span></div>
+          <div class="linha-resumo"><strong>Assunto:</strong> <span>${esc(item.assunto)}</span></div>
+          <div class="linha-resumo"><strong>Status:</strong> <span class="status-chip ${statusClasse}">${esc(status)}</span></div>
+        </div>
+
+        <button type="button" class="btn-abrir-solicitacao abrir-topo" onclick="alternarSolicitacaoLembrete(this)">Abrir solicitação</button>
+
+        <div class="detalhes-expandido">
+          <section class="bloco-painel cinza">
+            <div class="bloco-titulo"><span>👤</span>Dados do cidadão</div>
+            <div class="dados-grid">
+              <div class="dado"><small>Nome</small><strong>${esc(item.nome)}</strong></div>
+              <div class="dado"><small>WhatsApp</small><strong>${esc(item.whatsapp)}</strong></div>
+              <div class="dado"><small>Localidade</small><strong>${esc(item.localidade)}</strong></div>
+              <div class="dado"><small>Assunto</small><strong>${esc(item.assunto)}</strong></div>
+            </div>
+            <div class="descricao-moderna"><small>Descrição</small>${esc(item.descricao)}</div>
+            <div class="acoes-rapidas">
+              ${whatsapp.length > 2
+                ? `<a href="https://wa.me/${whatsapp}" target="_blank" rel="noopener"><button type="button" class="btn-whatsapp">WhatsApp</button></a>`
+                : ""}
+            </div>
+          </section>
+
+          ${anexosCidadao.length ? `
+          <section class="bloco-painel azul">
+            <div class="bloco-titulo"><span>📷</span>Fotos e anexos recebidos</div>
+            ${anexosCidadaoHtml}
+          </section>` : ""}
+
+          <section class="bloco-painel amarelo">
+            <div class="bloco-titulo"><span>📝</span>Anotação interna e lembrete</div>
+            <div class="anotacao-box">
+              <div class="anotacao-ajuda">Somente você vê estas informações. Elas não aparecem para o cidadão.</div>
+              <textarea id="anotacao-${id}" placeholder="Ex.: cobrar retorno da Secretaria de Obras na próxima semana.">${escCampo(item.anotacao_interna)}</textarea>
+              <label for="lembrete-${id}"><strong>Data do lembrete</strong></label>
+              <input id="lembrete-${id}" class="lembrete-data" type="text" inputmode="numeric" placeholder="DD/MM/AAAA" value="${escCampo(formatarDataCurta(item.lembrete_em))}">
+              <div class="anotacao-ajuda">Digite DD/MM/AAAA. Para remover o lembrete, apague a data e salve.</div>
+              <button id="btn-anotacao-${id}" type="button" onclick="salvarAnotacaoInterna(${id})">Salvar anotação e lembrete</button>
+            </div>
+          </section>
+
+          <section class="bloco-painel azul status-area">
+            <div class="bloco-titulo"><span>🔄</span>Status da solicitação</div>
+            <div class="linha"><strong>Status atual:</strong> <span class="status-chip ${statusClasse}">${esc(status)}</span></div>
+            <select id="status-${id}">
+              ${["Recebida","Recebido","Em análise","Encaminhado","Em andamento","Concluído"]
+                .map(s => `<option value="${s}" ${s === status ? "selected" : ""}>${s}</option>`)
+                .join("")}
+            </select>
+            <button id="botao-${id}" type="button" onclick="atualizarStatus(${id})">Salvar novo status</button>
+          </section>
+
+          <section class="bloco-painel verde">
+            <div class="bloco-titulo"><span>💬</span>Resposta ao cidadão</div>
+            <div class="respostas-box">
+              ${historicoRespostas}
+              <div class="nova-resposta">
+                <label for="resposta-${id}"><strong>Nova resposta</strong></label>
+                <textarea id="resposta-${id}" placeholder="Digite a resposta que ficará visível para o cidadão ao consultar o protocolo."></textarea>
+                <label for="documentos-${id}"><strong>Anexar documentos (opcional)</strong></label>
+                <input type="file" id="documentos-${id}" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.odt,.ods" onchange="adicionarDocumentos(${id})">
+                <div class="dica-anexo">Você pode adicionar até 5 documentos, um por vez, antes de enviar.</div>
+                <div id="pendentes-${id}" class="arquivos-pendentes"></div>
+                <button id="btn-resposta-${id}" type="button" onclick="enviarResposta(${id})">Enviar resposta / documentos</button>
+              </div>
+            </div>
+          </section>
+
+          <button type="button" class="btn-abrir-solicitacao fechar-final" onclick="alternarSolicitacaoLembrete(this)">Fechar solicitação</button>
+        </div>
+      `;
+      card.addEventListener("click", (ev) => {
+        if (card.classList.contains("expandido")) return;
+        if (ev.target.closest("button,a,input,select,textarea")) return;
+        const b = card.querySelector(".btn-abrir-solicitacao");
+        if (b) alternarSolicitacaoLembrete(b);
+      });
+
+      lista.appendChild(card);
+      renderArquivosPendentes(id);
+    });
+
+  } catch (e) {
+    console.error("Erro ao carregar solicitações:", e);
+    lista.innerHTML = `
+      <div class="erro">
+        <strong>Não foi possível carregar as solicitações.</strong><br>
+        ${esc(mensagemDeErro(e))}<br>
+        <button type="button" onclick="carregarSolicitacoes()">Tentar novamente</button>
+      </div>
+    `;
+  }
+}
+
+async function enviarResposta(id) {
+  const campo = document.getElementById(`resposta-${id}`);
+  const arquivosEl = document.getElementById(`documentos-${id}`);
+  const botao = document.getElementById(`btn-resposta-${id}`);
+  if (!campo || !arquivosEl || !botao) return;
+
+  const mensagem = campo.value.trim();
+  const arquivos = [...arquivosPendentes(id)];
+
+  if (!mensagem && arquivos.length === 0) {
+    alert("Digite uma resposta ou selecione pelo menos um documento.");
+    return;
+  }
+
+  if (arquivos.length > 5) {
+    alert("Envie no máximo 5 documentos por resposta.");
+    return;
+  }
+
+  for (const arquivo of arquivos) {
+    if (arquivo.size > 10 * 1024 * 1024) {
+      alert("O arquivo " + arquivo.name + " ultrapassa o limite de 10 MB.");
+      return;
+    }
+  }
+
+  botao.disabled = true;
+  botao.textContent = "Enviando...";
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const anexos = [];
+
+    for (const arquivo of arquivos) {
+      const nomeSeguro = arquivo.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const caminho = id + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "-" + nomeSeguro;
+
+      const upload = await requisicao(
+        SUPABASE_URL + "/storage/v1/object/documentos-respostas/" +
+          caminho.split("/").map(encodeURIComponent).join("/"),
+        {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + sessao.access_token,
+            "Content-Type": arquivo.type || "application/octet-stream",
+            "x-upsert": "false"
+          },
+          body: arquivo
+        }
+      );
+
+      if (!upload.ok) {
+        const detalhe = await upload.text().catch(() => "");
+        throw new Error("Não foi possível enviar o documento " + arquivo.name + ". " + detalhe);
+      }
+
+      anexos.push({
+        nome: arquivo.name,
+        tipo: arquivo.type || "",
+        caminho: caminho,
+        url: caminhoPublicoStorage("documentos-respostas", caminho)
+      });
+    }
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/rest/v1/respostas_solicitacoes",
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({
+          solicitacao_id: id,
+          mensagem: mensagem || null,
+          anexos: anexos
+        })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => []);
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.message ||
+        dados.hint ||
+        dados.details ||
+        "Não foi possível registrar a resposta."
+      );
+    }
+
+    alert("Resposta enviada com sucesso!");
+    campo.value = "";
+    arquivosEl.value = "";
+    arquivosPendentesPorSolicitacao.delete(Number(id));
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    console.error("Erro ao enviar resposta:", e);
+    alert(mensagemDeErro(e));
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Enviar resposta / documentos";
+  }
+}
+
+async function salvarAnotacaoInterna(id) {
+  const campo = document.getElementById(`anotacao-${id}`);
+  const lembrete = document.getElementById(`lembrete-${id}`);
+  const botao = document.getElementById(`btn-anotacao-${id}`);
+  if (!campo || !lembrete || !botao) return;
+
+  let lembreteIso = null;
+  try {
+    lembreteIso = dataBrParaIso(lembrete.value);
+  } catch (e) {
+    alert(e.message);
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = "Salvando...";
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/rest/v1/solicitacoes?id=eq." + encodeURIComponent(id),
+      {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({
+          anotacao_interna: campo.value.trim() || null,
+          lembrete_em: lembreteIso,
+          atualizado_em: new Date().toISOString()
+        })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => ([]));
+
+    if (!resposta.ok || !Array.isArray(dados) || dados.length === 0) {
+      throw new Error(
+        dados.message ||
+        dados.hint ||
+        dados.details ||
+        "Não foi possível salvar a anotação."
+      );
+    }
+
+    alert("Anotação e lembrete salvos!");
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    console.error("Erro ao salvar anotação interna:", e);
+    alert(mensagemDeErro(e));
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Salvar anotação e lembrete";
+  }
+}
+
+async function atualizarStatus(id) {
+  const seletor = document.getElementById(`status-${id}`);
+  const botao = document.getElementById(`botao-${id}`);
+  if (!seletor || !botao) return;
+
+  botao.disabled = true;
+  botao.textContent = "Salvando...";
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/rest/v1/solicitacoes?id=eq." + encodeURIComponent(id),
+      {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({ status: seletor.value })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => ([]));
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.message ||
+        dados.hint ||
+        dados.details ||
+        "Não foi possível atualizar o status."
+      );
+    }
+
+    if (!Array.isArray(dados) || dados.length === 0) {
+      throw new Error("O servidor não permitiu alterar este registro.");
+    }
+
+    alert("Status atualizado com sucesso!");
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    console.error("Erro ao atualizar status:", e);
+    alert(mensagemDeErro(e));
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Salvar novo status";
+  }
+}
+
+async function verificarLogin() {
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) {
+      mostrarLogin("");
+      return;
+    }
+
+    mostrarPainel();
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    limparSessao();
+    mostrarLogin(mensagemDeErro(e));
+  }
+}
+
+function sair() {
+  limparSessao();
+  document.getElementById("senhaLogin").value = "";
+  mostrarLogin("");
+}
+
+window.addEventListener("popstate",()=>irPainel((location.hash||"#inicio").slice(1),null,false));
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"){
+    // Mantém o conteúdo atual na tela; atualização completa só quando necessária.
+    const nav=document.getElementById("painelBottom");
+    if(nav) nav.style.display="grid";
+  }
+});
+
+document.getElementById("btnLogin").addEventListener("click", fazerLogin);
+document.getElementById("senhaLogin").addEventListener("keydown", e => {
+  if (e.key === "Enter") fazerLogin();
+});
+
+document.getElementById("filtroStatus").addEventListener("change", carregarSolicitacoes);
+
+let atrasoBusca;
+document.getElementById("filtroBusca").addEventListener("input", () => {
+  clearTimeout(atrasoBusca);
+  atrasoBusca = setTimeout(carregarSolicitacoes, 350);
+});
+
+document.getElementById("btnSair").addEventListener("click", sair);
+
+verificarLogin();
+</script>
+</body>
+</html>
