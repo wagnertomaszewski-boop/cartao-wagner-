@@ -167,22 +167,31 @@ async function carregarProjetosPublicos(filtro="todos"){
   const alvo=document.getElementById("projectList");
   if(!alvo)return;
   alvo.innerHTML='<div class="notice" style="display:block">Carregando projetos e ações...</div>';
+
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),8000);
+
   try{
-    let url=SUPABASE_URL+"/rest/v1/projetos_acoes_publicos?select=*&publicado=eq.true";
-    if(filtroProjetosAtual!=="todos"){
-      url+="&tipo=eq."+encodeURIComponent(filtroProjetosAtual);
-    }
-    url+="&order=ordem.asc,criado_em.desc";
-    const resp=await fetch(url,{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY},cache:"no-store"});
+    const resp=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_projetos_acoes",{
+      method:"POST",
+      headers:{
+        "apikey":SUPABASE_KEY,
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({p_tipo:filtroProjetosAtual==="todos"?null:filtroProjetosAtual}),
+      cache:"no-store",
+      signal:controller.signal
+    });
+    clearTimeout(timer);
     const dados=await resp.json();
     if(!resp.ok)throw new Error(dados?.message||"Falha ao carregar");
     projetosPublicosCache=Array.isArray(dados)?dados:[];
     renderProjetosPublicos(projetosPublicosCache);
   }catch(e){
-    alvo.innerHTML='<div class="notice bad" style="display:block">Não foi possível carregar os projetos agora. Toque novamente na categoria.</div>';
+    clearTimeout(timer);
+    alvo.innerHTML='<div class="notice bad" style="display:block"><strong>Não foi possível carregar os projetos.</strong><br><span class="muted">Toque na categoria para tentar novamente.</span></div>';
   }
 }
-
 function go(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));let n=document.getElementById('nav-'+id);if(n)n.classList.add('active');window.scrollTo(0,0)}
 let categoria="";document.querySelectorAll(".cat").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"));b.classList.add("active");categoria=b.dataset.cat}));
 document.getElementById("formSolicitacao").addEventListener("submit",async function(e){e.preventDefault();const btn=document.getElementById("botaoEnviar"),msg=document.getElementById("mensagem");btn.disabled=true;btn.textContent="ENVIANDO...";msg.className="notice";msg.style.display="none";try{let caminho=null;const arq=document.getElementById("anexo").files[0];if(arq){const nome=Date.now()+"-"+arq.name.replace(/[^a-zA-Z0-9._-]/g,"_");const up=await fetch(SUPABASE_URL+"/storage/v1/object/anexos-solicitacoes/"+nome,{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":arq.type},body:arq});if(!up.ok)throw new Error("Não foi possível enviar o anexo.");caminho=nome}const titulo=document.getElementById("assunto").value.trim();const assunto=categoria?categoria+" — "+titulo:titulo;const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/criar_solicitacao_com_anexos",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"return=representation"},body:JSON.stringify({p_nome:document.getElementById("nome").value.trim(),p_whatsapp:document.getElementById("whatsapp").value.trim(),p_localidade:document.getElementById("localidade").value.trim(),p_assunto:assunto,p_descricao:document.getElementById("descricao").value.trim(),p_anexos:caminho?[caminho]:[]})});const d=await r.json();if(!r.ok)throw new Error(d.message||d.error||"Não foi possível enviar.");const p=typeof d==="string"?d:d.protocolo;msg.className="notice ok";msg.innerHTML="<strong>Solicitação enviada!</strong><br>Protocolo: <strong>"+p+"</strong><br><span class='muted'>Guarde este número para acompanhar.</span>";this.reset();categoria="";document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"))}catch(err){msg.className="notice err";msg.textContent="Não foi possível enviar: "+err.message}finally{btn.disabled=false;btn.textContent="✈ Enviar solicitação"}});
