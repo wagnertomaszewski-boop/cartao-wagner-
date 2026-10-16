@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b63ad">
-<title>Mandato em Ação — V2 Projetos Integrados</title>
+<title>Mandato em Ação — V2 Projetos Atualizados</title>
 <style>
 :root{--blue:#0868bd;--blue2:#064a85;--green:#18a458;--gold:#e5a916;--bg:#f5f7fb;--text:#102542;--muted:#748396;--line:#dde5ee}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#e9eef4;color:var(--text)}button,input,textarea{font:inherit}a{text-decoration:none;color:inherit}
@@ -122,7 +122,7 @@ label{display:block;font-weight:700;margin:13px 0 6px;font-size:14px}input,texta
 <nav class="bottom">
 <button id="nav-home" class="active" onclick="go('home')"><b>⌂</b>Início</button>
 <button id="nav-solicitar" onclick="go('solicitar')"><b>✎</b>Solicitações</button>
-<button id="nav-projetos" onclick="go('projetos');carregarProjetosPublicos()"><b>🏛️</b>Projetos</button>
+<button id="nav-projetos" onclick="go('projetos');carregarProjetosPublicos('todos')"><b>🏛️</b>Projetos</button>
 <button onclick="alert('A área de Enquetes está em preparação na V2.');go('home')"><b>▥</b>Enquetes</button>
 <button onclick="alert('A área de Notícias está em preparação na V2.');go('home')"><b>▤</b>Notícias</button>
 </nav>
@@ -130,15 +130,27 @@ label{display:block;font-weight:700;margin:13px 0 6px;font-size:14px}input,texta
 <script>
 const SUPABASE_URL='https://pmmsdjozyyxkbuqlkfpb.supabase.co',SUPABASE_KEY='sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_';
 let projetosPublicosCache=[];
-function escProjeto(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));}
-function nomeTipoProjeto(t){return ({projeto:"PROJETO / LEI",pedido:"PEDIDO DE PROVIDÊNCIA",emenda:"EMENDA",resultado:"RESULTADO"})[t]||String(t||"").toUpperCase();}
-function renderProjetosPublicos(filtro="todos"){
+let filtroProjetosAtual="todos";
+
+function escProjeto(v){
+  return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+}
+function tipoProjeto(v){
+  return String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+function nomeTipoProjeto(t){
+  const n=tipoProjeto(t);
+  return ({projeto:"PROJETO / LEI",pedido:"PEDIDO DE PROVIDÊNCIA",emenda:"EMENDA",resultado:"RESULTADO"})[n]||String(t||"").toUpperCase();
+}
+function renderProjetosPublicos(itens){
   const alvo=document.getElementById("projectList");
   if(!alvo)return;
-  const itens=projetosPublicosCache.filter(x=>filtro==="todos"||x.tipo===filtro);
-  if(!itens.length){alvo.innerHTML='<div class="notice" style="display:block">Nenhum conteúdo nesta categoria.</div>';return;}
+  if(!Array.isArray(itens)||!itens.length){
+    alvo.innerHTML='<div class="project-empty"><b>Nenhum conteúdo nesta categoria.</b><span>Quando houver novos registros publicados, eles aparecerão aqui.</span></div>';
+    return;
+  }
   alvo.innerHTML=itens.map(item=>`
-    <article class="project-card" data-type="${escProjeto(item.tipo)}">
+    <article class="project-card" data-type="${escProjeto(tipoProjeto(item.tipo))}">
       <span class="tag">${escProjeto(nomeTipoProjeto(item.tipo))}${item.destaque?" · DESTAQUE":""}</span>
       <h3>${escProjeto(item.titulo)}</h3>
       ${item.foto_url?'<img class="project-photo" src="'+escProjeto(item.foto_url)+'" alt="Foto de '+escProjeto(item.titulo)+'">':""}
@@ -150,18 +162,24 @@ function renderProjetosPublicos(filtro="todos"){
       </div>
     </article>`).join("");
 }
-async function carregarProjetosPublicos(){
+async function carregarProjetosPublicos(filtro="todos"){
+  filtroProjetosAtual=filtro||"todos";
   const alvo=document.getElementById("projectList");
   if(!alvo)return;
   alvo.innerHTML='<div class="notice" style="display:block">Carregando projetos e ações...</div>';
   try{
-    const resp=await fetch(SUPABASE_URL+"/rest/v1/projetos_acoes_publicos?select=*&publicado=eq.true&order=ordem.asc,criado_em.desc",{headers:{apikey:SUPABASE_KEY}});
+    let url=SUPABASE_URL+"/rest/v1/projetos_acoes_publicos?select=*&publicado=eq.true";
+    if(filtroProjetosAtual!=="todos"){
+      url+="&tipo=eq."+encodeURIComponent(filtroProjetosAtual);
+    }
+    url+="&order=ordem.asc,criado_em.desc";
+    const resp=await fetch(url,{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY},cache:"no-store"});
     const dados=await resp.json();
-    if(!resp.ok)throw new Error("Falha ao carregar");
+    if(!resp.ok)throw new Error(dados?.message||"Falha ao carregar");
     projetosPublicosCache=Array.isArray(dados)?dados:[];
-    renderProjetosPublicos("todos");
+    renderProjetosPublicos(projetosPublicosCache);
   }catch(e){
-    alvo.innerHTML='<div class="notice bad" style="display:block">Não foi possível carregar os projetos agora.</div>';
+    alvo.innerHTML='<div class="notice bad" style="display:block">Não foi possível carregar os projetos agora. Toque novamente na categoria.</div>';
   }
 }
 
@@ -182,7 +200,7 @@ document.querySelectorAll(".project-filter").forEach(btn=>{
   btn.addEventListener("click",()=>{
     document.querySelectorAll(".project-filter").forEach(x=>x.classList.remove("active"));
     btn.classList.add("active");
-    renderProjetosPublicos(btn.dataset.pf);
+    carregarProjetosPublicos(btn.dataset.pf||"todos");
   });
 });
 </script></body></html>
