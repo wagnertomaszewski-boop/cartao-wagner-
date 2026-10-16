@@ -53,7 +53,7 @@ label{display:block;font-weight:700;margin:13px 0 6px;font-size:14px}input,texta
 .project-empty{text-align:center;padding:28px 14px;color:var(--muted)}
 .project-empty b{display:block;color:var(--text);font-size:16px;margin:8px 0 6px}
 @media(max-width:520px){.two{grid-template-columns:1fr}.cat{padding:11px;font-size:13px}}
-.melhor-arte{display:inline-block;width:90px;height:auto;vertical-align:-2px;margin-left:6px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.08))}</style></head>
+.melhor-arte{display:inline-block;width:90px;height:auto;vertical-align:-2px;margin-left:6px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.08))}.project-photo{width:100%;height:190px;object-fit:cover;border-radius:14px;margin:10px 0;background:#eef3f7}\n</style></head>
 <body><div class="app">
 
 <section id="home" class="page active">
@@ -141,6 +141,7 @@ function renderProjetosPublicos(filtro="todos"){
     <article class="project-card" data-type="${escProjeto(item.tipo)}">
       <span class="tag">${escProjeto(nomeTipoProjeto(item.tipo))}${item.destaque?" · DESTAQUE":""}</span>
       <h3>${escProjeto(item.titulo)}</h3>
+      ${item.foto_url?'<img class="project-photo" src="'+escProjeto(item.foto_url)+'" alt="Foto de '+escProjeto(item.titulo)+'">':""}
       <p>${escProjeto(item.resumo||"")}</p>
       <div class="project-meta">
         ${item.referencia?'<span>📄 '+escProjeto(item.referencia)+'</span>':""}
