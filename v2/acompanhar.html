@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Acompanhar protocolo | Mandato em Ação</title>
+  <meta name="theme-color" content="#071a32">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <a href="./index.html">‹ Voltar ao início</a>
+    <h1>Acompanhar protocolo</h1>
+    <p>Consulte o status atual e veja as respostas e documentos já enviados pelo mandato.</p>
+  </header>
+
+  <main class="panel">
+    <label for="protocolo">Número do protocolo</label>
+    <input id="protocolo" type="text" autocomplete="off" placeholder="Ex.: 2026-000021">
+    <button class="primary-btn" id="consultar" type="button">CONSULTAR SOLICITAÇÃO</button>
+
+    <div id="resultado" class="result">
+      <h2>Solicitação encontrada</h2>
+      <div class="kv"><small>Protocolo</small><strong id="rProtocolo"></strong></div>
+      <div class="kv"><small>Status atual</small><span class="status-pill" id="rStatus"></span></div>
+      <div class="kv"><small>Assunto</small><strong id="rAssunto"></strong></div>
+      <div class="kv"><small>Localidade</small><strong id="rLocalidade"></strong></div>
+      <div class="kv"><small>Respostas do mandato</small><div id="rRespostas"></div></div>
+    </div>
+    <div id="erro" class="notice err"></div>
+  </main>
+
+  <div class="footer-note">Guarde seu protocolo. Ele é a chave para acompanhar sua solicitação.</div>
+
+  <nav class="bottom-nav">
+    <a class="nav-item" href="./index.html"><b>⌂</b>Início</a>
+    <a class="nav-item" href="./solicitacao.html"><b>＋</b>Solicitar</a>
+    <a class="nav-item active" href="./acompanhar.html"><b>⌕</b>Acompanhar</a>
+    <a class="nav-item" href="../index.html"><b>•••</b>Mais</a>
+  </nav>
+</div>
+
+<script>
+const SUPABASE_URL="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
+const SUPABASE_KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+
+function dataPt(v){if(!v)return"";const d=new Date(v);return isNaN(d)?"":d.toLocaleString("pt-BR")}
+function anexos(v){if(Array.isArray(v))return v;if(!v)return[];try{const p=JSON.parse(v);return Array.isArray(p)?p:[]}catch{return[]}}
+
+async function carregarRespostas(protocolo){
+  const alvo=document.getElementById("rRespostas"); alvo.innerHTML="";
+  try{
+    const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_respostas_protocolo",{
+      method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({p_protocolo:protocolo})
+    });
+    if(!r.ok) throw new Error();
+    const dados=await r.json();
+    if(!Array.isArray(dados)||!dados.length){alvo.innerHTML='<div class="empty">Ainda não há resposta registrada.</div>';return}
+    dados.forEach(item=>{
+      const box=document.createElement("div"); box.className="reply";
+      if(item.criado_em){const t=document.createElement("time");t.textContent=dataPt(item.criado_em);box.appendChild(t)}
+      if(item.mensagem){const p=document.createElement("div");p.textContent=item.mensagem;p.style.whiteSpace="pre-wrap";box.appendChild(p)}
+      anexos(item.anexos).forEach(a=>{if(!a||!a.url)return;const link=document.createElement("a");link.href=a.url;link.target="_blank";link.rel="noopener";link.textContent="📎 "+(a.nome||"Abrir documento");box.appendChild(link)});
+      alvo.appendChild(box);
+    });
+  }catch{alvo.innerHTML='<div class="empty">Não foi possível carregar as respostas agora.</div>'}
+}
+
+async function consultar(){
+  const protocolo=document.getElementById("protocolo").value.trim();
+  const resultado=document.getElementById("resultado"),erro=document.getElementById("erro");
+  resultado.style.display="none";erro.className="notice err";erro.style.display="none";
+  if(!protocolo){erro.textContent="Digite o número do protocolo.";erro.style.display="block";return}
+  const btn=document.getElementById("consultar");btn.disabled=true;btn.textContent="CONSULTANDO...";
+  try{
+    const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_protocolo",{
+      method:"POST",headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({p_protocolo:protocolo})
+    });
+    if(!r.ok)throw new Error("Não foi possível consultar agora.");
+    const dados=await r.json();
+    if(!dados.length)throw new Error("Protocolo não encontrado. Confira o número e tente novamente.");
+    const s=dados[0];
+    document.getElementById("rProtocolo").textContent=s.protocolo||protocolo;
+    document.getElementById("rStatus").textContent=s.status||"Recebida";
+    document.getElementById("rAssunto").textContent=s.assunto||"Não informado";
+    document.getElementById("rLocalidade").textContent=s.localidade||"Não informada";
+    resultado.style.display="block";
+    await carregarRespostas(s.protocolo||protocolo);
+  }catch(e){erro.textContent=e.message;erro.style.display="block"}
+  finally{btn.disabled=false;btn.textContent="CONSULTAR SOLICITAÇÃO"}
+}
+document.getElementById("consultar").addEventListener("click",consultar);
+document.getElementById("protocolo").addEventListener("keydown",e=>{if(e.key==="Enter")consultar()});
+</script>
+</body>
+</html>
