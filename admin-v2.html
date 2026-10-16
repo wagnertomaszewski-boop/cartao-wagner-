@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="theme-color" content="#061c31">
+  <link rel="manifest" href="./manifest-admin.json">
+  <title>Painel do Mandato | Wagner Tomaszewski</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:#f3f6f8;color:#17202a}
+    header{display:none;background:#071f31;color:#fff;padding:24px 16px;text-align:center}
+    header h1{margin:0 0 6px;font-size:28px}
+    header p{margin:0;color:#cbd5df}
+    main{display:none}
+    .container{max-width:800px;margin:auto;padding:20px}
+    .titulo{margin:20px 0;font-size:28px}
+    .card{background:#fff;border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px rgba(0,0,0,.10);border-left:5px solid #0b7a45}
+    .card.lembrete-hoje{border-left-color:#b7791f}
+    .card.lembrete-atrasado{border-left-color:#b42318}
+    .protocolo{color:#0b7a45;font-weight:bold;font-size:17px;margin-bottom:12px}
+    .linha{margin:7px 0;line-height:1.4}
+    .descricao{background:#f5f7f8;padding:12px;border-radius:8px;margin-top:12px;white-space:pre-wrap}
+    .anexos-cidadao-box{margin-top:12px;padding:12px;border-radius:10px;background:#eef4ff;border:1px solid #c8d8f5}
+    .anexos-cidadao-box strong{display:block;margin-bottom:8px;color:#174a7e}
+    .btn-anexo-cidadao{background:#174a7e;margin-top:7px}
+    select,#filtroBusca,#telaLogin input,textarea,input[type="file"]{width:100%;padding:12px;margin-top:12px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
+    textarea{min-height:105px;resize:vertical;font-family:Arial,sans-serif}
+    button{width:100%;border:0;padding:13px;border-radius:8px;margin-top:10px;font-size:16px;font-weight:bold;background:#0b7a45;color:#fff;cursor:pointer}
+    button:disabled{opacity:.6}
+    .vazio{text-align:center;background:#fff;padding:30px;border-radius:12px}
+    .erro{background:#ffe6e6;color:#8b0000;padding:15px;border-radius:10px;line-height:1.45;margin-top:12px}
+    .erro button{max-width:260px}
+    .status{font-weight:bold;color:#0b7a45}
+    .anotacao-box{margin-top:14px;padding:14px;border-radius:10px;background:#fff7e6;border:1px solid #f1c97a}
+    .anotacao-box h4{margin:0 0 6px;color:#8a5a00}
+    .anotacao-ajuda{font-size:13px;color:#7a6850;line-height:1.35}
+    .anotacao-box button{background:#8a5a00}
+    .anotacao-box input.lembrete-data{width:100%;padding:12px;margin-top:8px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
+    .lembrete-alerta{margin:0 0 12px;padding:11px 12px;border-radius:9px;font-weight:bold;line-height:1.35}
+    .lembrete-alerta.hoje{background:#fff3cd;color:#7a5200;border:1px solid #ecd27a}
+    .lembrete-alerta.atrasado{background:#ffe8e6;color:#8b1e16;border:1px solid #efb2ad}
+    .lembrete-alerta.futuro{background:#eef6f1;color:#235b3b;border:1px solid #c9e3d2}
+    .respostas-box{margin-top:16px;padding:14px;border-radius:10px;background:#eef6f1;border:1px solid #c9e3d2}
+    .respostas-box h4{margin:0 0 10px;color:#0b7a45}
+    .resposta-item{background:#fff;border-radius:9px;padding:12px;margin-top:9px;border-left:4px solid #0b7a45}
+    .resposta-data{font-size:12px;color:#667085;margin-bottom:6px}
+    .resposta-texto{white-space:pre-wrap;line-height:1.45}
+    .anexos{margin-top:8px}
+    .anexos a{display:inline-block;margin:4px 8px 0 0;color:#075985;font-weight:bold;text-decoration:none}
+    .arquivos-pendentes{margin-top:10px}
+    .arquivo-pendente{display:flex;gap:8px;align-items:center;justify-content:space-between;background:#fff;border:1px solid #d8dee4;border-radius:8px;padding:9px 10px;margin-top:7px}
+    .arquivo-pendente span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+    .arquivo-pendente button{width:auto;margin:0;padding:7px 10px;font-size:13px;background:#b42318}
+    .dica-anexo{font-size:13px;color:#667085;margin-top:6px;line-height:1.35}
+    .nova-resposta{margin-top:16px;padding-top:12px;border-top:1px solid #d8dee4}
+    .sem-resposta{color:#667085;font-size:14px}
+    #telaLogin{display:block;padding:24px;max-width:520px;margin:30px auto;background:#fff;border-radius:14px}
+    #erroLogin{line-height:1.4;color:#8b0000}
+  
+    /* Painel do Mandato V2 — camada visual de teste */
+    body{background:#f4f7fb;color:#14263d;padding-bottom:82px}
+    header{background:linear-gradient(155deg,#0a3158,#0a67ad);padding:20px 18px 24px;text-align:left;border-radius:0 0 28px 28px;box-shadow:0 8px 24px rgba(8,47,84,.18)}
+    .painel-topo{max-width:800px;margin:auto}
+    .painel-marca{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .painel-marca small{display:block;color:#cfe4f5;font-size:12px;font-weight:700;letter-spacing:.05em}
+    .painel-marca h1{font-size:27px;margin:3px 0 0}
+    #btnSair{width:auto;margin:0;padding:9px 13px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);font-size:13px}
+    header p{margin-top:10px;color:#dcebf7}
+    .container{padding:16px 14px;max-width:800px}
+    .titulo{font-size:22px;margin:20px 2px 12px}
+    .resumo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:-2px;margin-bottom:16px}
+    .resumo-card{background:#fff;border:1px solid #e4eaf0;border-radius:18px;padding:14px;box-shadow:0 7px 20px rgba(11,49,88,.07)}
+    .resumo-card span{display:block;color:#728196;font-size:12px;margin-bottom:6px}
+    .resumo-card strong{font-size:27px;color:#0a3158}
+    .resumo-card.alerta strong{color:#b7791f}
+    .resumo-card.ok strong{color:#11824a}
+    .resumo-card.azul strong{color:#0b70c9}
+    .filtros-box{background:#fff;border:1px solid #e5eaf0;border-radius:18px;padding:12px;margin-bottom:14px;box-shadow:0 6px 18px rgba(11,49,88,.05)}
+    .filtros-box #filtroBusca,.filtros-box #filtroStatus{margin-top:8px}
+    .card{border-left:0;border:1px solid #e4eaf0;border-radius:19px;padding:16px;box-shadow:0 7px 20px rgba(11,49,88,.07)}
+    .protocolo{display:inline-block;background:#eaf3fb;color:#0a62a5;padding:6px 9px;border-radius:999px;font-size:13px;margin-bottom:11px}
+    .anexos-cidadao-box{background:#eef6ff;border-color:#cfe1f5}
+    .painel-bottom{position:fixed;z-index:50;left:50%;bottom:0;transform:translateX(-50%);width:min(800px,100%);display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:1px solid #e0e6ed;box-shadow:0 -6px 22px rgba(11,49,88,.08);padding:7px 3px calc(7px + env(safe-area-inset-bottom))}
+    .painel-bottom button{margin:0;padding:4px 2px;background:transparent;color:#7b8999;font-size:10px;border-radius:0}
+    .painel-bottom button b{display:block;font-size:19px;color:#607286;margin-bottom:2px}
+    .painel-bottom button.ativo,.painel-bottom button.ativo b{color:#0b70c9}
+    @media(max-width:420px){.resumo-card strong{font-size:24px}.painel-marca h1{font-size:24px}}
+</style>
+</head>
+<body>
+  <div id="telaLogin">
+    <h2>Acesso ao Painel</h2>
+    <input id="emailLogin" type="email" placeholder="E-mail" autocomplete="email">
+    <input id="senhaLogin" type="password" placeholder="Senha" autocomplete="current-password">
+    <button id="btnLogin" type="button">ENTRAR</button>
+    <p id="erroLogin"></p>
+  </div>
+
+  <header>
+    <div class="painel-topo">
+      <div class="painel-marca">
+        <div><small>WT · MANDATO EM AÇÃO</small><h1>Painel do Mandato</h1></div>
+        <button id="btnSair" type="button">Sair</button>
+      </div>
+      <p>Gestão interna das solicitações, respostas e acompanhamentos.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <h2 class="titulo">Visão geral</h2>
+    <section class="resumo-grid">
+      <div class="resumo-card azul"><span>Total de solicitações</span><strong id="resumoTotal">—</strong></div>
+      <div class="resumo-card alerta"><span>Em aberto</span><strong id="resumoAbertas">—</strong></div>
+      <div class="resumo-card"><span>Lembretes hoje/atrasados</span><strong id="resumoLembretes">—</strong></div>
+      <div class="resumo-card ok"><span>Concluídas</span><strong id="resumoConcluidas">—</strong></div>
+    </section>
+
+    <h2 class="titulo" id="secSolicitacoes">Solicitações da comunidade</h2>
+    <div class="filtros-box">
+      <input id="filtroBusca" type="text" placeholder="Buscar por nome ou protocolo">
+
+      <select id="filtroStatus">
+      <option value="Todos">Todos os status</option>
+      <option value="Recebida">Recebida</option>
+      <option value="Recebido">Recebido</option>
+      <option value="Em análise">Em análise</option>
+      <option value="Encaminhado">Encaminhado</option>
+      <option value="Em andamento">Em andamento</option>
+      <option value="Concluído">Concluído</option>
+    </select>
+    </div>
+
+    <div id="lista">Carregando solicitações...</div>
+  </main>
+
+<nav class="painel-bottom" id="painelBottom">
+    <button class="ativo" type="button" onclick="irPainel('inicio',this)"><b>⌂</b>Início</button>
+    <button type="button" onclick="irPainel('solicitacoes',this)"><b>☷</b>Solicitações</button>
+    <button type="button" onclick="irPainel('lembretes',this)"><b>⏰</b>Lembretes</button>
+    <button type="button" onclick="irPainel('resultados',this)"><b>✓</b>Resultados</button>
+    <button type="button" onclick="irPainel('mais',this)"><b>•••</b>Mais</button>
+  </nav>
+
+<script>
+const SUPABASE_URL = "https://pmmsdjozyyxkbuqlkfpb.supabase.co";
+const SUPABASE_KEY = "sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+const STORAGE_KEY = "wagner_admin_session_v2";
+const TEMPO_LIMITE_MS = 15000;
+const arquivosPendentesPorSolicitacao = new Map();
+
+function irPainel(destino, botao){
+  document.querySelectorAll(".painel-bottom button").forEach(b=>b.classList.remove("ativo"));
+  if(botao) botao.classList.add("ativo");
+  if(destino==="inicio"){
+    window.scrollTo({top:0,behavior:"smooth"});
+    return;
+  }
+  if(destino==="solicitacoes"){
+    document.getElementById("secSolicitacoes")?.scrollIntoView({behavior:"smooth",block:"start"});
+    return;
+  }
+  if(destino==="lembretes"){
+    const cards=[...document.querySelectorAll("#lista .card")];
+    const alvo=cards.find(c=>c.classList.contains("lembrete-hoje")||c.classList.contains("lembrete-atrasado"));
+    (alvo||document.getElementById("secSolicitacoes"))?.scrollIntoView({behavior:"smooth",block:"start"});
+    return;
+  }
+  if(destino==="resultados"){
+    const select=document.getElementById("filtroStatus");
+    if(select){select.value="Concluído"; carregarSolicitacoes();}
+    document.getElementById("secSolicitacoes")?.scrollIntoView({behavior:"smooth",block:"start"});
+    return;
+  }
+  if(destino==="mais"){
+    alert("A área Mais será criada nas próximas etapas do Painel do Mandato.");
+  }
+}
+
+function atualizarResumoPainel(itens){
+  const todos=Array.isArray(itens)?itens:[];
+  const total=todos.length;
+  const concluidas=todos.filter(x=>normalizar(x.status)==="concluido").length;
+  const abertas=total-concluidas;
+  const hoje=dataHojeISO();
+  const lembretes=todos.filter(x=>x.lembrete_em && x.lembrete_em<=hoje).length;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set("resumoTotal",total);
+  set("resumoAbertas",abertas);
+  set("resumoLembretes",lembretes);
+  set("resumoConcluidas",concluidas);
+}
+
+function salvarSessao(sessao){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessao));
+}
+
+function lerSessao(){
+  try{
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+  }catch(e){
+    return null;
+  }
+}
+
+function limparSessao(){
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem("sb-pmmsdjozyyxkbuqlkfpb-auth-token");
+}
+
+async function requisicao(url, opcoes = {}) {
+  const controlador = new AbortController();
+  const timer = setTimeout(() => controlador.abort(), TEMPO_LIMITE_MS);
+
+  try {
+    return await fetch(url, { ...opcoes, signal: controlador.signal });
+  } catch (e) {
+    if (e && e.name === "AbortError") {
+      throw new Error("Tempo esgotado ao conectar com o servidor.");
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function mensagemDeErro(erro) {
+  const msg = String((erro && erro.message) || erro || "").toLowerCase();
+
+  if (
+    msg.includes("invalid login credentials") ||
+    msg.includes("invalid_credentials") ||
+    msg.includes("email or password")
+  ) {
+    return "E-mail ou senha incorretos.";
+  }
+
+  if (
+    msg.includes("failed to fetch") ||
+    msg.includes("network") ||
+    msg.includes("tempo esgotado") ||
+    msg.includes("load failed")
+  ) {
+    return "Não foi possível conectar ao servidor. Confira sua internet e tente novamente.";
+  }
+
+  return (erro && erro.message) ? erro.message : "Não foi possível concluir a operação. Tente novamente.";
+}
+
+function esc(v) {
+  if (v === null || v === undefined || v === "") return "Não informado";
+  return String(v).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+
+function escCampo(v) {
+  if (v === null || v === undefined) return "";
+  return String(v).replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+
+function normalizar(v) {
+  return String(v || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function formatarData(v) {
+  if (!v) return "";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("pt-BR");
+}
+
+function dataHojeISO() {
+  const d = new Date();
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
+function formatarDataCurta(v) {
+  const partes = String(v || "").split("-");
+  if (partes.length !== 3) return String(v || "");
+  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+function dataBrParaIso(v) {
+  const valor = String(v || "").trim();
+  if (!valor) return null;
+
+  const m = valor.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) throw new Error("Digite a data no formato DD/MM/AAAA.");
+
+  const dia = Number(m[1]);
+  const mes = Number(m[2]);
+  const ano = Number(m[3]);
+  const d = new Date(Date.UTC(ano, mes - 1, dia));
+
+  if (
+    d.getUTCFullYear() !== ano ||
+    d.getUTCMonth() !== mes - 1 ||
+    d.getUTCDate() !== dia
+  ) {
+    throw new Error("Digite uma data válida.");
+  }
+
+  return `${String(ano).padStart(4, "0")}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+}
+
+function estadoLembrete(v) {
+  if (!v) return "";
+  const hoje = dataHojeISO();
+  if (v < hoje) return "atrasado";
+  if (v === hoje) return "hoje";
+  return "futuro";
+}
+
+function normalizarAnexos(v) {
+  if (Array.isArray(v)) return v;
+  if (!v) return [];
+  try {
+    const p = JSON.parse(v);
+    return Array.isArray(p) ? p : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function caminhoPublicoStorage(bucket, caminho) {
+  const partes = String(caminho || "").split("/").filter(Boolean).map(encodeURIComponent);
+  return SUPABASE_URL + "/storage/v1/object/public/" + encodeURIComponent(bucket) + "/" + partes.join("/");
+}
+
+async function abrirAnexoCidadao(caminho, botao) {
+  if (!caminho) return;
+
+  const textoOriginal = botao ? botao.textContent : "";
+  const novaJanela = window.open("about:blank", "_blank");
+
+  if (botao) {
+    botao.disabled = true;
+    botao.textContent = "Abrindo...";
+  }
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const caminhoCodificado = String(caminho)
+      .split("/")
+      .filter(Boolean)
+      .map(encodeURIComponent)
+      .join("/");
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/storage/v1/object/sign/anexos-solicitacoes/" + caminhoCodificado,
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ expiresIn: 3600 })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => ({}));
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.message ||
+        dados.error ||
+        "Não foi possível abrir o anexo."
+      );
+    }
+
+    let url = dados.signedURL || dados.signedUrl || "";
+    if (!url) throw new Error("O servidor não retornou o link do anexo.");
+
+    if (url.startsWith("/")) {
+      url = SUPABASE_URL + "/storage/v1" + url;
+    }
+
+    if (novaJanela) {
+      novaJanela.location.href = url;
+    } else {
+      window.location.href = url;
+    }
+  } catch (e) {
+    if (novaJanela) novaJanela.close();
+    alert(mensagemDeErro(e));
+  } finally {
+    if (botao) {
+      botao.disabled = false;
+      botao.textContent = textoOriginal || "Abrir anexo";
+    }
+  }
+}
+
+function arquivosPendentes(id) {
+  return arquivosPendentesPorSolicitacao.get(Number(id)) || [];
+}
+
+function renderArquivosPendentes(id) {
+  const alvo = document.getElementById(`pendentes-${id}`);
+  if (!alvo) return;
+
+  const arquivos = arquivosPendentes(id);
+
+  if (arquivos.length === 0) {
+    alvo.innerHTML = '<div class="dica-anexo">Nenhum arquivo selecionado ainda.</div>';
+    return;
+  }
+
+  alvo.innerHTML = arquivos.map((arquivo, indice) => {
+    const nome = esc(arquivo.name);
+    const tamanhoMb = (arquivo.size / (1024 * 1024)).toFixed(2);
+    return `
+      <div class="arquivo-pendente">
+        <span>📎 ${nome} (${tamanhoMb} MB)</span>
+        <button type="button" onclick="removerDocumentoPendente(${id}, ${indice})">Remover</button>
+      </div>
+    `;
+  }).join("");
+}
+
+function adicionarDocumentos(id) {
+  const input = document.getElementById(`documentos-${id}`);
+  if (!input) return;
+
+  const atuais = arquivosPendentes(id);
+  const novos = Array.from(input.files || []);
+
+  for (const arquivo of novos) {
+    if (arquivo.size > 10 * 1024 * 1024) {
+      alert("O arquivo " + arquivo.name + " ultrapassa o limite de 10 MB.");
+      input.value = "";
+      return;
+    }
+  }
+
+  const combinados = [...atuais];
+
+  for (const arquivo of novos) {
+    const duplicado = combinados.some(a =>
+      a.name === arquivo.name &&
+      a.size === arquivo.size &&
+      a.lastModified === arquivo.lastModified
+    );
+
+    if (!duplicado) combinados.push(arquivo);
+  }
+
+  if (combinados.length > 5) {
+    alert("Você pode anexar no máximo 5 documentos por resposta.");
+    input.value = "";
+    return;
+  }
+
+  arquivosPendentesPorSolicitacao.set(Number(id), combinados);
+  input.value = "";
+  renderArquivosPendentes(id);
+}
+
+function removerDocumentoPendente(id, indice) {
+  const arquivos = [...arquivosPendentes(id)];
+  arquivos.splice(indice, 1);
+
+  if (arquivos.length === 0) {
+    arquivosPendentesPorSolicitacao.delete(Number(id));
+  } else {
+    arquivosPendentesPorSolicitacao.set(Number(id), arquivos);
+  }
+
+  renderArquivosPendentes(id);
+}
+
+function mostrarLogin(mensagem = "") {
+  document.getElementById("telaLogin").style.display = "block";
+  document.querySelector("header").style.display = "none";
+  document.querySelector("main").style.display = "none";
+  const nav = document.getElementById("painelBottom"); if(nav) nav.style.display = "none";
+  document.getElementById("erroLogin").textContent = mensagem;
+}
+
+function mostrarPainel() {
+  document.getElementById("telaLogin").style.display = "none";
+  document.querySelector("header").style.display = "block";
+  document.querySelector("main").style.display = "block";
+  const nav = document.getElementById("painelBottom"); if(nav) nav.style.display = "grid";
+}
+
+async function renovarSessao(refreshToken) {
+  const resposta = await requisicao(
+    SUPABASE_URL + "/auth/v1/token?grant_type=refresh_token",
+    {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    }
+  );
+
+  const dados = await resposta.json().catch(() => ({}));
+
+  if (!resposta.ok) {
+    throw new Error(dados.msg || dados.message || dados.error_description || "Sessão expirada.");
+  }
+
+  const sessao = {
+    access_token: dados.access_token,
+    refresh_token: dados.refresh_token || refreshToken,
+    expires_at: Date.now() + ((dados.expires_in || 3600) * 1000)
+  };
+  salvarSessao(sessao);
+  return sessao;
+}
+
+async function obterSessaoValida() {
+  let sessao = lerSessao();
+  if (!sessao || !sessao.access_token) return null;
+
+  if (sessao.expires_at && Date.now() > sessao.expires_at - 60000) {
+    if (!sessao.refresh_token) return null;
+    sessao = await renovarSessao(sessao.refresh_token);
+  }
+  return sessao;
+}
+
+async function fazerLogin() {
+  const email = document.getElementById("emailLogin").value.trim();
+  const senha = document.getElementById("senhaLogin").value;
+  const erroEl = document.getElementById("erroLogin");
+  const botao = document.getElementById("btnLogin");
+
+  erroEl.textContent = "";
+
+  if (!email || !senha) {
+    erroEl.textContent = "Digite seu e-mail e sua senha.";
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = "ENTRANDO...";
+
+  try {
+    const resposta = await requisicao(
+      SUPABASE_URL + "/auth/v1/token?grant_type=password",
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email: email, password: senha })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => ({}));
+
+    if (!resposta.ok) {
+      throw new Error(dados.msg || dados.message || dados.error_description || "Não foi possível entrar.");
+    }
+
+    salvarSessao({
+      access_token: dados.access_token,
+      refresh_token: dados.refresh_token,
+      expires_at: Date.now() + ((dados.expires_in || 3600) * 1000)
+    });
+
+    document.getElementById("senhaLogin").value = "";
+    mostrarPainel();
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    console.error("Erro de login:", e);
+    erroEl.textContent = mensagemDeErro(e);
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "ENTRAR";
+  }
+}
+
+async function carregarSolicitacoes() {
+  const lista = document.getElementById("lista");
+  lista.textContent = "Carregando solicitações...";
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) {
+      limparSessao();
+      mostrarLogin("Sua sessão expirou. Entre novamente.");
+      return;
+    }
+
+    const filtroStatus = document.getElementById("filtroStatus").value;
+    const termoBusca = normalizar(document.getElementById("filtroBusca").value);
+
+    let url = SUPABASE_URL + "/rest/v1/solicitacoes?select=*&order=id.desc";
+    if (filtroStatus !== "Todos") {
+      url += "&status=eq." + encodeURIComponent(filtroStatus);
+    }
+
+    const resposta = await requisicao(url, {
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + sessao.access_token
+      }
+    });
+
+    const dadosResposta = await resposta.json().catch(() => ([]));
+
+    if (resposta.status === 401) {
+      limparSessao();
+      mostrarLogin("Sua sessão expirou. Entre novamente.");
+      return;
+    }
+
+    if (!resposta.ok) {
+      throw new Error(
+        dadosResposta.message ||
+        dadosResposta.hint ||
+        dadosResposta.details ||
+        "Não foi possível carregar as solicitações."
+      );
+    }
+
+    let dados = Array.isArray(dadosResposta) ? dadosResposta : [];
+
+    const respostasPorSolicitacao = {};
+    try {
+      const respostaRespostas = await requisicao(
+        SUPABASE_URL + "/rest/v1/respostas_solicitacoes?select=*&order=criado_em.desc",
+        {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + sessao.access_token
+          }
+        }
+      );
+
+      if (respostaRespostas.ok) {
+        const respostas = await respostaRespostas.json().catch(() => []);
+        (Array.isArray(respostas) ? respostas : []).forEach(r => {
+          const chave = Number(r.solicitacao_id);
+          if (!respostasPorSolicitacao[chave]) respostasPorSolicitacao[chave] = [];
+          respostasPorSolicitacao[chave].push(r);
+        });
+      } else {
+        console.warn("Histórico de respostas ainda não está disponível.");
+      }
+    } catch (e) {
+      console.warn("Não foi possível carregar respostas:", e);
+    }
+
+    atualizarResumoPainel(dados);
+
+    if (termoBusca) {
+      dados = dados.filter(item =>
+        normalizar(item.nome).includes(termoBusca) ||
+        normalizar(item.protocolo).includes(termoBusca)
+      );
+    }
+
+    if (dados.length === 0) {
+      lista.innerHTML = '<div class="vazio">Nenhuma solicitação encontrada.</div>';
+      return;
+    }
+
+    lista.innerHTML = "";
+
+    dados.forEach(item => {
+      const id = Number(item.id);
+      const status = item.status || "Recebida";
+      const telefone = String(item.whatsapp || "").replace(/\D/g, "");
+      const whatsapp = telefone.startsWith("55") ? telefone : "55" + telefone;
+
+      const card = document.createElement("div");
+      const estadoDoLembrete = estadoLembrete(item.lembrete_em);
+      card.className = "card" +
+        (estadoDoLembrete === "hoje" ? " lembrete-hoje" : "") +
+        (estadoDoLembrete === "atrasado" ? " lembrete-atrasado" : "");
+
+      let lembreteHtml = "";
+      if (item.lembrete_em) {
+        const dataLegivel = esc(formatarDataCurta(item.lembrete_em));
+        if (estadoDoLembrete === "hoje") {
+          lembreteHtml = '<div class="lembrete-alerta hoje">⏰ Lembrete para hoje — ' + dataLegivel + '</div>';
+        } else if (estadoDoLembrete === "atrasado") {
+          lembreteHtml = '<div class="lembrete-alerta atrasado">⚠️ Lembrete atrasado — ' + dataLegivel + '</div>';
+        } else {
+          lembreteHtml = '<div class="lembrete-alerta futuro">📅 Próximo lembrete — ' + dataLegivel + '</div>';
+        }
+      }
+
+      const anexosCidadao = Array.isArray(item.anexos)
+        ? item.anexos.filter(Boolean)
+        : [];
+
+      const anexosCidadaoHtml = anexosCidadao.length
+        ? '<div class="anexos-cidadao-box">' +
+            '<strong>📷 Anexos enviados pelo cidadão</strong>' +
+            anexosCidadao.map((caminho, indice) =>
+              '<button type="button" class="btn-anexo-cidadao" ' +
+              'data-caminho="' + escCampo(caminho) + '" ' +
+              'onclick="abrirAnexoCidadao(this.dataset.caminho, this)">' +
+              '📎 Abrir anexo ' + (indice + 1) +
+              '</button>'
+            ).join("") +
+          '</div>'
+        : "";
+
+      const respostas = respostasPorSolicitacao[id] || [];
+      const historicoRespostas = respostas.length
+        ? respostas.map(r => {
+            const anexos = normalizarAnexos(r.anexos);
+            const links = anexos.length
+              ? '<div class="anexos">' + anexos.map(a => {
+                  const nome = esc(a.nome || "Documento");
+                  const url = esc(a.url || "");
+                  return url ? '<a href="' + url + '" target="_blank" rel="noopener">📎 ' + nome + '</a>' : "";
+                }).join("") + '</div>'
+              : "";
+            return '<div class="resposta-item">' +
+              '<div class="resposta-data">' + esc(formatarData(r.criado_em)) + '</div>' +
+              (r.mensagem ? '<div class="resposta-texto">' + esc(r.mensagem) + '</div>' : '') +
+              links +
+            '</div>';
+          }).join("")
+        : '<div class="sem-resposta">Nenhuma resposta enviada ainda.</div>';
+
+      card.innerHTML = `
+        ${lembreteHtml}
+        <div class="protocolo">${esc(item.protocolo || ("Solicitação #" + id))}</div>
+        <div class="linha"><strong>Nome:</strong> ${esc(item.nome)}</div>
+        <div class="linha"><strong>WhatsApp:</strong> ${esc(item.whatsapp)}</div>
+        <div class="linha"><strong>Localidade:</strong> ${esc(item.localidade)}</div>
+        <div class="linha"><strong>Assunto:</strong> ${esc(item.assunto)}</div>
+        <div class="descricao"><strong>Descrição:</strong><br>${esc(item.descricao)}</div>
+        ${anexosCidadaoHtml}
+
+        <div class="anotacao-box">
+          <h4>📝 Anotação interna e lembrete</h4>
+          <div class="anotacao-ajuda">Somente você vê estas informações. Elas não aparecem para o cidadão.</div>
+          <textarea id="anotacao-${id}" placeholder="Ex.: cobrar retorno da Secretaria de Obras na próxima semana.">${escCampo(item.anotacao_interna)}</textarea>
+          <label for="lembrete-${id}"><strong>Data do lembrete</strong></label>
+          <input
+            id="lembrete-${id}"
+            class="lembrete-data"
+            type="text"
+            inputmode="numeric"
+            placeholder="DD/MM/AAAA"
+            value="${escCampo(formatarDataCurta(item.lembrete_em))}"
+          >
+          <div class="anotacao-ajuda">Digite a data como DD/MM/AAAA. Se não quiser mais o lembrete, apague a data e salve novamente.</div>
+          <button id="btn-anotacao-${id}" type="button" onclick="salvarAnotacaoInterna(${id})">Salvar anotação e lembrete</button>
+        </div>
+
+        <div class="linha"><strong>Status atual:</strong> <span class="status">${esc(status)}</span></div>
+
+        <select id="status-${id}">
+          ${["Recebida","Recebido","Em análise","Encaminhado","Em andamento","Concluído"]
+            .map(s => `<option value="${s}" ${s === status ? "selected" : ""}>${s}</option>`)
+            .join("")}
+        </select>
+
+        <button id="botao-${id}" type="button" onclick="atualizarStatus(${id})">Salvar novo status</button>
+
+        <div class="respostas-box">
+          <h4>Respostas ao cidadão</h4>
+          ${historicoRespostas}
+
+          <div class="nova-resposta">
+            <label for="resposta-${id}"><strong>Nova resposta</strong></label>
+            <textarea id="resposta-${id}" placeholder="Digite a resposta que ficará visível para o cidadão ao consultar o protocolo."></textarea>
+
+            <label for="documentos-${id}"><strong>Anexar documentos (opcional)</strong></label>
+            <input
+              type="file"
+              id="documentos-${id}"
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.odt,.ods"
+              onchange="adicionarDocumentos(${id})"
+            >
+            <div class="dica-anexo">
+              Escolha um arquivo. Para adicionar outro, toque novamente em “Escolher arquivo”.
+              Os arquivos ficarão na lista abaixo até você enviar a resposta.
+            </div>
+            <div id="pendentes-${id}" class="arquivos-pendentes"></div>
+
+            <button id="btn-resposta-${id}" type="button" onclick="enviarResposta(${id})">
+              Enviar resposta / documentos
+            </button>
+          </div>
+        </div>
+
+        ${whatsapp.length > 2
+          ? `<a href="https://wa.me/${whatsapp}" target="_blank" rel="noopener"><button type="button">Falar pelo WhatsApp</button></a>`
+          : ""}
+      `;
+
+      lista.appendChild(card);
+      renderArquivosPendentes(id);
+    });
+
+  } catch (e) {
+    console.error("Erro ao carregar solicitações:", e);
+    lista.innerHTML = `
+      <div class="erro">
+        <strong>Não foi possível carregar as solicitações.</strong><br>
+        ${esc(mensagemDeErro(e))}<br>
+        <button type="button" onclick="carregarSolicitacoes()">Tentar novamente</button>
+      </div>
+    `;
+  }
+}
+
+async function enviarResposta(id) {
+  const campo = document.getElementById(`resposta-${id}`);
+  const arquivosEl = document.getElementById(`documentos-${id}`);
+  const botao = document.getElementById(`btn-resposta-${id}`);
+  if (!campo || !arquivosEl || !botao) return;
+
+  const mensagem = campo.value.trim();
+  const arquivos = [...arquivosPendentes(id)];
+
+  if (!mensagem && arquivos.length === 0) {
+    alert("Digite uma resposta ou selecione pelo menos um documento.");
+    return;
+  }
+
+  if (arquivos.length > 5) {
+    alert("Envie no máximo 5 documentos por resposta.");
+    return;
+  }
+
+  for (const arquivo of arquivos) {
+    if (arquivo.size > 10 * 1024 * 1024) {
+      alert("O arquivo " + arquivo.name + " ultrapassa o limite de 10 MB.");
+      return;
+    }
+  }
+
+  botao.disabled = true;
+  botao.textContent = "Enviando...";
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const anexos = [];
+
+    for (const arquivo of arquivos) {
+      const nomeSeguro = arquivo.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const caminho = id + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "-" + nomeSeguro;
+
+      const upload = await requisicao(
+        SUPABASE_URL + "/storage/v1/object/documentos-respostas/" +
+          caminho.split("/").map(encodeURIComponent).join("/"),
+        {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + sessao.access_token,
+            "Content-Type": arquivo.type || "application/octet-stream",
+            "x-upsert": "false"
+          },
+          body: arquivo
+        }
+      );
+
+      if (!upload.ok) {
+        const detalhe = await upload.text().catch(() => "");
+        throw new Error("Não foi possível enviar o documento " + arquivo.name + ". " + detalhe);
+      }
+
+      anexos.push({
+        nome: arquivo.name,
+        tipo: arquivo.type || "",
+        caminho: caminho,
+        url: caminhoPublicoStorage("documentos-respostas", caminho)
+      });
+    }
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/rest/v1/respostas_solicitacoes",
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({
+          solicitacao_id: id,
+          mensagem: mensagem || null,
+          anexos: anexos
+        })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => []);
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.message ||
+        dados.hint ||
+        dados.details ||
+        "Não foi possível registrar a resposta."
+      );
+    }
+
+    alert("Resposta enviada com sucesso!");
+    campo.value = "";
+    arquivosEl.value = "";
+    arquivosPendentesPorSolicitacao.delete(Number(id));
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    console.error("Erro ao enviar resposta:", e);
+    alert(mensagemDeErro(e));
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Enviar resposta / documentos";
+  }
+}
+
+async function salvarAnotacaoInterna(id) {
+  const campo = document.getElementById(`anotacao-${id}`);
+  const lembrete = document.getElementById(`lembrete-${id}`);
+  const botao = document.getElementById(`btn-anotacao-${id}`);
+  if (!campo || !lembrete || !botao) return;
+
+  let lembreteIso = null;
+  try {
+    lembreteIso = dataBrParaIso(lembrete.value);
+  } catch (e) {
+    alert(e.message);
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = "Salvando...";
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/rest/v1/solicitacoes?id=eq." + encodeURIComponent(id),
+      {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({
+          anotacao_interna: campo.value.trim() || null,
+          lembrete_em: lembreteIso,
+          atualizado_em: new Date().toISOString()
+        })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => ([]));
+
+    if (!resposta.ok || !Array.isArray(dados) || dados.length === 0) {
+      throw new Error(
+        dados.message ||
+        dados.hint ||
+        dados.details ||
+        "Não foi possível salvar a anotação."
+      );
+    }
+
+    alert("Anotação e lembrete salvos!");
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    console.error("Erro ao salvar anotação interna:", e);
+    alert(mensagemDeErro(e));
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Salvar anotação e lembrete";
+  }
+}
+
+async function atualizarStatus(id) {
+  const seletor = document.getElementById(`status-${id}`);
+  const botao = document.getElementById(`botao-${id}`);
+  if (!seletor || !botao) return;
+
+  botao.disabled = true;
+  botao.textContent = "Salvando...";
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/rest/v1/solicitacoes?id=eq." + encodeURIComponent(id),
+      {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({ status: seletor.value })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => ([]));
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.message ||
+        dados.hint ||
+        dados.details ||
+        "Não foi possível atualizar o status."
+      );
+    }
+
+    if (!Array.isArray(dados) || dados.length === 0) {
+      throw new Error("O servidor não permitiu alterar este registro.");
+    }
+
+    alert("Status atualizado com sucesso!");
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    console.error("Erro ao atualizar status:", e);
+    alert(mensagemDeErro(e));
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Salvar novo status";
+  }
+}
+
+async function verificarLogin() {
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) {
+      mostrarLogin("");
+      return;
+    }
+
+    mostrarPainel();
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    limparSessao();
+    mostrarLogin(mensagemDeErro(e));
+  }
+}
+
+function sair() {
+  limparSessao();
+  document.getElementById("senhaLogin").value = "";
+  mostrarLogin("");
+}
+
+document.getElementById("btnLogin").addEventListener("click", fazerLogin);
+document.getElementById("senhaLogin").addEventListener("keydown", e => {
+  if (e.key === "Enter") fazerLogin();
+});
+
+document.getElementById("filtroStatus").addEventListener("change", carregarSolicitacoes);
+
+let atrasoBusca;
+document.getElementById("filtroBusca").addEventListener("input", () => {
+  clearTimeout(atrasoBusca);
+  atrasoBusca = setTimeout(carregarSolicitacoes, 350);
+});
+
+document.getElementById("btnSair").addEventListener("click", sair);
+
+verificarLogin();
+</script>
+</body>
+</html>
