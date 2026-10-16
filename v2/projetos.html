@@ -14,9 +14,43 @@
 <h1>Projetos e ações</h1>
 <p>Um espaço para acompanhar iniciativas, pedidos, emendas e resultados do mandato.</p>
 </header>
-<main class="page-content"><div class="chips"><span class="chip active">Todos</span><span class="chip">Projetos</span><span class="chip">Pedidos</span><span class="chip">Emendas</span><span class="chip">Resultados</span></div>
-<section class="info-card"><div class="eyebrow">Transparência</div><h2>Acompanhe do pedido ao resultado</h2><p>A estrutura desta área já está pronta para publicar cada ação com resumo, situação atual, documentos e atualizações.</p></section>
-<section class="empty-state"><div class="big">🏛️</div><strong>Área preparada</strong><p>Os conteúdos reais serão cadastrados antes do lançamento da versão 2.</p></section></main>
+<main class="page-content">
+<div class="chips">
+  <span class="chip active" data-pf="todos">Todos</span>
+  <span class="chip" data-pf="projeto">Projetos de lei</span>
+  <span class="chip" data-pf="pedido">Pedidos</span>
+  <span class="chip" data-pf="emenda">Emendas</span>
+  <span class="chip" data-pf="resultado">Resultados</span>
+</div>
+
+<section class="feed-card project-item" data-type="projeto">
+  <div class="eyebrow">Projeto / Lei</div>
+  <h2>Diploma Aluno Nota Dez</h2>
+  <p>Iniciativa de autoria do Vereador Wagner Tomaszewski que criou a premiação “Diploma Aluno Nota Dez” para estudantes das redes de ensino de Cristal.</p>
+  <div class="meta"><span>📅 Lei nº 1.553/2021</span><span>🏛️ Educação</span><span>🟡 Acompanhando execução</span></div>
+</section>
+
+<section class="feed-card project-item" data-type="projeto">
+  <div class="eyebrow">Projeto / Lei</div>
+  <h2>Mês do Esporte e Lazer</h2>
+  <p>Iniciativa de autoria do mandato que instituiu o Mês do Esporte e Lazer no Município de Cristal. Está sendo preparada atualização do período para o mês de maio.</p>
+  <div class="meta"><span>📅 Lei nº 1.588/2022</span><span>⚽ Esporte e lazer</span><span>🔵 Atualização em preparação</span></div>
+</section>
+
+<section class="feed-card project-item" data-type="pedido">
+  <div class="eyebrow">Pedido de Providência</div>
+  <h2>Segurança viária na Estrada da Barca</h2>
+  <p>Pedido de Providência nº 26/2026 solicitando sinalização e medidas de segurança viária na região. O Executivo informou que realizará estudo de viabilidade técnica e financeira.</p>
+  <div class="meta"><span>📄 Pedido nº 26/2026</span><span>📍 Estrada da Barca</span><span>🟡 Em acompanhamento</span></div>
+</section>
+
+<section class="feed-card project-item" data-type="emenda resultado">
+  <div class="eyebrow">Emenda / Resultado</div>
+  <h2>Trator Solis 90 e roçadeira para a agricultura</h2>
+  <p>Recurso articulado junto ao Deputado Federal Bibo Nunes para aquisição de trator Solis 90 com cabine e roçadeira, fortalecendo o atendimento aos produtores rurais.</p>
+  <div class="meta"><span>💰 R$ 240 mil em emenda</span><span>🚜 Agricultura</span><span>🟢 Equipamento entregue</span></div>
+</section>
+</main>
 <nav class="bottom-nav">
 <a class="nav-item " href="./index.html"><b>⌂</b>Início</a>
 <a class="nav-item" href="./solicitacao.html"><b>＋</b>Solicitar</a>
@@ -24,5 +58,18 @@
 <a class="nav-item" href="../index.html"><b>•••</b>Mais</a>
 </nav>
 </div>
+<script>
+document.querySelectorAll('.chip[data-pf]').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    document.querySelectorAll('.chip[data-pf]').forEach(x=>x.classList.remove('active'));
+    chip.classList.add('active');
+    const f=chip.dataset.pf;
+    document.querySelectorAll('.project-item').forEach(card=>{
+      const tipos=(card.dataset.type||'').split(' ');
+      card.style.display=(f==='todos'||tipos.includes(f))?'block':'none';
+    });
+  });
+});
+</script>
 </body>
 </html>
