@@ -193,7 +193,7 @@
     .bloco-titulo{font-size:14px;margin-bottom:9px}
     .bloco-titulo span{width:28px;height:28px;border-radius:9px;font-size:15px}
     .anotacao-ajuda{font-size:12px;line-height:1.35}
-    .bloco-painel.amarelo{background:#fff;border-color:#e6eaf0;border-left:4px solid #d49a16}
+    .bloco-painel.amarelo{background:#fff;border-color:#e6eaf0;border-left:4px solid #2c7db9}
     .anotacao-box textarea{min-height:72px;margin-top:8px;padding:11px 12px;font-size:14px;border-color:#dfe5ec;background:#fbfcfe}
     .lembrete-linha{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:end;margin-top:10px;padding-top:10px;border-top:1px solid #edf0f3}
     .lembrete-campo label{display:block;margin:0 0 5px;font-size:12px;color:#5f6f80}
@@ -230,7 +230,7 @@
     .status-chip.encaminhado{background:#e8f3ff;color:#1767a8}
     .status-chip.andamento{background:#e7f0ff;color:#315da8}
     .status-chip.concluido{background:#e7f8ee;color:#147a45}
-    .bloco-painel.amarelo{border-left-color:#d49a16}
+    .bloco-painel.amarelo{border-left-color:#2c7db9}
     .bloco-painel.azul.status-area{border-left:4px solid #2b78b9;background:#f7fbff}
     .bloco-painel.verde{border-left:4px solid #2a8a55;background:#f7fcf9}
     .anexos-cidadao-box .btn-anexo-cidadao{background:linear-gradient(135deg,#2b6da6,#215783)}
@@ -357,14 +357,14 @@
     }
     .gestao-ico{
       width:34px;height:34px;border-radius:11px;display:grid;place-items:center;
-      background:#eef4fa;font-size:16px;flex:0 0 auto
+      background:#edf5ff;font-size:16px;flex:0 0 auto
     }
     .gestao-head strong{font-size:15px;color:#17304e}
     .gestao-head small{display:block;color:#8190a0;font-size:11px;margin-top:2px}
     .gestao-body{padding:13px 14px}
-    .gestao-card.nota{border-top:3px solid #d7a019}
+    .gestao-card.nota{border-top:3px solid #2c7db9;background:#fff}
     .gestao-card.status{border-top:3px solid #2c7db9}
-    .gestao-card.resposta{border-top:3px solid #2c7db9}
+    .gestao-card.resposta{border-top:3px solid #2a8a55}
 
     .nota-grid{display:grid;grid-template-columns:minmax(0,1fr) 160px;gap:10px}
     .campo-mini label{display:block;font-size:11px;font-weight:800;color:#617286;margin-bottom:5px}
@@ -375,7 +375,7 @@
     .campo-mini textarea{min-height:72px;resize:vertical}
     .nota-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
     .nota-actions button{width:auto;margin:0;padding:9px 13px;border-radius:10px;font-size:12px}
-    .nota-actions .primario{background:#0b70c9}
+    .nota-actions .primario{background:linear-gradient(135deg,#0b70c9,#0a64b5)}
     .nota-actions .linkbtn{background:#eef3f7;color:#526579}
     .nota-info{font-size:11px;color:#8a96a3;margin-top:6px}
 
@@ -388,11 +388,9 @@
     }
     .status-controles button{
       width:auto;min-width:120px;margin:0;padding:10px 14px;border-radius:11px;
-      font-size:12px;background:#0b70c9
+      font-size:12px;background:#138a49
     }
 
-    .gestao-card.resposta .gestao-ico{background:#eef5fc}
-    .gestao-card.resposta .resposta-linha button{background:#0b70c9}
     .resposta-historico-vazio{
       display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:11px;
       background:#f8fafc;color:#7c8996;font-size:11px;margin-bottom:10px
@@ -409,7 +407,7 @@
     }
     .resposta-linha button{
       width:auto;min-width:128px;margin:0;padding:10px 13px;border-radius:11px;
-      font-size:12px;background:#0b70c9
+      font-size:12px;background:#138a49
     }
     .resposta-ajuda{font-size:10px;color:#8a96a3}
     .gestao-card .resposta-item{margin-top:7px;border:1px solid #dce8e1;background:#fbfdfc}
@@ -440,7 +438,7 @@
         <div><small>WT · MANDATO EM AÇÃO</small><h1>Painel do Mandato</h1></div>
         <div style="display:flex;gap:7px"><button type="button" onclick="recarregarSemCache()" style="width:auto;margin:0;padding:9px 11px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);font-size:13px">↻ Atualizar</button><button id="btnSair" type="button">Sair</button></div>
       </div>
-      <p>Organize atendimentos, lembretes, respostas e resultados do mandato.</p><div style="margin-top:7px;font-size:11px;color:#bcd9ee">Versão de teste 16/10 · 15:18</div>
+      <p>Organize atendimentos, lembretes, respostas e resultados do mandato.</p><div style="margin-top:7px;font-size:11px;color:#bcd9ee">Versão de teste 16/10 · 15:16</div>
     </div>
   </header>
 
@@ -790,19 +788,12 @@ function renderLinhaTempoAdmin(historico,statusAtual){
   });
   return '<div class="timeline-admin">'+etapas.map((e,i)=>{
     const cls=i<atual?"done":i===atual?"current":"";
-    let dataParte="", horaParte="";
-    if(porEtapa[i]){
-      const d=new Date(porEtapa[i]);
-      if(!Number.isNaN(d.getTime())){
-        dataParte=d.toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
-        horaParte=d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
-      }
-    }
+    const dt=porEtapa[i] ? formatarData(porEtapa[i]) : "";
     return '<div class="timeline-step '+cls+'">'+
       '<span class="timeline-dot"></span>'+
       '<div class="timeline-label">'+e[0]+'</div>'+
       '<div class="timeline-desc">'+e[1]+'</div>'+
-      (dataParte?'<div class="timeline-date">📅 '+esc(dataParte)+' &nbsp; 🕒 '+esc(horaParte)+'</div>':"")+
+      (dt?'<div class="timeline-date">🕒 '+esc(dt)+'</div>':"")+
     '</div>';
   }).join("")+'</div>';
 }
