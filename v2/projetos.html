@@ -56,6 +56,7 @@ function renderProjetos(filtro="todos"){
     <section class="feed-card project-item" data-type="${esc(item.tipo)}">
       <div class="eyebrow">${esc(nomeTipo(item.tipo))}${item.destaque?' · Destaque':''}</div>
       <h2>${esc(item.titulo)}</h2>
+      ${item.foto_url?'<img class="project-photo" src="'+esc(item.foto_url)+'" alt="Foto de '+esc(item.titulo)+'">':""}
       <p>${esc(item.resumo||"")}</p>
       <div class="meta">
         ${item.referencia?'<span>📄 '+esc(item.referencia)+'</span>':""}
