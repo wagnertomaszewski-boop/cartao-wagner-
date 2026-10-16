@@ -1,0 +1,128 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0868bd"><title>Gerenciar projetos | Painel Wagner Tomaszewski</title>
+<style>
+:root{--blue:#0868bd;--navy:#102542;--muted:#64778a;--bg:#f3f6fb}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--navy);font:15px/1.46 Arial,Helvetica,sans-serif}
+header{background:linear-gradient(125deg,#0d72c9,#07508e);color:white;padding:18px;box-shadow:0 3px 16px #1233}
+header h1{margin:7px 0 2px;font-size:25px}header p{margin:0;color:#e3f1ff}
+header a{color:#fff}
+main{max-width:850px;margin:auto;padding:17px}
+.card{background:#fff;border-radius:20px;padding:20px;border:1px solid #dfe6ef;box-shadow:0 9px 25px #24496d11;margin-bottom:16px}
+label{display:block;font-weight:bold;margin:14px 0 5px}input,select,textarea{font:inherit;color:#172e48;background:white;display:block;width:100%;border:1px solid #d2dfe9;border-radius:11px;padding:11px}textarea{min-height:96px;resize:vertical}
+input[type=checkbox]{width:auto;display:inline}
+button{font:700 14px Arial;cursor:pointer;border:1px solid #0868bd;border-radius:11px;color:#0868bd;padding:11px 13px;background:#fff;margin:6px 5px 6px 0}
+button.primary{color:#fff;background:var(--blue)}button.warn{color:#9c3b2d;border-color:#e3a299}
+.row{display:flex;flex-wrap:wrap;gap:12px}.row>*{flex:1;min-width:180px}.muted{color:var(--muted);font-size:13px}
+.notice{display:none;border-radius:12px;background:#ebf4fc;border:1px solid #bad7ef;padding:12px;margin:12px 0;white-space:pre-wrap}
+.notice.error{background:#ffeded;border-color:#f0bbb8;color:#981e24}
+.entry{border:1px solid #d9e7f2;background:#f8fbff;padding:12px;border-radius:12px;margin:10px 0}
+h2{margin:0 0 8px;font-size:23px}h3{font-size:17px;margin:21px 0 9px}
+#loginCard{max-width:520px;margin:24px auto}
+.checks{display:flex;gap:19px;margin:17px 0}.checks label{display:flex;align-items:center;gap:8px;margin:0}
+</style></head>
+<body><header><a href="./admin.html">‹ Voltar ao painel de solicitações</a><h1>Gerenciar projetos e ações</h1><p>Informações publicadas no aplicativo Wagner Tomaszewski</p></header>
+<main>
+<section id="loginCard" class="card"><h2>Acesso administrativo</h2><p class="muted">Entre com o mesmo acesso autorizado do painel do mandato.</p><form id="loginForm">
+<label for="email">E-mail</label><input id="email" type="email" required autocomplete="username">
+<label for="password">Senha</label><input id="password" type="password" required autocomplete="current-password">
+<button class="primary">Entrar</button></form><div class="notice" id="loginStatus"></div></section>
+<section id="editor" hidden>
+<div class="card"><div class="row"><div><h2>Projetos cadastrados</h2><p class="muted">Escolha uma publicação ou crie um novo projeto.</p></div><div style="text-align:right"><button id="logout">Sair</button></div></div>
+<label for="itemSelect">Selecione uma ação</label><select id="itemSelect"></select><button id="newItem">+ Novo projeto ou ação</button>
+</div>
+<form id="form" class="card">
+<h2 id="formTitle">Editar projeto</h2>
+<div class="row">
+<div><label>Tipo</label><select name="tipo"><option value="projeto">Projeto / lei</option><option value="pedido">Pedido</option><option value="emenda">Emenda</option><option value="resultado">Resultado</option></select></div>
+<div><label>Ordem de exibição</label><input type="number" name="ordem" min="0"></div>
+</div>
+<label>Título</label><input name="titulo" required maxlength="220">
+<label>Descrição / Sobre o projeto</label><textarea name="resumo"></textarea>
+<div class="row"><div><label>Referência / nº da lei</label><input name="referencia"></div><div><label>Área</label><input name="area"></div></div>
+<label>Situação atual</label><input name="situacao" placeholder="Ex.: Vigente · execução sendo acompanhada">
+<label>Endereço da imagem de capa (https://)</label><input name="foto_url" type="url" placeholder="https://..."><p class="muted">Use imagem autorizada. Para alunos, prefira imagem ilustrativa sem identificação de estudantes locais.</p>
+<label>Objetivo</label><textarea name="objetivo"></textarea>
+<label>O que já foi feito</label><textarea name="feito"></textarea>
+<label>O que falta fazer</label><textarea name="falta"></textarea>
+<div class="checks"><label><input name="publicado" type="checkbox"> Publicado no app</label><label><input name="destaque" type="checkbox"> Destaque</label></div>
+<h3>🗓 Linha do tempo</h3><p class="muted">Informe apenas etapas confirmadas. A data pode ficar vazia.</p><div id="timelineRows"></div><button type="button" id="addStep">+ Adicionar etapa</button>
+<h3>📎 Documentos</h3><p class="muted">Somente documentos públicos com link válido aparecem no aplicativo.</p><div id="docRows"></div><button type="button" id="addDoc">+ Adicionar documento</button>
+<div class="notice" id="saveStatus"></div><button class="primary" type="submit">Salvar alterações</button></form>
+</section></main>
+<script>
+"use strict";
+const BASE="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
+const KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+const $=id=>document.getElementById(id);
+let token="",items=[],draft=null;
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+async function call(path,method,body,admin=true){
+ const headers={apikey:KEY,"Content-Type":"application/json",Prefer:"return=representation"};
+ if(admin)headers.Authorization="Bearer "+token;
+ const r=await fetch(BASE+path,{method,headers,body:body==null?undefined:JSON.stringify(body)});
+ const d=await r.json().catch(()=>null);
+ if(!r.ok)throw Error((d&&d.message)||"Falha ao comunicar com o servidor ("+r.status+").");
+ return d;
+}
+function notice(id,message,error){const el=$(id);el.textContent=message;el.style.display=message?"block":"none";el.classList.toggle("error",!!error)}
+$("loginForm").onsubmit=async e=>{
+ e.preventDefault();notice("loginStatus","Conectando...",false);
+ try{
+  const d=await call("/auth/v1/token?grant_type=password","POST",{email:$("email").value.trim(),password:$("password").value},false);
+  if(!d.access_token)throw Error("Não foi possível autenticar.");
+  token=d.access_token;$("password").value="";await loadItems();
+  $("loginCard").hidden=true;$("editor").hidden=false;notice("loginStatus","",false);
+ }catch(err){token="";notice("loginStatus","Não foi possível entrar: "+err.message,true)}
+};
+$("logout").onclick=()=>{token="";draft=null;$("editor").hidden=true;$("loginCard").hidden=false;notice("loginStatus","Sessão encerrada.",false)};
+async function loadItems(selectId){
+ items=await call("/rest/v1/projetos_acoes_publicos?select=*&order=ordem.asc,id.asc","GET");
+ if(!Array.isArray(items))throw Error("Não foi possível carregar os projetos.");
+ const s=$("itemSelect");s.innerHTML=items.map(x=>'<option value="'+Number(x.id)+'">'+esc(x.titulo)+(x.publicado?"":" (rascunho)")+'</option>').join("");
+ if(items.length){s.value=String(selectId&&items.some(x=>x.id===selectId)?selectId:items[0].id);editSelected()}else createItem();
+}
+function defaultItem(){return {tipo:"projeto",titulo:"",resumo:"",referencia:"",area:"",situacao:"",foto_url:"",objetivo:"",feito:"",falta:"",ordem:items.length*10+10,publicado:false,destaque:false,etapas:[],documentos:[]}}
+function editSelected(){const x=items.find(y=>String(y.id)===$("itemSelect").value);if(x)fill(x)}
+$("itemSelect").onchange=editSelected;
+function fill(x){
+ draft=JSON.parse(JSON.stringify(x));$("formTitle").textContent=x.id?"Editar: "+x.titulo:"Novo projeto / ação";
+ const f=$("form");for(const name of ["tipo","titulo","resumo","referencia","area","situacao","foto_url","objetivo","feito","falta","ordem"]){f.elements[name].value=x[name]==null?"":x[name]}
+ f.elements.publicado.checked=!!x.publicado;f.elements.destaque.checked=!!x.destaque;
+ paintRows();notice("saveStatus","",false);
+}
+function createItem(){fill(defaultItem());$("itemSelect").value=""}
+$("newItem").onclick=createItem;
+function paintRows(){
+ const ts=Array.isArray(draft.etapas)?draft.etapas:[];
+ $("timelineRows").innerHTML=ts.map((x,i)=>'<div class="entry timelineRow"><label>Etapa '+(i+1)+'</label><input class="stepTitle" placeholder="Ex.: Lei sancionada" value="'+esc(x.titulo)+'"><label>Data (se conhecida)</label><input class="stepDate" type="date" value="'+esc(x.data||"")+'"><label>Descrição</label><textarea class="stepDescription">'+esc(x.descricao)+'</textarea><button type="button" class="warn removeStep">Remover etapa</button></div>').join("");
+ const ds=Array.isArray(draft.documentos)?draft.documentos:[];
+ $("docRows").innerHTML=ds.map((x,i)=>'<div class="entry docRow"><label>Nome do documento '+(i+1)+'</label><input class="docName" value="'+esc(x.nome)+'"><label>Link público HTTPS</label><input class="docUrl" type="url" value="'+esc(x.url)+'"><button type="button" class="warn removeDoc">Remover documento</button></div>').join("");
+ document.querySelectorAll(".removeStep").forEach((b,i)=>b.onclick=()=>{collectArrays();draft.etapas.splice(i,1);paintRows()});
+ document.querySelectorAll(".removeDoc").forEach((b,i)=>b.onclick=()=>{collectArrays();draft.documentos.splice(i,1);paintRows()});
+}
+function collectArrays(){
+ draft.etapas=Array.from(document.querySelectorAll(".timelineRow")).map(row=>({titulo:row.querySelector(".stepTitle").value.trim(),data:row.querySelector(".stepDate").value||null,descricao:row.querySelector(".stepDescription").value.trim()})).filter(x=>x.titulo);
+ draft.documentos=Array.from(document.querySelectorAll(".docRow")).map(row=>({nome:row.querySelector(".docName").value.trim(),url:row.querySelector(".docUrl").value.trim()})).filter(x=>x.nome||x.url);
+}
+$("addStep").onclick=()=>{collectArrays();draft.etapas.push({titulo:"",data:null,descricao:""});paintRows()};
+$("addDoc").onclick=()=>{collectArrays();draft.documentos.push({nome:"",url:""});paintRows()};
+$("form").onsubmit=async e=>{
+ e.preventDefault();
+ try{
+ collectArrays();const f=$("form");
+ const payload={};
+ for(const name of ["tipo","titulo","resumo","referencia","area","situacao","foto_url","objetivo","feito","falta"])payload[name]=f.elements[name].value.trim();
+ payload.ordem=Number(f.elements.ordem.value)||0;payload.publicado=f.elements.publicado.checked;payload.destaque=f.elements.destaque.checked;
+ payload.etapas=draft.etapas;payload.documentos=draft.documentos;
+ if(!payload.titulo)throw Error("Informe o título.");
+ if(payload.foto_url&&!/^https:\/\//i.test(payload.foto_url))throw Error("A imagem precisa de um link HTTPS.");
+ if(payload.documentos.some(x=>!x.nome||!/^https:\/\//i.test(x.url)))throw Error("Cada documento precisa de nome e link HTTPS.");
+ notice("saveStatus","Salvando...",false);
+ let saved;
+ if(draft.id){saved=await call("/rest/v1/projetos_acoes_publicos?id=eq."+encodeURIComponent(draft.id),"PATCH",payload)}
+ else saved=await call("/rest/v1/projetos_acoes_publicos","POST",payload);
+ if(!Array.isArray(saved)||!saved.length)throw Error("Alteração não autorizada para esta conta.");
+ const id=saved[0].id;await loadItems(id);notice("saveStatus","Alterações salvas no banco. Se estiver publicado, já aparecerão no app após atualizar a tela.",false);
+ }catch(err){notice("saveStatus","Erro ao salvar: "+err.message,true)}
+};
+</script></body></html>
