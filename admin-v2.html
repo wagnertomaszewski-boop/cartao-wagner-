@@ -124,6 +124,15 @@
     #lista .card.expandido > a{display:block}
     #lista .card.expandido .btn-abrir-solicitacao{background:#6b7785}
     #lista.modo-lembretes .card{padding:14px}
+    .anexo-modal{position:fixed;inset:0;z-index:1000;background:rgba(3,18,32,.92);display:none;align-items:center;justify-content:center;padding:14px}
+    .anexo-modal.aberto{display:flex}
+    .anexo-modal-box{width:min(760px,100%);height:min(88vh,900px);background:#fff;border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+    .anexo-modal-top{display:flex;align-items:center;gap:8px;padding:10px;background:#0a3158;color:#fff}
+    .anexo-modal-top strong{flex:1;font-size:14px}
+    .anexo-modal-top button,.anexo-modal-top a{width:auto;margin:0;padding:8px 11px;border-radius:9px;background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.2);font-size:12px;font-weight:700;text-decoration:none}
+    .anexo-modal-conteudo{flex:1;min-height:0;background:#101820;display:flex;align-items:center;justify-content:center}
+    .anexo-modal-conteudo img{max-width:100%;max-height:100%;object-fit:contain}
+    .anexo-modal-conteudo iframe{width:100%;height:100%;border:0;background:#fff}
     @media(max-width:420px){.resumo-card strong{font-size:24px}.painel-marca h1{font-size:24px}}
 </style>
 </head>
@@ -142,7 +151,7 @@
         <div><small>WT · MANDATO EM AÇÃO</small><h1>Painel do Mandato</h1></div>
         <div style="display:flex;gap:7px"><button type="button" onclick="recarregarSemCache()" style="width:auto;margin:0;padding:9px 11px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);font-size:13px">↻ Atualizar</button><button id="btnSair" type="button">Sair</button></div>
       </div>
-      <p>Gestão interna das solicitações, respostas e acompanhamentos.</p><div style="margin-top:7px;font-size:11px;color:#bcd9ee">Versão de teste 16/10 · 12:52</div>
+      <p>Gestão interna das solicitações, respostas e acompanhamentos.</p><div style="margin-top:7px;font-size:11px;color:#bcd9ee">Versão de teste 16/10 · 13:02</div>
     </div>
   </header>
 
@@ -187,6 +196,17 @@
       <div class="view-card"><h3>Próximas áreas</h3><p>Aqui vamos incluir Projetos e ações, agenda, notícias, enquetes, documentos e configurações do Painel do Mandato.</p></div>
     </section>
   </main>
+
+<div id="anexoModal" class="anexo-modal" onclick="if(event.target===this)fecharAnexoModal()">
+  <div class="anexo-modal-box">
+    <div class="anexo-modal-top">
+      <strong id="anexoModalTitulo">Anexo recebido</strong>
+      <a id="anexoModalExterno" href="#" target="_blank" rel="noopener">Abrir fora</a>
+      <button type="button" onclick="fecharAnexoModal()">Fechar</button>
+    </div>
+    <div id="anexoModalConteudo" class="anexo-modal-conteudo"></div>
+  </div>
+</div>
 
 <nav class="painel-bottom" id="painelBottom">
     <button class="ativo" type="button" onclick="irPainel('inicio',this,true)"><b>⌂</b>Início</button>
@@ -442,12 +462,36 @@ function caminhoPublicoStorage(bucket, caminho) {
   return SUPABASE_URL + "/storage/v1/object/public/" + encodeURIComponent(bucket) + "/" + partes.join("/");
 }
 
+function fecharAnexoModal(){
+  const modal=document.getElementById("anexoModal");
+  const conteudo=document.getElementById("anexoModalConteudo");
+  if(conteudo) conteudo.innerHTML="";
+  if(modal) modal.classList.remove("aberto");
+}
+
+function mostrarAnexoNoPainel(url, caminho){
+  const modal=document.getElementById("anexoModal");
+  const conteudo=document.getElementById("anexoModalConteudo");
+  const externo=document.getElementById("anexoModalExterno");
+  const titulo=document.getElementById("anexoModalTitulo");
+  if(!modal||!conteudo) return;
+
+  const nome=String(caminho||"Anexo").split("/").pop()||"Anexo";
+  if(titulo) titulo.textContent=nome;
+  if(externo) externo.href=url;
+
+  const ext=(nome.split(".").pop()||"").toLowerCase();
+  const imagem=["jpg","jpeg","png","webp","gif","bmp","avif"].includes(ext);
+  conteudo.innerHTML=imagem
+    ? '<img src="'+url+'" alt="Anexo recebido">'
+    : '<iframe src="'+url+'" title="Anexo recebido"></iframe>';
+  modal.classList.add("aberto");
+}
+
 async function abrirAnexoCidadao(caminho, botao) {
   if (!caminho) return;
 
   const textoOriginal = botao ? botao.textContent : "";
-  const novaJanela = window.open("about:blank", "_blank");
-
   if (botao) {
     botao.disabled = true;
     botao.textContent = "Abrindo...";
@@ -477,29 +521,14 @@ async function abrirAnexoCidadao(caminho, botao) {
     );
 
     const dados = await resposta.json().catch(() => ({}));
-
-    if (!resposta.ok) {
-      throw new Error(
-        dados.message ||
-        dados.error ||
-        "Não foi possível abrir o anexo."
-      );
-    }
+    if (!resposta.ok) throw new Error(dados.message || dados.error || "Não foi possível abrir o anexo.");
 
     let url = dados.signedURL || dados.signedUrl || "";
     if (!url) throw new Error("O servidor não retornou o link do anexo.");
+    if (url.startsWith("/")) url = SUPABASE_URL + "/storage/v1" + url;
 
-    if (url.startsWith("/")) {
-      url = SUPABASE_URL + "/storage/v1" + url;
-    }
-
-    if (novaJanela) {
-      novaJanela.location.href = url;
-    } else {
-      window.location.href = url;
-    }
+    mostrarAnexoNoPainel(url, caminho);
   } catch (e) {
-    if (novaJanela) novaJanela.close();
     alert(mensagemDeErro(e));
   } finally {
     if (botao) {
@@ -879,7 +908,6 @@ async function carregarSolicitacoes() {
         </div>
 
         <div class="linha linha-status"><strong>Status atual:</strong> <span class="status">${esc(status)}</span></div>
-        <button type="button" class="btn-abrir-solicitacao" onclick="alternarSolicitacaoLembrete(this)">Abrir solicitação</button>
 
         <select id="status-${id}">
           ${["Recebida","Recebido","Em análise","Encaminhado","Em andamento","Concluído"]
@@ -919,6 +947,7 @@ async function carregarSolicitacoes() {
         ${whatsapp.length > 2
           ? `<a href="https://wa.me/${whatsapp}" target="_blank" rel="noopener"><button type="button">Falar pelo WhatsApp</button></a>`
           : ""}
+        <button type="button" class="btn-abrir-solicitacao" onclick="alternarSolicitacaoLembrete(this)">Abrir solicitação</button>
       `;
 
       card.addEventListener("click", (ev) => {
@@ -1194,6 +1223,13 @@ function sair() {
 }
 
 window.addEventListener("popstate",()=>irPainel((location.hash||"#inicio").slice(1),null,false));
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"){
+    // Mantém o conteúdo atual na tela; atualização completa só quando necessária.
+    const nav=document.getElementById("painelBottom");
+    if(nav) nav.style.display="grid";
+  }
+});
 
 document.getElementById("btnLogin").addEventListener("click", fazerLogin);
 document.getElementById("senhaLogin").addEventListener("keydown", e => {
