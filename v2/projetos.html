@@ -73,17 +73,26 @@ async function carregarProjetos(filtro="todos"){
   filtroAtual=filtro||"todos";
   const alvo=document.getElementById("projetosLista");
   alvo.innerHTML='<section class="feed-card"><p>Carregando projetos e ações...</p></section>';
+
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),8000);
+
   try{
-    let url=SUPABASE_URL+"/rest/v1/projetos_acoes_publicos?select=*&publicado=eq.true";
-    if(filtroAtual!=="todos") url+="&tipo=eq."+encodeURIComponent(filtroAtual);
-    url+="&order=ordem.asc,criado_em.desc";
-    const resp=await fetch(url,{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY},cache:"no-store"});
+    const resp=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_projetos_acoes",{
+      method:"POST",
+      headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({p_tipo:filtroAtual==="todos"?null:filtroAtual}),
+      cache:"no-store",
+      signal:controller.signal
+    });
+    clearTimeout(timer);
     const dados=await resp.json();
     if(!resp.ok) throw new Error("Falha ao carregar");
     projetosPublicos=Array.isArray(dados)?dados:[];
     renderProjetos(projetosPublicos);
   }catch(e){
-    alvo.innerHTML='<section class="feed-card"><h2>Não foi possível carregar agora</h2><p>Toque novamente na categoria em alguns instantes.</p></section>';
+    clearTimeout(timer);
+    alvo.innerHTML='<section class="feed-card"><h2>Não foi possível carregar agora</h2><p>Toque novamente na categoria para tentar de novo.</p></section>';
   }
 }
 document.querySelectorAll('.chip[data-pf]').forEach(chip=>{
