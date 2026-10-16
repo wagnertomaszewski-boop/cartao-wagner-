@@ -1,111 +1,50 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>Nova solicitação | Mandato em Ação</title>
-  <meta name="theme-color" content="#071a32">
-  <link rel="stylesheet" href="./styles.css">
-</head>
-<body>
-<div class="app">
-  <header class="topbar">
-    <a href="./index.html">‹ Voltar ao início</a>
-    <h1>Nova solicitação</h1>
-    <p>Conte o que está acontecendo. Você receberá um protocolo para acompanhar depois.</p>
-  </header>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b63ad"><style>
+:root{--blue:#0868bd;--blue2:#064a85;--green:#18a458;--gold:#e5a916;--bg:#f5f7fb;--text:#102542;--muted:#748396;--line:#dde5ee}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#e9eef4;color:var(--text)}button,input,textarea{font:inherit}.app{max-width:720px;margin:auto;min-height:100vh;background:var(--bg);padding-bottom:82px}
+.top{background:linear-gradient(180deg,#0b69bb,#075392);color:#fff;padding:14px 18px 22px;border-radius:0 0 28px 28px}.brand{display:flex;align-items:center;justify-content:space-between}.brand strong{font-size:13px;letter-spacing:.08em}.back{color:#fff;text-decoration:none;font-size:14px}.top h1{margin:18px 0 4px;font-size:27px}.top p{margin:0;color:#eaf2f8;line-height:1.45;font-size:14px}
+.wrap{padding:14px}.card{background:#fff;border:1px solid #e8edf3;border-radius:22px;padding:16px;box-shadow:0 10px 24px rgba(14,42,75,.07);margin-bottom:12px}
+label{display:block;font-weight:700;margin:13px 0 6px;font-size:14px}input,textarea{width:100%;border:1.5px solid var(--line);border-radius:13px;padding:13px 14px;background:#fff;color:var(--text);outline:none}textarea{min-height:110px;resize:vertical}
+.primary{width:100%;border:0;border-radius:14px;background:var(--blue);color:#fff;font-weight:800;padding:15px;margin-top:16px}.primary:disabled{opacity:.6}
+.section-title{font-size:16px;font-weight:800;margin:2px 0 10px}.muted{color:var(--muted);font-size:12px;line-height:1.4}
+.notice{display:none;margin-top:14px;padding:14px;border-radius:13px;line-height:1.45}.ok{display:block;background:#e9f8ef;border:1px solid #b7dfc5;color:#17643a}.err{display:block;background:#fff0f0;border:1px solid #efb5b5;color:#8c2424}
+.bottom{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(720px,100%);display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid #e3e8ee;z-index:20;padding:8px 3px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -7px 22px rgba(12,43,77,.07)}.bottom a{text-align:center;text-decoration:none;color:#7a899a;font-size:11px}.bottom b{display:block;font-size:19px;margin-bottom:2px}.bottom .active{color:var(--blue);font-weight:700}
+</style><title>Nova solicitação | Mandato em Ação</title><style>
+.categories{display:grid;grid-template-columns:1fr 1fr;gap:9px}.cat{border:1.5px solid #e1e7ee;background:#fff;border-radius:15px;padding:12px;text-align:left;color:#314154;display:flex;gap:9px;align-items:center;cursor:pointer}.cat b{font-size:20px}.cat.active{border-color:#0b69bb;background:#eef6fd;color:#07599d}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.upload{border:1.5px dashed #b9c6d4;border-radius:15px;padding:14px;text-align:center;margin-top:8px;background:#fafcff}.upload input{border:0;padding:8px 0}
+@media(max-width:520px){.two{grid-template-columns:1fr}.cat{padding:11px;font-size:13px}}
+</style></head><body><div class="app">
+<header class="top"><div class="brand"><a class="back" href="./index.html">‹ Voltar</a><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Solicitações</h1><p>Envie sua solicitação. Vamos encaminhar ao setor responsável e acompanhar até a solução.</p></header>
+<main class="wrap">
+<div class="card"><div class="section-title">Categoria da solicitação</div><div class="categories">
+<button type="button" class="cat" data-cat="Infraestrutura e vias públicas"><b>🛣️</b>Infraestrutura e vias públicas</button>
+<button type="button" class="cat" data-cat="Meio ambiente"><b>🍃</b>Meio ambiente</button>
+<button type="button" class="cat" data-cat="Iluminação pública"><b>💡</b>Iluminação pública</button>
+<button type="button" class="cat" data-cat="Saúde"><b>♡</b>Saúde</button>
+<button type="button" class="cat" data-cat="Educação"><b>🎓</b>Educação</button>
+<button type="button" class="cat" data-cat="Outros"><b>•••</b>Outros</button>
+</div></div>
 
-  <main class="panel">
-    <form id="formSolicitacao">
-      <label for="nome">Nome completo *</label>
-      <input id="nome" type="text" required autocomplete="name" placeholder="Digite seu nome">
-
-      <label for="whatsapp">WhatsApp *</label>
-      <input id="whatsapp" type="tel" required inputmode="tel" placeholder="Ex.: 51999999999">
-
-      <label for="localidade">Localidade *</label>
-      <input id="localidade" type="text" required placeholder="Ex.: Alto Alegre">
-
-      <label for="assunto">Assunto *</label>
-      <input id="assunto" type="text" required placeholder="Ex.: Estrada, iluminação, ponte...">
-
-      <label for="descricao">Descreva sua solicitação *</label>
-      <textarea id="descricao" required placeholder="Explique o problema e, se possível, indique um ponto de referência."></textarea>
-
-      <label for="anexo">Foto ou arquivo</label>
-      <input id="anexo" type="file" accept="image/*,.pdf">
-      <div class="help">Opcional. Envie uma foto ou PDF que ajude a identificar a situação.</div>
-
-      <button class="primary-btn" id="botaoEnviar" type="submit">ENVIAR SOLICITAÇÃO</button>
-    </form>
-    <div id="mensagem" class="notice"></div>
-  </main>
-
-  <div class="footer-note">Seus dados são usados para atendimento da solicitação pelo mandato.</div>
-
-  <nav class="bottom-nav">
-    <a class="nav-item" href="./index.html"><b>⌂</b>Início</a>
-    <a class="nav-item active" href="./solicitacao.html"><b>＋</b>Solicitar</a>
-    <a class="nav-item" href="./acompanhar.html"><b>⌕</b>Acompanhar</a>
-    <a class="nav-item" href="../index.html"><b>•••</b>Mais</a>
-  </nav>
+<form id="formSolicitacao">
+<div class="card"><div class="section-title">Sua solicitação</div>
+<label for="assunto">Título da solicitação *</label><input id="assunto" required placeholder="Ex.: Buraco na rua, falta de iluminação...">
+<label for="descricao">Descrição *</label><textarea id="descricao" required placeholder="Descreva o problema com o máximo de detalhes possível."></textarea>
+<label for="anexo">Adicionar foto ou PDF</label><div class="upload"><input id="anexo" type="file" accept="image/*,.pdf"><div class="muted">Você pode anexar um arquivo para ajudar a identificar a situação.</div></div>
 </div>
 
+<div class="card"><div class="section-title">Dados para retorno</div><div class="two">
+<div><label for="nome">Nome completo *</label><input id="nome" required autocomplete="name"></div>
+<div><label for="whatsapp">WhatsApp *</label><input id="whatsapp" type="tel" required inputmode="tel"></div>
+</div>
+<label for="localidade">Localidade *</label><input id="localidade" required placeholder="Ex.: São Geraldo">
+<button class="primary" id="botaoEnviar">✈ Enviar solicitação</button>
+<div id="mensagem" class="notice"></div></div>
+</form>
+</main>
+<nav class="bottom"><a href="./index.html"><b>⌂</b>Início</a><a class="active" href="./solicitacao.html"><b>✎</b>Solicitações</a><a href="./enquetes.html"><b>▥</b>Enquetes</a><a href="./noticias.html"><b>▤</b>Notícias</a></nav>
+</div>
 <script>
-const SUPABASE_URL="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
-const SUPABASE_KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
-
-document.getElementById("formSolicitacao").addEventListener("submit",async function(event){
-  event.preventDefault();
-  const botao=document.getElementById("botaoEnviar");
-  const mensagem=document.getElementById("mensagem");
-  botao.disabled=true; botao.textContent="ENVIANDO...";
-  mensagem.className="notice"; mensagem.style.display="none";
-
-  const dados={
-    nome:document.getElementById("nome").value.trim(),
-    whatsapp:document.getElementById("whatsapp").value.trim(),
-    localidade:document.getElementById("localidade").value.trim(),
-    assunto:document.getElementById("assunto").value.trim(),
-    descricao:document.getElementById("descricao").value.trim()
-  };
-
-  try{
-    const arquivo=document.getElementById("anexo").files[0];
-    let caminhoAnexo=null;
-    if(arquivo){
-      const nomeArquivo=Date.now()+"-"+arquivo.name.replace(/[^a-zA-Z0-9._-]/g,"_");
-      const upload=await fetch(SUPABASE_URL+"/storage/v1/object/anexos-solicitacoes/"+nomeArquivo,{
-        method:"POST",
-        headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":arquivo.type},
-        body:arquivo
-      });
-      if(!upload.ok) throw new Error("Não foi possível enviar o anexo.");
-      caminhoAnexo=nomeArquivo;
-    }
-
-    const resposta=await fetch(SUPABASE_URL+"/rest/v1/rpc/criar_solicitacao_com_anexos",{
-      method:"POST",
-      headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json","Prefer":"return=representation"},
-      body:JSON.stringify({
-        p_nome:dados.nome,p_whatsapp:dados.whatsapp,p_localidade:dados.localidade,
-        p_assunto:dados.assunto,p_descricao:dados.descricao,p_anexos:caminhoAnexo?[caminhoAnexo]:[]
-      })
-    });
-    const resultado=await resposta.json();
-    if(!resposta.ok) throw new Error(resultado.message||resultado.error||"Não foi possível enviar.");
-    const protocolo=typeof resultado==="string"?resultado:resultado.protocolo;
-
-    mensagem.className="notice ok";
-    mensagem.innerHTML="<strong>Solicitação enviada!</strong><br><br>Seu protocolo é <strong style='font-size:21px'>"+protocolo+"</strong><br><br>Guarde esse número para acompanhar o andamento.";
-    this.reset();
-  }catch(erro){
-    mensagem.className="notice err";
-    mensagem.textContent="Não foi possível enviar: "+erro.message;
-  }finally{
-    botao.disabled=false; botao.textContent="ENVIAR SOLICITAÇÃO";
-  }
-});
-</script>
-</body>
-</html>
+const SUPABASE_URL="https://pmmsdjozyyxkbuqlkfpb.supabase.co",SUPABASE_KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+let categoria="";document.querySelectorAll(".cat").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"));b.classList.add("active");categoria=b.dataset.cat}));
+document.getElementById("formSolicitacao").addEventListener("submit",async function(e){e.preventDefault();const btn=document.getElementById("botaoEnviar"),msg=document.getElementById("mensagem");btn.disabled=true;btn.textContent="ENVIANDO...";msg.className="notice";msg.style.display="none";try{let caminho=null;const arq=document.getElementById("anexo").files[0];if(arq){const nome=Date.now()+"-"+arq.name.replace(/[^a-zA-Z0-9._-]/g,"_");const up=await fetch(SUPABASE_URL+"/storage/v1/object/anexos-solicitacoes/"+nome,{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":arq.type},body:arq});if(!up.ok)throw new Error("Não foi possível enviar o anexo.");caminho=nome}
+const titulo=document.getElementById("assunto").value.trim();const assunto=categoria?categoria+" — "+titulo:titulo;
+const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/criar_solicitacao_com_anexos",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"return=representation"},body:JSON.stringify({p_nome:document.getElementById("nome").value.trim(),p_whatsapp:document.getElementById("whatsapp").value.trim(),p_localidade:document.getElementById("localidade").value.trim(),p_assunto:assunto,p_descricao:document.getElementById("descricao").value.trim(),p_anexos:caminho?[caminho]:[]})});const d=await r.json();if(!r.ok)throw new Error(d.message||d.error||"Não foi possível enviar.");const p=typeof d==="string"?d:d.protocolo;msg.className="notice ok";msg.innerHTML="<strong>Solicitação enviada!</strong><br>Protocolo: <strong>"+p+"</strong><br><span class='muted'>Guarde este número para acompanhar.</span>";this.reset();categoria="";document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"))}catch(err){msg.className="notice err";msg.textContent="Não foi possível enviar: "+err.message}finally{btn.disabled=false;btn.textContent="✈ Enviar solicitação"}});
+</script></body></html>
