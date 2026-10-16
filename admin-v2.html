@@ -29,6 +29,7 @@
     .anexos-cidadao-box{margin-top:12px;padding:12px;border-radius:10px;background:#eef4ff;border:1px solid #c8d8f5}
     .anexos-cidadao-box strong{display:block;margin-bottom:8px;color:#174a7e}
     .btn-anexo-cidadao{background:#174a7e;margin-top:7px}
+    .card > a button{max-width:260px;padding:11px 14px;font-size:14px}
     select,#filtroBusca,#telaLogin input,textarea,input[type="file"]{width:100%;padding:12px;margin-top:12px;border-radius:8px;border:1px solid #bbb;font-size:16px;background:#fff}
     textarea{min-height:105px;resize:vertical;font-family:Arial,sans-serif}
     button{width:100%;border:0;padding:13px;border-radius:8px;margin-top:10px;font-size:16px;font-weight:bold;background:#0b7a45;color:#fff;cursor:pointer}
@@ -100,6 +101,27 @@
     .atalho b{display:block;font-size:23px;margin-bottom:8px}
     .atalho strong{display:block;font-size:14px}
     .atalho span{display:block;color:#7a8998;font-size:11px;margin-top:4px;line-height:1.3}
+    #lista.modo-lembretes .card{padding:14px}
+    #lista.modo-lembretes .card .linha,
+    #lista.modo-lembretes .card .descricao,
+    #lista.modo-lembretes .card .anexos-cidadao-box,
+    #lista.modo-lembretes .card .anotacao-box,
+    #lista.modo-lembretes .card .respostas-box,
+    #lista.modo-lembretes .card select,
+    #lista.modo-lembretes .card > button,
+    #lista.modo-lembretes .card > a{display:none}
+    #lista.modo-lembretes .card .linha.linha-nome,
+    #lista.modo-lembretes .card .linha.linha-assunto{display:block}
+    #lista.modo-lembretes .card .btn-abrir-solicitacao{display:block;background:#0b70c9;margin-top:12px}
+    #lista.modo-lembretes .card.expandido .linha,
+    #lista.modo-lembretes .card.expandido .descricao,
+    #lista.modo-lembretes .card.expandido .anexos-cidadao-box,
+    #lista.modo-lembretes .card.expandido .anotacao-box,
+    #lista.modo-lembretes .card.expandido .respostas-box,
+    #lista.modo-lembretes .card.expandido select,
+    #lista.modo-lembretes .card.expandido > button,
+    #lista.modo-lembretes .card.expandido > a{display:block}
+    #lista.modo-lembretes .card.expandido .btn-abrir-solicitacao{background:#6b7785}
     @media(max-width:420px){.resumo-card strong{font-size:24px}.painel-marca h1{font-size:24px}}
 </style>
 </head>
@@ -118,7 +140,7 @@
         <div><small>WT · MANDATO EM AÇÃO</small><h1>Painel do Mandato</h1></div>
         <div style="display:flex;gap:7px"><button type="button" onclick="recarregarSemCache()" style="width:auto;margin:0;padding:9px 11px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);font-size:13px">↻ Atualizar</button><button id="btnSair" type="button">Sair</button></div>
       </div>
-      <p>Gestão interna das solicitações, respostas e acompanhamentos.</p><div style="margin-top:7px;font-size:11px;color:#bcd9ee">Versão de teste 16/10 · 12:05</div>
+      <p>Gestão interna das solicitações, respostas e acompanhamentos.</p><div style="margin-top:7px;font-size:11px;color:#bcd9ee">Versão de teste 16/10 · 12:28</div>
     </div>
   </header>
 
@@ -208,6 +230,9 @@ function irPainel(destino, botao, alterarHash=true){
   const titulo=document.getElementById("secSolicitacoes");
   const filtro=document.getElementById("filtroStatus");
 
+  const lista=document.getElementById("lista");
+  if(lista) lista.classList.remove("modo-lembretes");
+
   if(destinoSeguro==="solicitacoes"){
     if(titulo) titulo.textContent="Solicitações da comunidade";
     if(filtro && filtro.value!=="Todos"){ filtro.value="Todos"; carregarSolicitacoes(); }
@@ -215,6 +240,8 @@ function irPainel(destino, botao, alterarHash=true){
     if(titulo) titulo.textContent="Lembretes";
     if(filtro && filtro.value!=="Todos") filtro.value="Todos";
     carregarSolicitacoes().then(()=> {
+      const lista=document.getElementById("lista");
+      if(lista) lista.classList.add("modo-lembretes");
       document.querySelectorAll("#lista .card").forEach(card=>{
         const tem=card.classList.contains("lembrete-hoje")||card.classList.contains("lembrete-atrasado");
         card.style.display=tem?"block":"none";
@@ -649,6 +676,13 @@ async function fazerLogin() {
   }
 }
 
+function alternarSolicitacaoLembrete(botao){
+  const card=botao?.closest(".card");
+  if(!card) return;
+  const aberto=card.classList.toggle("expandido");
+  botao.textContent=aberto?"Fechar solicitação":"Abrir solicitação";
+}
+
 async function carregarSolicitacoes() {
   const lista = document.getElementById("lista");
   lista.textContent = "Carregando solicitações...";
@@ -800,10 +834,10 @@ async function carregarSolicitacoes() {
       card.innerHTML = `
         ${lembreteHtml}
         <div class="protocolo">${esc(item.protocolo || ("Solicitação #" + id))}</div>
-        <div class="linha"><strong>Nome:</strong> ${esc(item.nome)}</div>
+        <div class="linha linha-nome"><strong>Nome:</strong> ${esc(item.nome)}</div>
         <div class="linha"><strong>WhatsApp:</strong> ${esc(item.whatsapp)}</div>
         <div class="linha"><strong>Localidade:</strong> ${esc(item.localidade)}</div>
-        <div class="linha"><strong>Assunto:</strong> ${esc(item.assunto)}</div>
+        <div class="linha linha-assunto"><strong>Assunto:</strong> ${esc(item.assunto)}</div>
         <div class="descricao"><strong>Descrição:</strong><br>${esc(item.descricao)}</div>
         ${anexosCidadaoHtml}
 
