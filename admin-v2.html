@@ -142,7 +142,7 @@
         <div><small>WT · MANDATO EM AÇÃO</small><h1>Painel do Mandato</h1></div>
         <div style="display:flex;gap:7px"><button type="button" onclick="recarregarSemCache()" style="width:auto;margin:0;padding:9px 11px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);font-size:13px">↻ Atualizar</button><button id="btnSair" type="button">Sair</button></div>
       </div>
-      <p>Gestão interna das solicitações, respostas e acompanhamentos.</p><div style="margin-top:7px;font-size:11px;color:#bcd9ee">Versão de teste 16/10 · 12:42</div>
+      <p>Gestão interna das solicitações, respostas e acompanhamentos.</p><div style="margin-top:7px;font-size:11px;color:#bcd9ee">Versão de teste 16/10 · 12:52</div>
     </div>
   </header>
 
@@ -879,6 +879,7 @@ async function carregarSolicitacoes() {
         </div>
 
         <div class="linha linha-status"><strong>Status atual:</strong> <span class="status">${esc(status)}</span></div>
+        <button type="button" class="btn-abrir-solicitacao" onclick="alternarSolicitacaoLembrete(this)">Abrir solicitação</button>
 
         <select id="status-${id}">
           ${["Recebida","Recebido","Em análise","Encaminhado","Em andamento","Concluído"]
@@ -919,6 +920,13 @@ async function carregarSolicitacoes() {
           ? `<a href="https://wa.me/${whatsapp}" target="_blank" rel="noopener"><button type="button">Falar pelo WhatsApp</button></a>`
           : ""}
       `;
+
+      card.addEventListener("click", (ev) => {
+        if (card.classList.contains("expandido")) return;
+        if (ev.target.closest("button,a,input,select,textarea")) return;
+        const b = card.querySelector(".btn-abrir-solicitacao");
+        if (b) alternarSolicitacaoLembrete(b);
+      });
 
       lista.appendChild(card);
       renderArquivosPendentes(id);
