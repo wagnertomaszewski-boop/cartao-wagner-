@@ -88,6 +88,16 @@
     .painel-bottom button{margin:0;padding:4px 2px;background:transparent;color:#7b8999;font-size:10px;border-radius:0}
     .painel-bottom button b{display:block;font-size:19px;color:#607286;margin-bottom:2px}
     .painel-bottom button.ativo,.painel-bottom button.ativo b{color:#0b70c9}
+    .painel-view{display:none}
+    .painel-view.ativa{display:block}
+    .view-card{background:#fff;border:1px solid #e4eaf0;border-radius:18px;padding:18px;box-shadow:0 7px 20px rgba(11,49,88,.07);margin-bottom:14px}
+    .view-card h3{margin:0 0 7px;font-size:18px}
+    .view-card p{margin:0;color:#718095;line-height:1.45}
+    .atalhos-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 18px}
+    .atalho{background:#fff;border:1px solid #e4eaf0;border-radius:17px;padding:14px;box-shadow:0 6px 18px rgba(11,49,88,.06);cursor:pointer}
+    .atalho b{display:block;font-size:23px;margin-bottom:8px}
+    .atalho strong{display:block;font-size:14px}
+    .atalho span{display:block;color:#7a8998;font-size:11px;margin-top:4px;line-height:1.3}
     @media(max-width:420px){.resumo-card strong{font-size:24px}.painel-marca h1{font-size:24px}}
 </style>
 </head>
@@ -111,30 +121,45 @@
   </header>
 
   <main class="container">
-    <h2 class="titulo">Visão geral</h2>
-    <section class="resumo-grid">
-      <div class="resumo-card azul"><span>Total de solicitações</span><strong id="resumoTotal">—</strong></div>
-      <div class="resumo-card alerta"><span>Em aberto</span><strong id="resumoAbertas">—</strong></div>
-      <div class="resumo-card"><span>Lembretes hoje/atrasados</span><strong id="resumoLembretes">—</strong></div>
-      <div class="resumo-card ok"><span>Concluídas</span><strong id="resumoConcluidas">—</strong></div>
+    <section id="viewInicio" class="painel-view ativa">
+      <h2 class="titulo">Visão geral</h2>
+      <section class="resumo-grid">
+        <div class="resumo-card azul"><span>Total de solicitações</span><strong id="resumoTotal">—</strong></div>
+        <div class="resumo-card alerta"><span>Em aberto</span><strong id="resumoAbertas">—</strong></div>
+        <div class="resumo-card"><span>Lembretes hoje/atrasados</span><strong id="resumoLembretes">—</strong></div>
+        <div class="resumo-card ok"><span>Concluídas</span><strong id="resumoConcluidas">—</strong></div>
+      </section>
+
+      <div class="atalhos-grid">
+        <div class="atalho" onclick="irPainel('solicitacoes')"><b>☷</b><strong>Solicitações</strong><span>Abrir atendimentos recebidos</span></div>
+        <div class="atalho" onclick="irPainel('lembretes')"><b>⏰</b><strong>Lembretes</strong><span>Ver o que precisa de retorno</span></div>
+        <div class="atalho" onclick="irPainel('resultados')"><b>✓</b><strong>Resultados</strong><span>Ver solicitações concluídas</span></div>
+        <div class="atalho" onclick="irPainel('mais')"><b>•••</b><strong>Mais</strong><span>Outras áreas do mandato</span></div>
+      </div>
+      <div class="view-card"><h3>Painel interno do mandato</h3><p>Use as abas abaixo para separar solicitações, lembretes e resultados. As fotos e anexos enviados pelos cidadãos continuam disponíveis somente aqui no painel.</p></div>
     </section>
 
-    <h2 class="titulo" id="secSolicitacoes">Solicitações da comunidade</h2>
-    <div class="filtros-box">
-      <input id="filtroBusca" type="text" placeholder="Buscar por nome ou protocolo">
+    <section id="viewSolicitacoes" class="painel-view">
+      <h2 class="titulo" id="secSolicitacoes">Solicitações da comunidade</h2>
+      <div class="filtros-box">
+        <input id="filtroBusca" type="text" placeholder="Buscar por nome ou protocolo">
+        <select id="filtroStatus">
+          <option value="Todos">Todos os status</option>
+          <option value="Recebida">Recebida</option>
+          <option value="Recebido">Recebido</option>
+          <option value="Em análise">Em análise</option>
+          <option value="Encaminhado">Encaminhado</option>
+          <option value="Em andamento">Em andamento</option>
+          <option value="Concluído">Concluído</option>
+        </select>
+      </div>
+      <div id="lista">Carregando solicitações...</div>
+    </section>
 
-      <select id="filtroStatus">
-      <option value="Todos">Todos os status</option>
-      <option value="Recebida">Recebida</option>
-      <option value="Recebido">Recebido</option>
-      <option value="Em análise">Em análise</option>
-      <option value="Encaminhado">Encaminhado</option>
-      <option value="Em andamento">Em andamento</option>
-      <option value="Concluído">Concluído</option>
-    </select>
-    </div>
-
-    <div id="lista">Carregando solicitações...</div>
+    <section id="viewMais" class="painel-view">
+      <h2 class="titulo">Mais</h2>
+      <div class="view-card"><h3>Próximas áreas</h3><p>Aqui vamos incluir Projetos e ações, agenda, notícias, enquetes, documentos e configurações do Painel do Mandato.</p></div>
+    </section>
   </main>
 
 <nav class="painel-bottom" id="painelBottom">
@@ -152,32 +177,53 @@ const STORAGE_KEY = "wagner_admin_session_v2";
 const TEMPO_LIMITE_MS = 15000;
 const arquivosPendentesPorSolicitacao = new Map();
 
-function irPainel(destino, botao){
+function irPainel(destino, botao, alterarHash=true){
+  const destinoSeguro=["inicio","solicitacoes","lembretes","resultados","mais"].includes(destino)?destino:"inicio";
+
+  document.querySelectorAll(".painel-view").forEach(v=>v.classList.remove("ativa"));
   document.querySelectorAll(".painel-bottom button").forEach(b=>b.classList.remove("ativo"));
-  if(botao) botao.classList.add("ativo");
-  if(destino==="inicio"){
-    window.scrollTo({top:0,behavior:"smooth"});
-    return;
+
+  const mapaViews={
+    inicio:"viewInicio",
+    solicitacoes:"viewSolicitacoes",
+    lembretes:"viewSolicitacoes",
+    resultados:"viewSolicitacoes",
+    mais:"viewMais"
+  };
+  document.getElementById(mapaViews[destinoSeguro])?.classList.add("ativa");
+
+  const botoes=[...document.querySelectorAll(".painel-bottom button")];
+  const indice={inicio:0,solicitacoes:1,lembretes:2,resultados:3,mais:4}[destinoSeguro];
+  if(botoes[indice]) botoes[indice].classList.add("ativo");
+
+  const titulo=document.getElementById("secSolicitacoes");
+  const filtro=document.getElementById("filtroStatus");
+
+  if(destinoSeguro==="solicitacoes"){
+    if(titulo) titulo.textContent="Solicitações da comunidade";
+    if(filtro && filtro.value!=="Todos"){ filtro.value="Todos"; carregarSolicitacoes(); }
+  } else if(destinoSeguro==="lembretes"){
+    if(titulo) titulo.textContent="Lembretes";
+    if(filtro && filtro.value!=="Todos") filtro.value="Todos";
+    carregarSolicitacoes().then(()=> {
+      document.querySelectorAll("#lista .card").forEach(card=>{
+        const tem=card.classList.contains("lembrete-hoje")||card.classList.contains("lembrete-atrasado");
+        card.style.display=tem?"block":"none";
+      });
+      const visiveis=[...document.querySelectorAll("#lista .card")].filter(x=>x.style.display!=="none");
+      if(!visiveis.length) document.getElementById("lista").innerHTML='<div class="vazio">Nenhum lembrete para hoje ou atrasado.</div>';
+    });
+  } else if(destinoSeguro==="resultados"){
+    if(titulo) titulo.textContent="Resultados concluídos";
+    if(filtro) filtro.value="Concluído";
+    carregarSolicitacoes();
   }
-  if(destino==="solicitacoes"){
-    document.getElementById("secSolicitacoes")?.scrollIntoView({behavior:"smooth",block:"start"});
-    return;
+
+  if(alterarHash){
+    const novo="#"+destinoSeguro;
+    if(location.hash!==novo) history.pushState({painel:destinoSeguro},"",novo);
   }
-  if(destino==="lembretes"){
-    const cards=[...document.querySelectorAll("#lista .card")];
-    const alvo=cards.find(c=>c.classList.contains("lembrete-hoje")||c.classList.contains("lembrete-atrasado"));
-    (alvo||document.getElementById("secSolicitacoes"))?.scrollIntoView({behavior:"smooth",block:"start"});
-    return;
-  }
-  if(destino==="resultados"){
-    const select=document.getElementById("filtroStatus");
-    if(select){select.value="Concluído"; carregarSolicitacoes();}
-    document.getElementById("secSolicitacoes")?.scrollIntoView({behavior:"smooth",block:"start"});
-    return;
-  }
-  if(destino==="mais"){
-    alert("A área Mais será criada nas próximas etapas do Painel do Mandato.");
-  }
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 
 function atualizarResumoPainel(itens){
@@ -498,6 +544,7 @@ function mostrarPainel() {
   document.querySelector("header").style.display = "block";
   document.querySelector("main").style.display = "block";
   const nav = document.getElementById("painelBottom"); if(nav) nav.style.display = "grid";
+  irPainel((location.hash || "#inicio").slice(1), null, false);
 }
 
 async function renovarSessao(refreshToken) {
@@ -1074,6 +1121,9 @@ function sair() {
   document.getElementById("senhaLogin").value = "";
   mostrarLogin("");
 }
+
+window.addEventListener("popstate",()=>irPainel((location.hash||"#inicio").slice(1),null,false));
+window.addEventListener("hashchange",()=>irPainel((location.hash||"#inicio").slice(1),null,false));
 
 document.getElementById("btnLogin").addEventListener("click", fazerLogin);
 document.getElementById("senhaLogin").addEventListener("keydown", e => {
