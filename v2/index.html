@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b63ad">
-<title>Mandato em Ação — V2 Atualizada</title>
+<title>Mandato em Ação — V2 Projetos Integrados</title>
 <style>
 :root{--blue:#0868bd;--blue2:#064a85;--green:#18a458;--gold:#e5a916;--bg:#f5f7fb;--text:#102542;--muted:#748396;--line:#dde5ee}
 *{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#e9eef4;color:var(--text)}button,input,textarea{font:inherit}a{text-decoration:none;color:inherit}
@@ -37,7 +37,7 @@ label{display:block;font-weight:700;margin:13px 0 6px;font-size:14px}input,texta
 .timeline{margin-top:15px}.step{position:relative;padding:0 0 18px 34px}.step:before{content:"";position:absolute;left:10px;top:18px;bottom:-2px;width:2px;background:#d8e0e8}.step:last-child:before{display:none}.dot{position:absolute;left:3px;top:0;width:17px;height:17px;border-radius:50%;border:2px solid #b6c2cf;background:#fff}.done .dot{background:#27ae60;border-color:#27ae60}.current .dot{background:#0b69bb;border-color:#0b69bb}.step b{display:block;font-size:14px}.step span{font-size:12px;color:var(--muted);line-height:1.4}.step .quando{display:block;margin-top:4px;font-size:11px;font-weight:700;color:#68798d}.done .quando{color:#197044}.current .quando{color:#0860a8}
 .reply{margin-top:10px;padding:12px;border:1px solid #dce5ed;border-radius:14px;background:#fff}.reply time{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.reply a{display:block;color:#0864ad;font-weight:700;margin-top:7px;font-size:13px}
 
-.bottom{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(720px,100%);display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid #e3e8ee;z-index:20;padding:8px 3px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -7px 22px rgba(12,43,77,.07)}.bottom button{background:none;border:0;text-align:center;color:#7a899a;font-size:11px}.bottom b{display:block;font-size:19px;margin-bottom:2px}.bottom .active{color:var(--blue);font-weight:700}
+.bottom{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(720px,100%);display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:1px solid #e3e8ee;z-index:20;padding:8px 3px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -7px 22px rgba(12,43,77,.07)}.bottom button{background:none;border:0;text-align:center;color:#7a899a;font-size:11px}.bottom b{display:block;font-size:19px;margin-bottom:2px}.bottom .active{color:var(--blue);font-weight:700}
 
 .project-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:14px}
 .project-head h2{margin:0;font-size:20px}
@@ -101,7 +101,7 @@ label{display:block;font-weight:700;margin:13px 0 6px;font-size:14px}input,texta
 </div></div></main></section>
 
 
-<section id="projetos" class="screen" style="display:none">
+<section id="projetos" class="page">
 <header class="top"><div class="brand"><button class="back" type="button" onclick="go('home')">‹ Voltar</button><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Projetos e ações</h1><p>Acompanhe o trabalho do mandato do início ao resultado.</p></header>
 <main class="wrap">
   <div class="card">
@@ -115,47 +115,55 @@ label{display:block;font-weight:700;margin:13px 0 6px;font-size:14px}input,texta
       <button class="project-filter" data-pf="emenda">Emendas</button>
       <button class="project-filter" data-pf="resultado">Resultados</button>
     </div>
-    <div id="projectList">
-      <article class="project-card" data-type="projeto">
-        <span class="tag">PROJETO / LEI</span>
-        <h3>Diploma Aluno Nota Dez</h3>
-        <p>Projeto de autoria do Vereador Wagner Tomaszewski que criou a premiação “Diploma Aluno Nota Dez” para estudantes das redes de ensino de Cristal.</p>
-        <div class="project-meta"><span>📅 Lei nº 1.553/2021</span><span>🏛️ Educação</span><span>🟡 Acompanhando execução</span></div>
-      </article>
-
-      <article class="project-card" data-type="projeto">
-        <span class="tag">PROJETO / LEI</span>
-        <h3>Mês do Esporte e Lazer</h3>
-        <p>Iniciativa de autoria do mandato que instituiu o Mês do Esporte e Lazer no Município de Cristal. Está sendo preparada atualização do período para o mês de maio.</p>
-        <div class="project-meta"><span>📅 Lei nº 1.588/2022</span><span>⚽ Esporte e lazer</span><span>🔵 Atualização em preparação</span></div>
-      </article>
-
-      <article class="project-card" data-type="pedido">
-        <span class="tag">PEDIDO DE PROVIDÊNCIA</span>
-        <h3>Segurança viária na Estrada da Barca</h3>
-        <p>Pedido de Providência nº 26/2026 solicitando sinalização e medidas de segurança viária na região. O Executivo informou que fará estudo de viabilidade técnica e financeira.</p>
-        <div class="project-meta"><span>📄 Pedido nº 26/2026</span><span>📍 Estrada da Barca</span><span>🟡 Em acompanhamento</span></div>
-      </article>
-
-      <article class="project-card" data-type="emenda resultado">
-        <span class="tag">EMENDA / RESULTADO</span>
-        <h3>Trator Solis 90 e roçadeira para a agricultura</h3>
-        <p>Recurso articulado junto ao Deputado Federal Bibo Nunes para aquisição de trator Solis 90 com cabine e roçadeira, fortalecendo o atendimento aos produtores rurais.</p>
-        <div class="project-meta"><span>💰 R$ 240 mil em emenda</span><span>🚜 Agricultura</span><span>🟢 Equipamento entregue</span></div>
-      </article>
-    </div>
+    <div id="projectList"><div class="notice" style="display:block">Carregando projetos e ações...</div></div>
   </div>
 </main>
 </section>
 <nav class="bottom">
 <button id="nav-home" class="active" onclick="go('home')"><b>⌂</b>Início</button>
 <button id="nav-solicitar" onclick="go('solicitar')"><b>✎</b>Solicitações</button>
+<button id="nav-projetos" onclick="go('projetos');carregarProjetosPublicos()"><b>🏛️</b>Projetos</button>
 <button onclick="alert('A área de Enquetes está em preparação na V2.');go('home')"><b>▥</b>Enquetes</button>
 <button onclick="alert('A área de Notícias está em preparação na V2.');go('home')"><b>▤</b>Notícias</button>
 </nav>
 </div>
 <script>
 const SUPABASE_URL='https://pmmsdjozyyxkbuqlkfpb.supabase.co',SUPABASE_KEY='sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_';
+let projetosPublicosCache=[];
+function escProjeto(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));}
+function nomeTipoProjeto(t){return ({projeto:"PROJETO / LEI",pedido:"PEDIDO DE PROVIDÊNCIA",emenda:"EMENDA",resultado:"RESULTADO"})[t]||String(t||"").toUpperCase();}
+function renderProjetosPublicos(filtro="todos"){
+  const alvo=document.getElementById("projectList");
+  if(!alvo)return;
+  const itens=projetosPublicosCache.filter(x=>filtro==="todos"||x.tipo===filtro);
+  if(!itens.length){alvo.innerHTML='<div class="notice" style="display:block">Nenhum conteúdo nesta categoria.</div>';return;}
+  alvo.innerHTML=itens.map(item=>`
+    <article class="project-card" data-type="${escProjeto(item.tipo)}">
+      <span class="tag">${escProjeto(nomeTipoProjeto(item.tipo))}${item.destaque?" · DESTAQUE":""}</span>
+      <h3>${escProjeto(item.titulo)}</h3>
+      <p>${escProjeto(item.resumo||"")}</p>
+      <div class="project-meta">
+        ${item.referencia?'<span>📄 '+escProjeto(item.referencia)+'</span>':""}
+        ${item.area?'<span>🏛️ '+escProjeto(item.area)+'</span>':""}
+        ${item.situacao?'<span>🔵 '+escProjeto(item.situacao)+'</span>':""}
+      </div>
+    </article>`).join("");
+}
+async function carregarProjetosPublicos(){
+  const alvo=document.getElementById("projectList");
+  if(!alvo)return;
+  alvo.innerHTML='<div class="notice" style="display:block">Carregando projetos e ações...</div>';
+  try{
+    const resp=await fetch(SUPABASE_URL+"/rest/v1/projetos_acoes_publicos?select=*&publicado=eq.true&order=ordem.asc,criado_em.desc",{headers:{apikey:SUPABASE_KEY}});
+    const dados=await resp.json();
+    if(!resp.ok)throw new Error("Falha ao carregar");
+    projetosPublicosCache=Array.isArray(dados)?dados:[];
+    renderProjetosPublicos("todos");
+  }catch(e){
+    alvo.innerHTML='<div class="notice bad" style="display:block">Não foi possível carregar os projetos agora.</div>';
+  }
+}
+
 function go(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));let n=document.getElementById('nav-'+id);if(n)n.classList.add('active');window.scrollTo(0,0)}
 let categoria="";document.querySelectorAll(".cat").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"));b.classList.add("active");categoria=b.dataset.cat}));
 document.getElementById("formSolicitacao").addEventListener("submit",async function(e){e.preventDefault();const btn=document.getElementById("botaoEnviar"),msg=document.getElementById("mensagem");btn.disabled=true;btn.textContent="ENVIANDO...";msg.className="notice";msg.style.display="none";try{let caminho=null;const arq=document.getElementById("anexo").files[0];if(arq){const nome=Date.now()+"-"+arq.name.replace(/[^a-zA-Z0-9._-]/g,"_");const up=await fetch(SUPABASE_URL+"/storage/v1/object/anexos-solicitacoes/"+nome,{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":arq.type},body:arq});if(!up.ok)throw new Error("Não foi possível enviar o anexo.");caminho=nome}const titulo=document.getElementById("assunto").value.trim();const assunto=categoria?categoria+" — "+titulo:titulo;const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/criar_solicitacao_com_anexos",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"return=representation"},body:JSON.stringify({p_nome:document.getElementById("nome").value.trim(),p_whatsapp:document.getElementById("whatsapp").value.trim(),p_localidade:document.getElementById("localidade").value.trim(),p_assunto:assunto,p_descricao:document.getElementById("descricao").value.trim(),p_anexos:caminho?[caminho]:[]})});const d=await r.json();if(!r.ok)throw new Error(d.message||d.error||"Não foi possível enviar.");const p=typeof d==="string"?d:d.protocolo;msg.className="notice ok";msg.innerHTML="<strong>Solicitação enviada!</strong><br>Protocolo: <strong>"+p+"</strong><br><span class='muted'>Guarde este número para acompanhar.</span>";this.reset();categoria="";document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"))}catch(err){msg.className="notice err";msg.textContent="Não foi possível enviar: "+err.message}finally{btn.disabled=false;btn.textContent="✈ Enviar solicitação"}});
@@ -173,11 +181,7 @@ document.querySelectorAll(".project-filter").forEach(btn=>{
   btn.addEventListener("click",()=>{
     document.querySelectorAll(".project-filter").forEach(x=>x.classList.remove("active"));
     btn.classList.add("active");
-    const filtro=btn.dataset.pf;
-    document.querySelectorAll("#projectList .project-card").forEach(card=>{
-      const tipos=(card.dataset.type||"").split(" ");
-      card.style.display=(filtro==="todos"||tipos.includes(filtro))?"block":"none";
-    });
+    renderProjetosPublicos(btn.dataset.pf);
   });
 });
 </script></body></html>
