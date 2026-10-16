@@ -121,3 +121,33 @@ textarea{min-height:132px;resize:vertical}
   .content{padding:15px}
   .panel{margin:15px;padding:18px}
 }
+.badge.ready{background:#e8f7ee;color:#16643a}
+.page-content{padding:18px}
+.info-card,.feed-card,.event-card,.poll-card{
+  background:#fff;border:1px solid #edf1f5;border-radius:20px;padding:17px;margin-bottom:12px;box-shadow:var(--shadow)
+}
+.info-card h2,.feed-card h2,.event-card h2,.poll-card h2{font-size:18px;margin:0 0 8px}
+.info-card p,.feed-card p,.event-card p,.poll-card p{margin:0;color:var(--muted);line-height:1.5;font-size:14px}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--blue);margin-bottom:7px}
+.empty-state{
+  text-align:center;background:#fff;border:1px dashed #cbd5df;border-radius:20px;padding:30px 18px;color:var(--muted)
+}
+.empty-state .big{font-size:34px;margin-bottom:10px}
+.chips{display:flex;gap:8px;overflow:auto;padding:2px 0 12px;scrollbar-width:none}
+.chip{white-space:nowrap;padding:9px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:13px;color:#4a5b6c}
+.chip.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.meta{display:flex;gap:10px;flex-wrap:wrap;color:#7b8998;font-size:12px;margin-top:10px}
+.event-date{
+  width:58px;min-width:58px;height:58px;border-radius:16px;background:#eaf1fb;display:grid;place-items:center;text-align:center;
+  color:var(--navy);font-weight:800;line-height:1.05
+}
+.event-date small{display:block;font-size:10px;font-weight:700}
+.event-row{display:flex;gap:14px;align-items:flex-start}
+.poll-option{
+  display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:14px;padding:13px;margin-top:9px;color:#455568
+}
+.poll-dot{width:18px;height:18px;border-radius:50%;border:2px solid #9badbf;flex:0 0 auto}
+.legal-note{margin-top:12px;font-size:11px;color:#7a8898;line-height:1.4}
+.link-button{
+  display:inline-flex;align-items:center;gap:6px;margin-top:13px;color:var(--blue);font-weight:800;font-size:14px
+}
