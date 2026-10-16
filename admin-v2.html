@@ -6,6 +6,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta name="version" content="20261016-1205">
   <meta name="theme-color" content="#061c31">
   <link rel="manifest" href="./manifest-admin.json">
   <title>Painel do Mandato | Wagner Tomaszewski</title>
@@ -114,9 +116,9 @@
     <div class="painel-topo">
       <div class="painel-marca">
         <div><small>WT · MANDATO EM AÇÃO</small><h1>Painel do Mandato</h1></div>
-        <button id="btnSair" type="button">Sair</button>
+        <div style="display:flex;gap:7px"><button type="button" onclick="recarregarSemCache()" style="width:auto;margin:0;padding:9px 11px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);font-size:13px">↻ Atualizar</button><button id="btnSair" type="button">Sair</button></div>
       </div>
-      <p>Gestão interna das solicitações, respostas e acompanhamentos.</p>
+      <p>Gestão interna das solicitações, respostas e acompanhamentos.</p><div style="margin-top:7px;font-size:11px;color:#bcd9ee">Versão de teste 16/10 · 12:05</div>
     </div>
   </header>
 
@@ -163,11 +165,11 @@
   </main>
 
 <nav class="painel-bottom" id="painelBottom">
-    <button class="ativo" type="button" onclick="irPainel('inicio',this)"><b>⌂</b>Início</button>
-    <button type="button" onclick="irPainel('solicitacoes',this)"><b>☷</b>Solicitações</button>
-    <button type="button" onclick="irPainel('lembretes',this)"><b>⏰</b>Lembretes</button>
-    <button type="button" onclick="irPainel('resultados',this)"><b>✓</b>Resultados</button>
-    <button type="button" onclick="irPainel('mais',this)"><b>•••</b>Mais</button>
+    <button class="ativo" type="button" onclick="irPainel('inicio',this,true)"><b>⌂</b>Início</button>
+    <button type="button" onclick="irPainel('solicitacoes',this,true)"><b>☷</b>Solicitações</button>
+    <button type="button" onclick="irPainel('lembretes',this,true)"><b>⏰</b>Lembretes</button>
+    <button type="button" onclick="irPainel('resultados',this,true)"><b>✓</b>Resultados</button>
+    <button type="button" onclick="irPainel('mais',this,true)"><b>•••</b>Mais</button>
   </nav>
 
 <script>
@@ -176,6 +178,13 @@ const SUPABASE_KEY = "sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 const STORAGE_KEY = "wagner_admin_session_v2";
 const TEMPO_LIMITE_MS = 15000;
 const arquivosPendentesPorSolicitacao = new Map();
+
+function recarregarSemCache(){
+  const base=location.href.split("?")[0].split("#")[0];
+  const hash=location.hash||"#inicio";
+  location.replace(base+"?v="+Date.now()+hash);
+}
+
 
 function irPainel(destino, botao, alterarHash=true){
   const destinoSeguro=["inicio","solicitacoes","lembretes","resultados","mais"].includes(destino)?destino:"inicio";
@@ -1123,7 +1132,6 @@ function sair() {
 }
 
 window.addEventListener("popstate",()=>irPainel((location.hash||"#inicio").slice(1),null,false));
-window.addEventListener("hashchange",()=>irPainel((location.hash||"#inicio").slice(1),null,false));
 
 document.getElementById("btnLogin").addEventListener("click", fazerLogin);
 document.getElementById("senhaLogin").addEventListener("keydown", e => {
