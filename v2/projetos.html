@@ -23,33 +23,9 @@
   <span class="chip" data-pf="resultado">Resultados</span>
 </div>
 
-<section class="feed-card project-item" data-type="projeto">
-  <div class="eyebrow">Projeto / Lei</div>
-  <h2>Diploma Aluno Nota Dez</h2>
-  <p>Iniciativa de autoria do Vereador Wagner Tomaszewski que criou a premiação “Diploma Aluno Nota Dez” para estudantes das redes de ensino de Cristal.</p>
-  <div class="meta"><span>📅 Lei nº 1.553/2021</span><span>🏛️ Educação</span><span>🟡 Acompanhando execução</span></div>
-</section>
-
-<section class="feed-card project-item" data-type="projeto">
-  <div class="eyebrow">Projeto / Lei</div>
-  <h2>Mês do Esporte e Lazer</h2>
-  <p>Iniciativa de autoria do mandato que instituiu o Mês do Esporte e Lazer no Município de Cristal. Está sendo preparada atualização do período para o mês de maio.</p>
-  <div class="meta"><span>📅 Lei nº 1.588/2022</span><span>⚽ Esporte e lazer</span><span>🔵 Atualização em preparação</span></div>
-</section>
-
-<section class="feed-card project-item" data-type="pedido">
-  <div class="eyebrow">Pedido de Providência</div>
-  <h2>Segurança viária na Estrada da Barca</h2>
-  <p>Pedido de Providência nº 26/2026 solicitando sinalização e medidas de segurança viária na região. O Executivo informou que realizará estudo de viabilidade técnica e financeira.</p>
-  <div class="meta"><span>📄 Pedido nº 26/2026</span><span>📍 Estrada da Barca</span><span>🟡 Em acompanhamento</span></div>
-</section>
-
-<section class="feed-card project-item" data-type="emenda resultado">
-  <div class="eyebrow">Emenda / Resultado</div>
-  <h2>Trator Solis 90 e roçadeira para a agricultura</h2>
-  <p>Recurso articulado junto ao Deputado Federal Bibo Nunes para aquisição de trator Solis 90 com cabine e roçadeira, fortalecendo o atendimento aos produtores rurais.</p>
-  <div class="meta"><span>💰 R$ 240 mil em emenda</span><span>🚜 Agricultura</span><span>🟢 Equipamento entregue</span></div>
-</section>
+<div id="projetosLista">
+  <section class="feed-card"><p>Carregando projetos e ações...</p></section>
+</div>
 </main>
 <nav class="bottom-nav">
 <a class="nav-item " href="./index.html"><b>⌂</b>Início</a>
@@ -59,17 +35,57 @@
 </nav>
 </div>
 <script>
+const SUPABASE_URL="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
+const SUPABASE_KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+let projetosPublicos=[];
+
+function esc(v){
+  return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+}
+function nomeTipo(t){
+  return ({projeto:"Projeto / Lei",pedido:"Pedido de Providência",emenda:"Emenda",resultado:"Resultado"})[t]||t;
+}
+function renderProjetos(filtro="todos"){
+  const alvo=document.getElementById("projetosLista");
+  const itens=projetosPublicos.filter(x=>filtro==="todos"||x.tipo===filtro);
+  if(!itens.length){
+    alvo.innerHTML='<section class="feed-card"><h2>Nenhum conteúdo nesta categoria</h2><p>Novos projetos e ações serão publicados aqui.</p></section>';
+    return;
+  }
+  alvo.innerHTML=itens.map(item=>`
+    <section class="feed-card project-item" data-type="${esc(item.tipo)}">
+      <div class="eyebrow">${esc(nomeTipo(item.tipo))}${item.destaque?' · Destaque':''}</div>
+      <h2>${esc(item.titulo)}</h2>
+      <p>${esc(item.resumo||"")}</p>
+      <div class="meta">
+        ${item.referencia?'<span>📄 '+esc(item.referencia)+'</span>':""}
+        ${item.area?'<span>🏛️ '+esc(item.area)+'</span>':""}
+        ${item.situacao?'<span>🔵 '+esc(item.situacao)+'</span>':""}
+      </div>
+    </section>`).join("");
+}
+async function carregarProjetos(){
+  const alvo=document.getElementById("projetosLista");
+  try{
+    const resp=await fetch(SUPABASE_URL+"/rest/v1/projetos_acoes_publicos?select=*&publicado=eq.true&order=ordem.asc,criado_em.desc",{
+      headers:{"apikey":SUPABASE_KEY}
+    });
+    const dados=await resp.json();
+    if(!resp.ok) throw new Error("Falha ao carregar");
+    projetosPublicos=Array.isArray(dados)?dados:[];
+    renderProjetos("todos");
+  }catch(e){
+    alvo.innerHTML='<section class="feed-card"><h2>Não foi possível carregar agora</h2><p>Tente novamente em alguns instantes.</p></section>';
+  }
+}
 document.querySelectorAll('.chip[data-pf]').forEach(chip=>{
   chip.addEventListener('click',()=>{
     document.querySelectorAll('.chip[data-pf]').forEach(x=>x.classList.remove('active'));
     chip.classList.add('active');
-    const f=chip.dataset.pf;
-    document.querySelectorAll('.project-item').forEach(card=>{
-      const tipos=(card.dataset.type||'').split(' ');
-      card.style.display=(f==='todos'||tipos.includes(f))?'block':'none';
-    });
+    renderProjetos(chip.dataset.pf);
   });
 });
+carregarProjetos();
 </script>
 </body>
 </html>
