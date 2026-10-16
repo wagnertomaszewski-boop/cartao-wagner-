@@ -38,22 +38,26 @@
 const SUPABASE_URL="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
 const SUPABASE_KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 let projetosPublicos=[];
+let filtroAtual="todos";
 
 function esc(v){
   return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
 }
-function nomeTipo(t){
-  return ({projeto:"Projeto / Lei",pedido:"Pedido de Providência",emenda:"Emenda",resultado:"Resultado"})[t]||t;
+function tipoNormalizado(v){
+  return String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 }
-function renderProjetos(filtro="todos"){
+function nomeTipo(t){
+  const n=tipoNormalizado(t);
+  return ({projeto:"Projeto / Lei",pedido:"Pedido de Providência",emenda:"Emenda",resultado:"Resultado"})[n]||t;
+}
+function renderProjetos(itens){
   const alvo=document.getElementById("projetosLista");
-  const itens=projetosPublicos.filter(x=>filtro==="todos"||x.tipo===filtro);
-  if(!itens.length){
-    alvo.innerHTML='<section class="feed-card"><h2>Nenhum conteúdo nesta categoria</h2><p>Novos projetos e ações serão publicados aqui.</p></section>';
+  if(!Array.isArray(itens)||!itens.length){
+    alvo.innerHTML='<section class="feed-card"><h2>Nenhum conteúdo nesta categoria</h2><p>Novos projetos e ações publicados aparecerão aqui.</p></section>';
     return;
   }
   alvo.innerHTML=itens.map(item=>`
-    <section class="feed-card project-item" data-type="${esc(item.tipo)}">
+    <section class="feed-card project-item" data-type="${esc(tipoNormalizado(item.tipo))}">
       <div class="eyebrow">${esc(nomeTipo(item.tipo))}${item.destaque?' · Destaque':''}</div>
       <h2>${esc(item.titulo)}</h2>
       ${item.foto_url?'<img class="project-photo" src="'+esc(item.foto_url)+'" alt="Foto de '+esc(item.titulo)+'">':""}
@@ -65,28 +69,31 @@ function renderProjetos(filtro="todos"){
       </div>
     </section>`).join("");
 }
-async function carregarProjetos(){
+async function carregarProjetos(filtro="todos"){
+  filtroAtual=filtro||"todos";
   const alvo=document.getElementById("projetosLista");
+  alvo.innerHTML='<section class="feed-card"><p>Carregando projetos e ações...</p></section>';
   try{
-    const resp=await fetch(SUPABASE_URL+"/rest/v1/projetos_acoes_publicos?select=*&publicado=eq.true&order=ordem.asc,criado_em.desc",{
-      headers:{"apikey":SUPABASE_KEY}
-    });
+    let url=SUPABASE_URL+"/rest/v1/projetos_acoes_publicos?select=*&publicado=eq.true";
+    if(filtroAtual!=="todos") url+="&tipo=eq."+encodeURIComponent(filtroAtual);
+    url+="&order=ordem.asc,criado_em.desc";
+    const resp=await fetch(url,{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY},cache:"no-store"});
     const dados=await resp.json();
     if(!resp.ok) throw new Error("Falha ao carregar");
     projetosPublicos=Array.isArray(dados)?dados:[];
-    renderProjetos("todos");
+    renderProjetos(projetosPublicos);
   }catch(e){
-    alvo.innerHTML='<section class="feed-card"><h2>Não foi possível carregar agora</h2><p>Tente novamente em alguns instantes.</p></section>';
+    alvo.innerHTML='<section class="feed-card"><h2>Não foi possível carregar agora</h2><p>Toque novamente na categoria em alguns instantes.</p></section>';
   }
 }
 document.querySelectorAll('.chip[data-pf]').forEach(chip=>{
   chip.addEventListener('click',()=>{
     document.querySelectorAll('.chip[data-pf]').forEach(x=>x.classList.remove('active'));
     chip.classList.add('active');
-    renderProjetos(chip.dataset.pf);
+    carregarProjetos(chip.dataset.pf||"todos");
   });
 });
-carregarProjetos();
+carregarProjetos("todos");
 </script>
 </body>
 </html>
