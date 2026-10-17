@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 690" width="1200" height="690" role="img" aria-labelledby="t d">
+<title id="t">Semana de Combate ao Alcoolismo - prevenção e acolhimento</title>
+<desc id="d">Capa ilustrativa azul com um coração protegido por mãos, símbolo de prevenção, saúde e apoio.</desc>
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0b3561"/><stop offset=".48" stop-color="#0957a1"/><stop offset="1" stop-color="#0094af"/></linearGradient><linearGradient id="orb" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff" stop-opacity=".24"/><stop offset="1" stop-color="#ffffff" stop-opacity=".02"/></linearGradient></defs>
+<rect width="1200" height="690" fill="url(#bg)"/>
+<circle cx="1070" cy="-35" r="310" fill="#fff" opacity=".045"/><circle cx="65" cy="570" r="350" fill="#fff" opacity=".045"/>
+<circle cx="960" cy="475" r="320" fill="none" stroke="#fff" stroke-width="3" opacity=".15"/>
+<circle cx="960" cy="475" r="256" fill="url(#orb)" stroke="#fff" stroke-width="2" opacity=".7"/>
+<path d="M0 555 C180 515 293 631 455 578 S761 501 970 600 S1143 627 1200 592 L1200 690 L0 690Z" fill="#e4f8ff" opacity=".08"/>
+<g fill="#fff" opacity=".13"><circle cx="1055" cy="170" r="13"/><circle cx="360" cy="84" r="11"/><circle cx="103" cy="145" r="7"/></g>
+<g font-family="Arial,Helvetica,sans-serif" fill="#fff">
+<text x="84" y="139" font-size="28" font-weight="700" letter-spacing="4" fill="#bbf3fc">SAÚDE E CONSCIENTIZAÇÃO</text>
+<text x="82" y="234" font-size="57" font-weight="700">Semana de Combate</text>
+<text x="82" y="304" font-size="57" font-weight="700">ao Alcoolismo</text>
+<text x="85" y="370" font-size="27" fill="#e2f7ff">Informação, prevenção e apoio às famílias</text>
+<rect x="82" y="425" width="358" height="60" rx="30" fill="#fff" opacity=".17"/>
+<text x="111" y="464" font-size="25" font-weight="700">18 a 24 de fevereiro</text>
+<text x="84" y="581" font-size="23" fill="#c9f6ff" letter-spacing="1.4">MUNICÍPIO DE CRISTAL / RS</text></g>
+<g transform="translate(744 193)">
+<circle cx="195" cy="175" r="188" fill="#fff" opacity=".96"/><circle cx="195" cy="175" r="162" fill="#effcff"/>
+<path d="M195 143 C154 86 92 130 117 186 C128 213 160 236 195 265 C233 234 260 213 273 184 C300 130 237 86 195 143Z" fill="#0e78b5"/>
+<path d="M74 248 C102 222 115 228 135 241 L180 274 Q197 288 212 274 L253 241 C272 223 294 222 316 249 C278 299 249 332 195 342 C141 332 108 295 74 248Z" fill="#069fba"/>
+<path d="M117 241 Q139 251 166 279 M273 239 Q253 252 227 281" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" opacity=".85"/></g>
+</svg>
