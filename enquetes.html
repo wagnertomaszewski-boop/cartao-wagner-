@@ -45,7 +45,7 @@ async function list(){
  const el=$('pollList');el.innerHTML='<div class="note">Consultando enquetes...</div>';
  try{
   polls=await api('/rest/v1/enquetes_mandato?select=id,titulo,descricao,fim_em,resultados_apos_voto&publicada=eq.true&order=inicio_em.desc');
-  if(!polls.length){el.innerHTML='<section class="card"><span class="tag">EM PREPARAÇÃO</span><h3>Qual deve ser a prioridade para melhorias em Cristal?</h3><p>Estradas rurais, saúde, agricultura, educação, esporte e lazer e iluminação pública.</p><div class="note">A votação ainda não foi aberta. O envio de SMS precisa ser ativado e testado antes.</div></section>';return;}
+  if(!polls.length){el.innerHTML='<section class="card"><span class="tag">EM PREPARAÇÃO</span><h3>Enquetes em breve</h3><p>As consultas aparecerão aqui quando forem publicadas pelo mandato.</p><div class="note">A votação ainda não foi aberta. O envio de SMS precisa ser ativado e testado antes.</div></section>';return;}
   el.innerHTML='';
   for(const p of polls){
    const ended=new Date(p.fim_em).getTime()<=Date.now();
