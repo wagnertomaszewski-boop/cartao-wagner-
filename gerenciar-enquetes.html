@@ -18,7 +18,7 @@ button.primary{background:#0969b1;color:white}button:disabled{opacity:.6;cursor:
 <section id="editor"><div class="card">
 <h2>Enquetes cadastradas</h2><label for="pollSelect">Selecione uma enquete</label><select id="pollSelect"></select>
 <button id="createNew" type="button">+ Criar nova enquete</button><button type="button" id="refresh">Atualizar lista</button>
-<p class="muted">Enquetes em rascunho são invisíveis aos moradores. A primeira proposta foi deixada como rascunho.</p>
+<p class="muted">Enquetes em rascunho são invisíveis aos moradores. A primeira proposta foi deixada como rascunho.</p><div id="pollStats" class="note">Selecione uma enquete para ver os totais de votos.</div>
 </div>
 <form class="card" id="pollForm"><h2 id="editorTitle">Editar enquete</h2>
 <label for="titulo">Pergunta</label><input id="titulo" required maxlength="220" minlength="8">
@@ -72,9 +72,17 @@ async function showPoll(p){
  $('inicio').value=isoInput(p.inicio_em);$('fim').value=isoInput(p.fim_em);
  $('opcoes').value=options.map(o=>o.texto).join('\n');$('opcoes').disabled=!!p.publicada;
  $('resultados').checked=!!p.resultados_apos_voto;$('publicada').checked=!!p.publicada;$('smsPronto').checked=false;
+ await atualizarContagem(p.id);
+}
+async function atualizarContagem(id){
+ try{
+  const r=await api('/rest/v1/rpc/resumo_admin_enquete',{method:'POST',body:JSON.stringify({p_enquete_id:id})});
+  const total=Number(r?.total||0);
+  $('pollStats').textContent='Total de votos: '+total+' · '+(r?.opcoes||[]).map(o=>o.texto+': '+Number(o.votos||0)).join(' · ');
+ }catch(e){$('pollStats').textContent='Não foi possível consultar a contagem: '+e.message}
 }
 function blank(){
- selected=null;options=[];$('editorTitle').textContent='Nova enquete';
+ selected=null;options=[];$('pollStats').textContent='Salve a nova enquete para consultar a contagem.';$('editorTitle').textContent='Nova enquete';
  $('titulo').value='';$('descricao').value='';$('inicio').value=isoInput(new Date().toISOString());
  const end=new Date(Date.now()+7*86400000);$('fim').value=isoInput(end.toISOString());$('opcoes').value='';
  $('opcoes').disabled=false;$('resultados').checked=true;$('publicada').checked=false;$('smsPronto').checked=false;
@@ -92,7 +100,7 @@ $('pollForm').onsubmit=async ev=>{
   if(choice.length<2||new Set(choice.map(x=>x.toLowerCase())).size!==choice.length)throw new Error('Cadastre ao menos duas alternativas diferentes.');
   if(choice.some(x=>x.length>180))throw new Error('Alternativa com mais de 180 caracteres.');
   const publish=$('publicada').checked;
-  if(publish && !$('smsPronto').checked)throw new Error('Antes de publicar, confirme que o envio de SMS já foi configurado e testado.');
+  if(publish && !selected?.publicada && !$('smsPronto').checked)throw new Error('Antes de publicar, confirme que o envio de SMS já foi configurado e testado.');
   const base={titulo,descricao,inicio_em:inicio,fim_em:fim,resultados_apos_voto:$('resultados').checked};
   let id;
   if(!selected){
@@ -101,7 +109,7 @@ $('pollForm').onsubmit=async ev=>{
    await api('/rest/v1/enquete_opcoes_mandato',{method:'POST',body:JSON.stringify(choice.map((texto,i)=>({enquete_id:id,texto,ordem:i*10+10})))});
   }else{
    id=selected.id;
-   await api('/rest/v1/enquetes_mandato?id=eq.'+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({...base,publicada:false})});
+   await api('/rest/v1/enquetes_mandato?id=eq.'+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({...base,publicada:selected.publicada&&publish})});
    if(!selected.publicada){
     const old=options.map(x=>x.texto);
     if(JSON.stringify(old)!==JSON.stringify(choice)){
