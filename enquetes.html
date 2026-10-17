@@ -35,7 +35,7 @@ const BASE='https://pmmsdjozyyxkbuqlkfpb.supabase.co';
 const KEY='sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_';
 const $=id=>document.getElementById(id);
 const safe=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let polls=[],current=null,optionId=null,session=null,phone='',lastSms=0;
+let polls=[],current=null,optionId=null,session=null,phone='',lastSms=0,votePending=false;
 async function api(path,opts={}){
  const r=await fetch(BASE+path,{...opts,headers:{apikey:KEY,Authorization:'Bearer '+(session?.access_token||KEY),'Content-Type':'application/json',...(opts.headers||{})}});
  let d;try{d=await r.json()}catch{d=null}
@@ -111,11 +111,18 @@ async function votoJaRegistrado(){
  else $('out').innerHTML='<p class="small">Os resultados serão exibidos após o encerramento da enquete.</p>';
 }
 async function saveVote(){
- const data=await api('/rest/v1/rpc/registrar_voto_enquete',{method:'POST',body:JSON.stringify({p_enquete_id:current.id,p_opcao_id:optionId})});
- if(!data?.registrado)throw new Error('Não foi possível registrar seu voto.');
- $('auth').innerHTML='';$('vote').disabled=true;$('vote').textContent='Voto registrado';message('Obrigado! Seu voto foi registrado.');
- if(current.resultados_apos_voto)await results(current.id);
- else $('out').innerHTML='<p class="small">Os resultados aparecem após o encerramento da enquete.</p>';
+ if(votePending)return;
+ votePending=true;
+ const b=$('vote');
+ if(b)b.disabled=true;
+ try{
+  const data=await api('/rest/v1/rpc/registrar_voto_enquete',{method:'POST',body:JSON.stringify({p_enquete_id:current.id,p_opcao_id:optionId})});
+  if(!data?.registrado)throw new Error('Não foi possível registrar seu voto.');
+  $('auth').innerHTML='';if(b)b.textContent='Voto registrado';message('Obrigado! Seu voto foi registrado.');
+  if(current.resultados_apos_voto)await results(current.id);
+  else $('out').innerHTML='<p class="small">Os resultados aparecem após o encerramento da enquete.</p>';
+ }catch(e){if(b)b.disabled=false;throw e}
+ finally{votePending=false}
 }
 async function results(id){
  try{
