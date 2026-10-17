@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" role="img" aria-label="Capa ilustrativa do Programa Municipal de Incentivo ao Esporte com futebol, ciclismo e vôlei">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#08447c"/><stop offset=".52" stop-color="#137fc2"/><stop offset="1" stop-color="#3fc0d6"/></linearGradient><radialGradient id="spot"><stop stop-color="#e2faff" stop-opacity=".34"/><stop offset="1" stop-color="#e2faff" stop-opacity="0"/></radialGradient><linearGradient id="circle" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ecfbff"/><stop offset="1" stop-color="#c8eaf5"/></linearGradient></defs>
+<rect width="1280" height="720" fill="url(#bg)"/>
+<circle cx="1050" cy="85" r="330" fill="url(#spot)"/><circle cx="100" cy="680" r="410" fill="url(#spot)"/>
+<path d="M0 605Q180 543 375 594T770 584T1280 571V720H0Z" fill="#05416c" opacity=".27"/>
+<g opacity=".21" stroke="#f9ffff" fill="none" stroke-width="4"><circle cx="640" cy="364" r="264"/><circle cx="640" cy="364" r="200"/><path d="M640 65V660M285 364H995"/></g>
+<g transform="translate(50 99)" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round" opacity=".92">
+<circle cx="178" cy="360" r="125"/><circle cx="513" cy="360" r="125"/>
+<path d="M178 360L295 217L397 360L178 360L296 360L251 273"/><path d="M397 360L456 218L513 360L397 360M456 218h-71"/><path d="M274 218l-19-24h-37"/>
+<circle cx="369" cy="139" r="40" fill="#fff" stroke="none"/><path d="M365 190l-61 95 86 55M365 190l89 45 48-16M301 282l-41 84"/>
+</g>
+<g transform="translate(733 145)">
+<circle cx="180" cy="226" r="158" fill="url(#circle)" stroke="#fff" stroke-width="13"/>
+<path d="M178 68q45 37 72 101q31 73 10 149M66 173q61-22 131-20q88 2 140 35M93 341q31-72 91-129q54-48 113-67" stroke="#186ca2" stroke-width="13" fill="none"/>
+<path d="M182 68q-53 59-81 159t-8 115" stroke="#186ca2" stroke-width="8" fill="none" opacity=".68"/>
+</g>
+<g transform="translate(995 370)">
+<circle r="108" fill="#ecfbff" stroke="#fff" stroke-width="10"/>
+<polygon points="-20,-76 43,-59 64,1 11,42 -46,8 -51,-45" fill="#126caa"/>
+<path d="M-20-76l-33-24M43-59l58-24M64 1l44 17M11 42l22 61M-46 8l-58 24" stroke="#126caa" stroke-width="10" fill="none"/>
+<polygon points="-20,-76 -51,-45 -46,8 11,42 64,1 43,-59" fill="none" stroke="#126caa" stroke-width="10"/>
+</g>
+<g font-family="Arial,Helvetica,sans-serif" fill="white">
+<rect x="44" y="38" width="615" height="76" rx="25" fill="#07385f" opacity=".84"/>
+<text x="72" y="87" font-size="39" font-weight="800" letter-spacing="1">INCENTIVO AO ESPORTE</text>
+<rect x="55" y="602" width="673" height="68" rx="22" fill="#083b68" opacity=".86"/>
+<text x="79" y="647" font-size="27" font-weight="700">PROMIE • PROJETO DE SUGESTÃO 4/2021</text>
+</g>
+</svg>
