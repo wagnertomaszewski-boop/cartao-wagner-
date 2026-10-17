@@ -12,7 +12,9 @@ h2{margin:5px 0 9px;font-size:22px}h3{margin:7px 0;font-size:20px}p{margin:9px 0
 .note{background:#eaf5ff;border:1px solid #c4e0f3;padding:14px;border-radius:12px;color:#315772;margin:13px 0}
 .note.error{background:#fff1f1;border-color:#f1caca;color:#962e33}
 label.choice{display:flex;gap:11px;align-items:center;padding:13px;margin:9px 0;border:1px solid #e0eaf1;background:#f9fbff;border-radius:13px;cursor:pointer}
-.choice input{accent-color:#106bb3;width:19px;height:19px}
+.choice input{accent-color:#106bb3;width:20px;height:20px}
+.choice{min-height:49px}
+.btn:focus-visible,.choice:focus-within{outline:3px solid #52a7f6;outline-offset:2px}
 .btn{display:block;border:1px solid #0969b4;padding:13px 15px;background:var(--blue);color:white;border-radius:13px;font-weight:700;cursor:pointer;font-size:15px;text-align:center;width:100%;margin:11px 0}
 .btn.secondary{display:inline-block;background:white;color:var(--blue);width:auto;font-size:14px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
@@ -77,7 +79,7 @@ async function openPoll(id){
 }
 async function startVote(){
  if(!current||!optionId)return;
- if(session?.access_token){try{await saveVote();return}catch(e){if(!/jwt|token|sessão|401/i.test(e.message)){message(e.message,true);return;}session=null;}}
+ if(session?.access_token){try{await saveVote();return}catch(e){if(/já votou|ja votou/i.test(e.message)){await votoJaRegistrado();return;}if(!/jwt|token|sessão|401/i.test(e.message)){message(e.message,true);return;}session=null;}}
  $('auth').innerHTML='<label class="field" for="tel">Número do celular com DDD</label><input id="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(51) 99999-9999" maxlength="19"><button class="btn" id="send" type="button">Receber código SMS</button><p class="small">Sem senha: você recebe um código temporário. O SMS só funcionará depois que o serviço estiver configurado.</p>';
  $('send').onclick=sendOtp;
 }
@@ -99,7 +101,14 @@ async function verifyOtp(){
  try{const d=await api('/auth/v1/verify',{method:'POST',body:JSON.stringify({phone,token:code,type:'sms'})});
  if(!d?.access_token)throw new Error('Não recebemos uma sessão válida após confirmar o código.');
  session={access_token:d.access_token};await saveVote();
- }catch(e){message(e.message,true);b.disabled=false}
+ }catch(e){if(/já votou|ja votou/i.test(e.message)){await votoJaRegistrado();return;}message(e.message,true);b.disabled=false}
+}
+async function votoJaRegistrado(){
+ $('auth').innerHTML='';
+ if($('vote')){$('vote').disabled=true;$('vote').textContent='Você já participou';}
+ message('Este celular já participou desta enquete. Obrigado!');
+ if(current?.resultados_apos_voto)await results(current.id);
+ else $('out').innerHTML='<p class="small">Os resultados serão exibidos após o encerramento da enquete.</p>';
 }
 async function saveVote(){
  const data=await api('/rest/v1/rpc/registrar_voto_enquete',{method:'POST',body:JSON.stringify({p_enquete_id:current.id,p_opcao_id:optionId})});
