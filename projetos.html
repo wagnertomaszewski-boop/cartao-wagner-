@@ -48,12 +48,12 @@ function validDoc(u){try{const p=new URL(u);return p.protocol==="https:"?p.href:
 async function rpc(name,arg){const r=await fetch(BASE+"/rest/v1/rpc/"+name,{method:"POST",headers:{apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/json"},body:JSON.stringify(arg)});if(!r.ok)throw Error("Não foi possível consultar as informações agora.");return r.json()}
 function datept(s){if(!s)return"";const d=new Date(s+"T12:00:00");return isNaN(d)?"":new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"}).format(d)}
 let projects=[],currentFilter="todos";
-const types={projeto:"PROJETO / LEI",pedido:"PEDIDO",emenda:"EMENDA",resultado:"RESULTADO"};
+const types={projeto:"PROJETO / LEI",sugestivo:"PROJETO SUGESTIVO",pedido:"PEDIDO",emenda:"EMENDA",resultado:"RESULTADO"};
 function renderList(){
  $("head").textContent="Projetos e ações";$("sub").textContent="Acompanhe o trabalho do mandato do início ao resultado.";$("back").href="./index.html";
  const shown=projects.filter(p=>currentFilter==="todos"||p.tipo===currentFilter||(currentFilter==="resultado"&&/entreg|conclu|resultado|executad|adquirid/i.test(p.situacao||"")));
- const buttons=[["todos","Todos"],["projeto","Projetos de lei"],["pedido","Pedidos"],["emenda","Emendas"],["resultado","Resultados"]];
- let html='<div class="panel"><h2>Transparência do mandato</h2><p class="muted">Projetos de lei, pedidos, emendas e ações organizados em um só lugar.</p><div class="filters">';
+ const buttons=[["todos","Todos"],["projeto","Projetos de lei"],["sugestivo","Sugestivos"],["pedido","Pedidos"],["emenda","Emendas"],["resultado","Resultados"]];
+ let html='<div class="panel"><h2>Transparência do mandato</h2><p class="muted">Projetos de lei, sugestivos, pedidos, emendas e ações organizados em um só lugar.</p><div class="filters">';
  buttons.forEach(x=>html+='<button type="button" class="'+(currentFilter===x[0]?"active":"")+'" data-filter="'+x[0]+'">'+x[1]+'</button>');
  html+='</div><div id="cards">';
  shown.forEach(p=>{
@@ -71,7 +71,7 @@ async function renderDetail(id){
  const x=await rpc("consulta_publica_detalhe_projeto",{p_id:id});
  if(!x||!x.id){$("main").innerHTML='<div class="panel notice">Projeto não encontrado ou não publicado.</div>';return}
  const cover=validImage(x.foto_url);
- let html='<article class="panel detailpanel">'+(cover?'<img class="cover" src="'+esc(cover)+'" alt="Estudantes em atividade escolar — imagem ilustrativa">':'')+'<div class="detailbody">'+(cover?'<div class="caption">Imagem ilustrativa — não representa necessariamente estudantes de Cristal.</div>':'')+
+ let html='<article class="panel detailpanel">'+(cover?'<img class="cover" src="'+esc(cover)+'" alt="Estudantes em atividade escolar — imagem ilustrativa">':'')+'<div class="detailbody">'+(cover?'<div class="caption">Imagem ilustrativa do tema. Não representa necessariamente uma atividade realizada em Cristal.</div>':'')+
  '<span class="tag">'+esc(types[x.tipo]||"AÇÃO")+'</span><h2>'+esc(x.titulo)+'</h2><div class="meta"><span>📄 '+esc(x.referencia||"")+'</span><span>🏛 '+esc(x.area||"")+'</span></div><div class="status">🔵 '+esc(x.situacao||"Em acompanhamento")+'</div>';
  function section(title,value){return value?'<section class="section"><h3>'+title+'</h3><p>'+esc(value)+'</p></section>':''}
  html+=section("📄 Sobre o projeto",x.resumo)+section("🎯 Objetivo",x.objetivo)+section("📊 Situação atual",x.situacao)+section("✅ O que já foi feito",x.feito)+section("🕒 O que falta fazer",x.falta);
