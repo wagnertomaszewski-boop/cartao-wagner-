@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675" role="img" aria-label="Imagem ilustrativa sobre segurança na internet para crianças e adolescentes">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#082b53"/><stop offset=".55" stop-color="#136ab0"/><stop offset="1" stop-color="#2ab5d4"/></linearGradient>
+ <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eef8ff"/><stop offset="1" stop-color="#c2e9f7"/></linearGradient>
+ <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0a5c9e"/><stop offset="1" stop-color="#12365f"/></linearGradient>
+ <filter id="sh"><feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#00152e" flood-opacity=".23"/></filter>
+</defs>
+<rect width="1200" height="675" fill="url(#bg)"/>
+<circle cx="1045" cy="-40" r="325" fill="#fff" opacity=".06"/><circle cx="80" cy="695" r="400" fill="#fff" opacity=".045"/>
+<g stroke="#b2edff" stroke-width="3" fill="none" opacity=".28"><path d="M43 72 210 130 366 83 547 192 741 98 947 180 1130 102"/><path d="M50 420 210 460 366 395 547 460 741 386 947 455 1130 410"/></g>
+<g fill="#d2f7ff" opacity=".8"><circle cx="210" cy="130" r="9"/><circle cx="547" cy="192" r="9"/><circle cx="947" cy="180" r="9"/><circle cx="210" cy="460" r="9"/><circle cx="741" cy="386" r="9"/></g>
+<g filter="url(#sh)">
+<rect x="106" y="107" width="978" height="476" rx="43" fill="url(#panel)"/>
+<rect x="148" y="150" width="904" height="388" rx="23" fill="#fff" opacity=".68"/>
+</g>
+<g transform="translate(155 173)">
+<circle cx="170" cy="122" r="79" fill="#f4c8aa"/>
+<path d="M87 118c0-113 160-140 176-11-32-12-65-46-92-37-36 28-51 34-84 48Z" fill="#26384c"/>
+<path d="M41 346c5-123 49-173 129-173s124 50 129 173" fill="#1682be"/>
+<path d="M92 226c35 52 105 66 157 0" fill="none" stroke="#126398" stroke-width="13" opacity=".45"/>
+</g>
+<g transform="translate(455 230)">
+<rect x="0" y="0" width="380" height="236" rx="21" fill="#082c50"/>
+<rect x="17" y="17" width="346" height="190" rx="11" fill="url(#screen)"/>
+<path d="M-47 240H427L386 272H-6Z" fill="#557c9c"/><path d="M-17 241H397L379 253H0Z" fill="#d0e1ed"/>
+<g transform="translate(131 19)">
+<path d="M60 13 136 43v48c0 61-43 99-76 115C27 190-16 152-16 91V43Z" fill="#36c2e3" opacity=".99"/>
+<path d="M60 33 119 56v35c0 49-32 77-59 93C33 168 1 140 1 91V56Z" fill="#e1fbff"/>
+<rect x="36" y="91" width="49" height="43" rx="6" fill="#0e70ac"/>
+<path d="M45 92V80a16 16 0 0 1 32 0v12" fill="none" stroke="#0e70ac" stroke-width="11" stroke-linecap="round"/>
+<path d="m49 111 9 10 18-20" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+</g></g>
+<g transform="translate(890 173)"><circle cx="62" cy="56" r="53" fill="#d8f8ff"/><path d="M28 45q34-31 68 0M39 57q23-20 46 0M52 70q10-9 20 0" fill="none" stroke="#1985bd" stroke-width="9" stroke-linecap="round"/><circle cx="62" cy="83" r="6" fill="#1985bd"/>
+<circle cx="62" cy="221" r="53" fill="#d8f8ff"/><rect x="31" y="187" width="61" height="69" rx="9" fill="#1a83b9"/><rect x="41" y="198" width="41" height="44" rx="3" fill="#d8f8ff"/><circle cx="61" cy="249" r="3" fill="white"/></g>
+<g font-family="Arial,Helvetica,sans-serif" text-anchor="middle"><text x="597" y="622" font-size="30" font-weight="700" fill="#e8faff">EDUCAÇÃO • PROTEÇÃO • CIDADANIA DIGITAL</text></g>
+</svg>
