@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Imagem ilustrativa de lavoura e conservação de solo agrícola">
+<defs>
+<linearGradient id="sky" x2="0" y2="1"><stop stop-color="#197eb9"/><stop offset="1" stop-color="#b8e6ef"/></linearGradient>
+<linearGradient id="soil" x2="0" y2="1"><stop stop-color="#ad6540"/><stop offset=".48" stop-color="#80422e"/><stop offset="1" stop-color="#593a2d"/></linearGradient>
+<linearGradient id="leaf" x2=".7" y2="1"><stop stop-color="#9bd868"/><stop offset="1" stop-color="#357b35"/></linearGradient>
+</defs>
+<rect width="1280" height="720" fill="url(#sky)"/><circle cx="1030" cy="121" r="76" fill="#ffdf74"/>
+<g opacity=".63" fill="#fff"><ellipse cx="185" cy="95" rx="105" ry="24"/><ellipse cx="236" cy="79" rx="67" ry="36"/><ellipse cx="410" cy="148" rx="102" ry="19"/><ellipse cx="447" cy="127" rx="65" ry="26"/></g>
+<path d="M0 350 Q160 266 313 320 Q510 233 724 340 Q942 242 1280 307V505H0Z" fill="#81bc7d"/>
+<path d="M0 427 Q180 340 333 387 Q503 321 679 395 Q913 311 1280 394V525H0Z" fill="#4f9b56"/>
+<path d="M0 490 Q300 397 556 483 Q864 394 1280 461V559H0Z" fill="#2c7741"/>
+<g stroke="#ddf2a5" stroke-width="8" fill="none" opacity=".55"><path d="M-20 525 Q275 428 590 493T1310 488"/><path d="M-20 554 Q275 457 590 522T1310 517"/></g>
+<path d="M0 533Q352 476 643 534Q1053 474 1280 532V720H0Z" fill="url(#soil)"/>
+<path d="M0 592Q280 556 644 592Q965 561 1280 594" stroke="#c98e57" stroke-width="11" fill="none"/>
+<path d="M0 650Q300 615 632 646Q943 624 1280 655" stroke="#9f7150" stroke-width="13" fill="none"/>
+<g fill="#d7b27f" opacity=".84"><circle cx="84" cy="585" r="8"/><circle cx="286" cy="631" r="9"/><circle cx="496" cy="560" r="9"/><circle cx="725" cy="610" r="7"/><circle cx="975" cy="583" r="10"/><circle cx="1141" cy="651" r="9"/></g>
+<g transform="translate(295 294)"><g stroke="#316a36" stroke-width="14" stroke-linecap="round" fill="none"><path d="M15 242Q19 133 5 53"/><path d="M18 202Q-18 151-62 138"/><path d="M19 178Q70 146 71 108"/></g><g fill="url(#leaf)"><path d="M4 130Q-58 124-95 63Q-8 55 4 130Z"/><path d="M13 161Q75 82 129 108Q109 161 13 161Z"/><path d="M0 88Q-8 17 32-27Q74 38 0 88Z"/></g></g>
+<g transform="translate(755 273) scale(1.25)"><g stroke="#316a36" stroke-width="10" stroke-linecap="round" fill="none"><path d="M15 242Q19 133 5 53"/><path d="M18 202Q-18 151-62 138"/><path d="M19 178Q70 146 71 108"/></g><g fill="url(#leaf)"><path d="M4 130Q-58 124-95 63Q-8 55 4 130Z"/><path d="M13 161Q75 82 129 108Q109 161 13 161Z"/><path d="M0 88Q-8 17 32-27Q74 38 0 88Z"/></g></g>
+<g transform="translate(1060 285) scale(.92)"><g stroke="#316a36" stroke-width="12" stroke-linecap="round" fill="none"><path d="M15 242Q19 133 5 53"/><path d="M18 202Q-18 151-62 138"/><path d="M19 178Q70 146 71 108"/></g><g fill="url(#leaf)"><path d="M4 130Q-58 124-95 63Q-8 55 4 130Z"/><path d="M13 161Q75 82 129 108Q109 161 13 161Z"/><path d="M0 88Q-8 17 32-27Q74 38 0 88Z"/></g></g>
+<rect x="31" y="19" width="455" height="53" rx="26" fill="#063f6d" opacity=".82"/>
+<text x="59" y="53" fill="white" font-size="23" font-family="Arial,sans-serif" font-weight="700">CONSERVAÇÃO DO SOLO AGRÍCOLA</text>
+</svg>
