@@ -455,6 +455,14 @@
     .total-banner-descricao{font-size:13px;color:#e2f2ff;line-height:1.4;text-align:right;max-width:220px}
     .status-resumo .sr-card.recebida small{font-size:11px}
     @media(max-width:450px){.total-solicitacoes-banner{padding:15px;min-height:85px}.total-solicitacoes-banner strong{font-size:30px}.total-banner-descricao{font-size:12px;max-width:165px}}
+
+    .resultado-card{background:#fff;border:1px solid #dce9f4;border-radius:17px;padding:15px;margin:0 0 12px;box-shadow:0 6px 18px #134d7d13}
+    .resultado-card h3{margin:9px 0 4px;font-size:18px;color:#174878}
+    .resultado-card p{font-size:14px;color:#4f6680;margin:5px 0}
+    .resultado-chip{display:inline-flex;background:#e7f6ed;color:#176740;font-size:12px;font-weight:800;border-radius:22px;padding:6px 11px}
+    .resultado-total{color:#145b98;font-weight:700;margin:10px 0}
+    .resultado-card .resultado-meta{font-size:12px;color:#718398}
+    .resultado-card button{background:#0e71b8;color:#fff;border:0;border-radius:11px;padding:11px 13px;font-weight:750;margin-top:8px}
 </style>
 </head>
 <body>
@@ -536,6 +544,15 @@
       <h2 class="titulo">Lembretes</h2>
       <div class="view-card" style="padding:14px;margin-bottom:12px"><h3 style="font-size:16px">Acompanhamentos do mandato</h3><p>Aqui aparecem somente os lembretes. Para ver todos os detalhes, abra a solicitação correspondente.</p></div>
       <div id="listaLembretes" class="lembretes-lista">Carregando lembretes...</div>
+    </section>
+
+    <section id="viewResultados" class="painel-view">
+      <h2 class="titulo">Resultados concluídos</h2>
+      <div class="view-card" style="padding:14px;margin-bottom:14px">
+        <h3 style="font-size:16px">Resultados do mandato</h3>
+        <p>Somente as solicitações concluídas aparecem aqui. Os contadores gerais permanecem independentes deste filtro.</p>
+      </div>
+      <div id="listaResultados" aria-live="polite">Carregando resultados...</div>
     </section>
 
     <section id="viewProjetos" class="painel-view">
@@ -627,7 +644,7 @@ function irPainel(destino, botao, alterarHash=true){
     inicio:"viewInicio",
     solicitacoes:"viewSolicitacoes",
     lembretes:"viewLembretes",
-    resultados:"viewSolicitacoes",
+    resultados:"viewResultados",
     projetos:"viewProjetos",
     mais:"viewMais"
   };
@@ -659,15 +676,9 @@ function irPainel(destino, botao, alterarHash=true){
   } else if(destinoSeguro==="projetos"){
     carregarProjetosPainel();
   } else if(destinoSeguro==="resultados"){
-    if(titulo) titulo.textContent="Resultados concluídos";
-    if(filtro) filtro.value="Concluído";
-    carregarSolicitacoes().then(()=>{
-      document.querySelectorAll("#lista .card").forEach(card=>{
-        card.style.display="block";
-        card.classList.remove("expandido");
-
-      });
-    });
+    carregarResultadosConcluidos();
+  } else if(destinoSeguro==="inicio"){
+    atualizarContadoresStatus();
   }
 
   if(alterarHash){
@@ -835,6 +846,7 @@ async function atualizarContadoresStatus(){
     const hoje=dataHojeISO();
     const atrasados=(Array.isArray(dados)?dados:[]).filter(x=>x.lembrete_em && x.lembrete_em<hoje).length;
     const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+    atualizarResumoPainel(dados);
     set("cntTotalSolicitacoes",Array.isArray(dados)?dados.length:0);
     set("cntRecebida",conta("Recebida")+conta("Recebido"));
     set("cntAnalise",conta("Em análise"));
@@ -1305,6 +1317,34 @@ async function excluirProjetoAcao(id){
   carregarProjetosPainel();
 }
 
+async function carregarResultadosConcluidos(){
+  const alvo=document.getElementById("listaResultados");
+  if(!alvo)return;
+  alvo.textContent="Carregando solicitações concluídas...";
+  try{
+    const sessao=await obterSessaoValida();
+    if(!sessao)throw new Error("Sua sessão expirou. Entre novamente.");
+    const url=SUPABASE_URL+"/rest/v1/solicitacoes?select=id,protocolo,assunto,localidade,criado_em,atualizado_em&status=eq.Conclu%C3%ADdo&order=atualizado_em.desc";
+    const resp=await requisicao(url,{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token}});
+    const itens=await resp.json().catch(()=>[]);
+    if(!resp.ok)throw new Error(itens?.message||"Não foi possível consultar os resultados.");
+    if(!Array.isArray(itens)||!itens.length){
+      alvo.innerHTML='<div class="vazio"><strong>Nenhuma solicitação concluída ainda.</strong><p>Quando uma solicitação receber o status Concluído, será exibida aqui.</p></div>';
+      return;
+    }
+    alvo.innerHTML='<p class="resultado-total">'+itens.length+' solicitação(ões) concluída(s)</p>'+itens.map(item=>{
+      const id=Number(item.id);
+      if(!Number.isSafeInteger(id))return "";
+      return '<article class="resultado-card"><span class="resultado-chip">✓ Concluída</span>'+
+        '<h3>'+esc(item.protocolo||"Solicitação #"+id)+'</h3>'+
+        '<p>'+esc(item.assunto)+'</p>'+
+        (item.localidade?'<p class="resultado-meta">Localidade: '+esc(item.localidade)+'</p>':'')+
+        '<p class="resultado-meta">Atualização: '+esc(formatarData(item.atualizado_em||item.criado_em))+'</p>'+
+        '<button type="button" onclick="abrirSolicitacaoPorId('+id+')">Abrir histórico e documentos ↗</button></article>';
+    }).join("");
+  }catch(e){alvo.innerHTML='<div class="erro">'+esc(mensagemDeErro(e))+'<button type="button" onclick="carregarResultadosConcluidos()">Tentar novamente</button></div>';}
+}
+
 async function carregarLembretes(){
   const alvo=document.getElementById("listaLembretes");
   if(!alvo) return;
@@ -1467,7 +1507,6 @@ async function carregarSolicitacoes() {
       console.warn("Histórico de status não disponível:",e);
     }
 
-    atualizarResumoPainel(dados);
     atualizarContadoresStatus();
 
     if (termoBusca) {
