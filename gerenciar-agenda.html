@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0967af"><title>Minha agenda | Painel do Mandato V17</title>
+<style>
+:root{--azul:#0a68b4;--azul2:#084777;--texto:#173755;--cinza:#62798c}
+*{box-sizing:border-box}
+body{margin:0;background:#eff4fa;color:var(--texto);font:15px/1.48 system-ui,Arial,sans-serif}
+header{background:linear-gradient(120deg,#0c73be,#06477e);color:#fff;padding:20px 16px;border-radius:0 0 27px 27px}
+header .inner{max-width:830px;margin:auto}header a{color:#fff;text-decoration:none;font-size:14px;font-weight:700}
+header h1{margin:15px 0 4px;font-size:28px}header p{margin:0;color:#dbefff;font-size:14px}
+main{max-width:830px;margin:auto;padding:17px 12px 40px}
+.card{background:#fff;border:1px solid #dee9f3;border-radius:19px;padding:17px;margin-bottom:15px;box-shadow:0 8px 25px #1944690f}
+h2{font-size:20px;margin:2px 0 12px}h3{font-size:17px;margin:0 0 5px}
+label{font-size:13px;font-weight:750;display:block;margin:13px 0 5px}
+input,textarea,select{display:block;width:100%;background:#fff;color:var(--texto);border:1px solid #c8d9e8;border-radius:11px;padding:11px;font:inherit}
+textarea{min-height:80px;resize:vertical}input[type=checkbox]{width:auto;display:inline-block;accent-color:#0a6db4}
+button,.button{border:1px solid #086bb5;color:#075c9e;background:#fff;border-radius:11px;padding:11px 13px;cursor:pointer;font:700 14px system-ui,Arial,sans-serif}
+button.primary{color:#fff;background:#0a68b4}button:disabled{opacity:.6}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}.actions>*{flex:1 1 130px;text-align:center}
+.muted{font-size:13px;color:var(--cinza)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tag{padding:5px 9px;border-radius:15px;font-size:11px;font-weight:800;background:#eaf4ff;color:#0763a4}
+.tag.privado{background:#f2eef7;color:#765582}
+.tag.cancelado{background:#fff0eb;color:#a05234}
+.dica{background:#eaf5ff;border:1px solid #c6e0f4;border-radius:12px;padding:12px;font-size:13px;color:#315b79;margin:11px 0}
+.dica.warning{background:#fff8ef;border-color:#ead4ad;color:#755420}
+.line{border-top:1px solid #e6eff6;margin:14px 0}
+.compromisso{border:1px solid #e1eaf3;background:#fff;border-radius:16px;padding:14px;margin:10px 0}
+.compromisso .top{display:flex;gap:12px;justify-content:space-between;align-items:start}
+.compromisso h3{margin:5px 0;font-size:17px}.compromisso .time{font-size:13px;color:#647e92}
+.compromisso .notas{color:#735781;font-size:13px;border-top:1px solid #f0e8f5;padding-top:8px;margin-top:8px;white-space:pre-wrap}
+.compromisso .desc{font-size:13px;color:#5d7387;margin-top:8px;white-space:pre-wrap}
+.notice{border-radius:12px;background:#eff7ff;padding:12px;color:#315b77;display:none;margin:12px 0;white-space:pre-wrap}
+.notice.error{background:#fff0ed;color:#9c3f2e}
+#login{display:none}#workspace{display:none}
+.loading{color:#5e7588}
+.filters{display:flex;gap:7px;flex-wrap:wrap}.filters button{font-size:12px;padding:8px 11px;border-color:#d4e3f0}
+.filters button.sel{background:var(--azul);color:#fff}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.stat{border:1px solid #dde9f4;border-radius:14px;background:#f6faff;padding:12px}
+.stat strong{display:block;font-size:24px}.stat small{font-size:11px;color:var(--cinza)}
+#formAgenda{scroll-margin-top:16px}
+#editarTitulo{margin-bottom:3px}
+@media(max-width:420px){.card{padding:14px}.grid{grid-template-columns:1fr}.stats{gap:6px}.stat{padding:10px}.stat strong{font-size:21px}}
+</style></head><body>
+<header><div class="inner"><a href="./admin-v17.html#mais">‹ Voltar ao Painel V17</a><h1>Minha agenda do mandato</h1><p>Organize seus compromissos e escolha o que será divulgado aos moradores.</p></div></header>
+<main>
+<section id="authLoading" class="card loading">Verificando seu acesso ao Painel do Mandato…</section>
+<section id="login" class="card"><h2>Acesso administrativo</h2><p class="muted">Entre com a mesma conta autorizada do Painel V17.</p>
+<form id="loginForm"><label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required><label for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password" required><div class="actions"><button type="submit" class="primary">Entrar na agenda</button></div></form>
+</section>
+<div id="msgLogin" class="notice" role="status"></div>
+<div id="workspace">
+<section class="card"><div class="actions" style="margin:0;align-items:center"><div style="flex:3"><h2>Compromissos do mandato</h2><p class="muted" style="margin:0">Particulares e públicos, organizados por data.</p></div><button type="button" id="logout" style="flex:0 0 auto">Sair</button></div>
+<div class="stats" id="stats" style="margin-top:16px"><div class="stat"><small>Total</small><strong>—</strong></div></div>
+<div class="actions"><button type="button" class="primary" id="novo">＋ Novo compromisso</button><button type="button" id="recarregar">↻ Atualizar</button></div>
+<div class="filters" id="filtros"><button type="button" class="sel" data-filtro="proximos">Próximos</button><button type="button" data-filtro="hoje">Hoje</button><button type="button" data-filtro="semana">7 dias</button><button type="button" data-filtro="mes">Este mês</button><button type="button" data-filtro="todos">Todos</button></div>
+<label for="busca">Buscar compromisso</label><input id="busca" type="search" placeholder="Título, local ou categoria">
+</section>
+<div id="lista" aria-live="polite"><section class="card">Carregando compromissos…</section></div>
+<section class="card" id="formAgenda">
+<h2 id="editarTitulo">Novo compromisso</h2>
+<p class="muted">Novos compromissos começam como <strong>particulares</strong>. Só serão publicados se você autorizar.</p>
+<form id="compromissoForm">
+<label for="titulo">Título do compromisso *</label><input id="titulo" maxlength="220" required placeholder="Ex.: Sessão ordinária da Câmara">
+<div class="grid"><div><label for="tipo">Tipo</label><select id="tipo"><option value="reuniao">Reunião</option><option value="sessao">Sessão da Câmara</option><option value="visita">Visita à comunidade</option><option value="audiencia">Audiência pública</option><option value="evento">Evento</option><option value="tarefa">Tarefa do mandato</option><option value="outro">Outro</option></select></div>
+<div><label for="situacao">Situação</label><select id="situacao"><option value="agendado">Agendado</option><option value="confirmado">Confirmado</option><option value="realizado">Realizado</option><option value="cancelado">Cancelado</option></select></div></div>
+<div class="grid"><div><label for="inicio">Início (data e hora) *</label><input id="inicio" type="datetime-local" required></div><div><label for="fim">Término (opcional)</label><input id="fim" type="datetime-local"></div></div>
+<div class="line"></div>
+<h3>Informações que podem ser públicas</h3>
+<label for="localPublico">Local para divulgação</label><input id="localPublico" placeholder="Ex.: Câmara Municipal de Cristal">
+<label for="descricaoPublica">Descrição para o cidadão</label><textarea id="descricaoPublica" placeholder="Informe somente o que pode ser divulgado à comunidade."></textarea>
+<div class="dica warning"><label style="margin:0"><input id="publicado" type="checkbox"> <strong>Publicar na agenda dos moradores</strong></label><p style="margin:8px 0 0">Ao marcar, título, data e horário, tipo, situação, local e descrição pública aparecerão no aplicativo. Confira antes de publicar.</p></div>
+<div class="line"></div>
+<h3>Informações particulares — só no seu painel</h3>
+<label for="localPrivado">Local ou referência particular</label><input id="localPrivado" placeholder="Endereço reservado, contato, detalhes de chegada…">
+<label for="notas">Anotações privadas</label><textarea id="notas" placeholder="Pessoas a contatar, assuntos da reunião, retornos pendentes…"></textarea>
+<div class="dica"><strong>Privacidade:</strong> estes dois campos particulares não são retornados pela agenda pública. Não coloque informações pessoais no título, na descrição ou no local públicos de um compromisso publicado.</div>
+<div class="actions"><button type="submit" class="primary" id="salvar">Salvar compromisso</button><button type="button" id="cancelar">Limpar edição</button><button type="button" id="excluir" style="color:#a43a35;border-color:#dba29b" hidden>Excluir</button></div>
+<div class="notice" id="mensagem" role="status"></div>
+</form>
+</section>
+<section class="card"><h2>Agenda pública</h2><p class="muted">Veja exatamente o que os moradores conseguirão consultar. Lembretes automáticos e notificações ainda não foram ativados.</p><a class="button" style="display:block;text-align:center;text-decoration:none" href="./agenda.html" target="_blank" rel="noopener">↗ Visualizar agenda pública</a></section>
+</div>
+</main>
+<script>
+"use strict";
+const BASE="https://pmmsdjozyyxkbuqlkfpb.supabase.co",KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_",ADMIN="ca5c30ec-828e-4c95-a0b9-a415bb9b3643";
+const STORE="wagner_admin_session_v2";
+const $=x=>document.getElementById(x);
+const esc=x=>String(x==null?"":x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const norm=x=>String(x||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+const tipos={reuniao:"Reunião",sessao:"Sessão da Câmara",visita:"Visita",audiencia:"Audiência",evento:"Evento",tarefa:"Tarefa",outro:"Outro"};
+const situacoes={agendado:"Agendado",confirmado:"Confirmado",realizado:"Realizado",cancelado:"Cancelado"};
+let token="",items=[],editando=null,filtro="proximos";
+function aviso(id,texto,erro=false){const e=$(id);e.textContent=texto;e.style.display=texto?"block":"none";e.classList.toggle("error",erro)}
+function toLocal(iso){if(!iso)return"";const d=new Date(iso),p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes())}
+function toISO(val){if(!val)return null;const d=new Date(val);if(!Number.isFinite(d.getTime()))throw Error("Informe uma data válida.");return d.toISOString()}
+function dt(iso){return iso?new Date(iso).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):""}
+async function chamar(path,options={}){
+ const r=await fetch(BASE+path,{...options,headers:{apikey:KEY,"Content-Type":"application/json",Prefer:"return=representation",Authorization:"Bearer "+token,...(options.headers||{})}});
+ const d=await r.json().catch(()=>null);
+ if(!r.ok)throw Error(d?.message||d?.error_description||"Não foi possível carregar/salvar ("+r.status+").");
+ return d;
+}
+async function validarToken(access){
+ const r=await fetch(BASE+"/auth/v1/user",{headers:{apikey:KEY,Authorization:"Bearer "+access}});
+ if(!r.ok)return false;
+ const user=await r.json().catch(()=>null);return user?.id===ADMIN;
+}
+async function carregarSessao(){
+ let sucesso=false;
+ try{
+  const s=JSON.parse(localStorage.getItem(STORE)||"null");
+  if(!s?.access_token)return;
+  if(s.expires_at && s.expires_at<Date.now()+10000)return;
+  if(!await validarToken(s.access_token))return;
+  token=s.access_token;
+  await carregar();sucesso=true;
+ }catch(err){token="";}finally{
+  $("authLoading").hidden=true;$("login").style.display=sucesso?"none":"block";
+  $("workspace").style.display=sucesso?"block":"none";
+ }
+}
+$("loginForm").onsubmit=async e=>{
+ e.preventDefault();const b=e.target.querySelector("button");b.disabled=true;aviso("msgLogin","Verificando…");
+ try{
+  const r=await fetch(BASE+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:KEY,"Content-Type":"application/json"},body:JSON.stringify({email:$("email").value.trim(),password:$("senha").value})});
+  const data=await r.json();if(!r.ok||!data.access_token)throw Error(data?.msg||data?.message||"Falha na autenticação.");
+  if(!await validarToken(data.access_token))throw Error("Esta conta não tem permissão de administrador.");
+  token=data.access_token;localStorage.setItem(STORE,JSON.stringify({access_token:token,refresh_token:data.refresh_token,expires_at:Date.now()+(data.expires_in||3600)*1000}));
+  $("senha").value="";await carregar();$("login").style.display="none";$("workspace").style.display="block";aviso("msgLogin","");
+ }catch(err){token="";aviso("msgLogin",err.message,true)}finally{b.disabled=false}
+};
+$("logout").onclick=()=>{token="";localStorage.removeItem(STORE);$("workspace").style.display="none";$("login").style.display="block"};
+async function carregar(){
+ items=await chamar("/rest/v1/agenda_mandato?select=*&order=inicio_em.asc");
+ if(!Array.isArray(items))throw Error("A agenda retornou dados inesperados.");
+ render(); 
+}
+function render(){
+ const hoje=new Date(),startDay=new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate()),endDay=new Date(startDay.getTime()+86400000);
+ const week=new Date(startDay.getTime()+7*86400000),startMonth=new Date(hoje.getFullYear(),hoje.getMonth(),1),endMonth=new Date(hoje.getFullYear(),hoje.getMonth()+1,1);
+ const proximos=items.filter(i=>new Date(i.inicio_em)>=startDay);
+ const today=items.filter(i=>new Date(i.inicio_em)>=startDay&&new Date(i.inicio_em)<endDay);
+ const publicos=items.filter(i=>i.publicado);
+ $("stats").innerHTML='<div class="stat"><small>Próximos</small><strong>'+proximos.length+'</strong></div><div class="stat"><small>Hoje</small><strong>'+today.length+'</strong></div><div class="stat"><small>Públicos</small><strong>'+publicos.length+'</strong></div>';
+ const busca=norm($("busca").value);
+ const filtrados=items.filter(i=>{
+  const data=new Date(i.inicio_em);
+  const periodo=filtro==="todos"||filtro==="proximos"&&data>=startDay||filtro==="hoje"&&data>=startDay&&data<endDay||filtro==="semana"&&data>=startDay&&data<week||filtro==="mes"&&data>=startMonth&&data<endMonth;
+  return periodo&&(!busca||norm([i.titulo,i.tipo,i.local_publico,i.local_privado,i.situacao].join(" ")).includes(busca));
+ });
+ const alvo=$("lista");
+ if(!filtrados.length){alvo.innerHTML='<section class="card"><p class="muted">Não há compromissos para este período ou pesquisa. Toque em <strong>+ Novo compromisso</strong> para cadastrar.</p></section>';return}
+ alvo.innerHTML=filtrados.map(i=>{
+  const id=Number(i.id);
+  return '<article class="compromisso"><div class="top"><div><span class="tag '+(i.publicado?"":"privado")+'">'+(i.publicado?"🌐 Público":"🔒 Particular")+'</span> <span class="tag '+esc(i.situacao)+'">'+esc(situacoes[i.situacao]||"Agendado")+'</span><h3>'+esc(i.titulo)+'</h3><div class="time">📅 '+esc(dt(i.inicio_em))+(i.fim_em?" até "+esc(dt(i.fim_em)):"")+'</div><div class="time">'+esc(tipos[i.tipo]||"Compromisso")+(i.local_publico?" · 📍 "+esc(i.local_publico):"")+'</div></div><button type="button" data-id="'+id+'" class="editar">Editar</button></div>'+(i.descricao_publica?'<div class="desc">'+esc(i.descricao_publica)+'</div>':"")+(i.notas_privadas?'<div class="notas">🔒 Nota privada: '+esc(i.notas_privadas)+'</div>':"")+'</article>';
+ }).join("");
+ alvo.querySelectorAll("button.editar").forEach(b=>b.onclick=()=>editar(Number(b.dataset.id)));
+}
+function limpar(){
+ editando=null;$("editarTitulo").textContent="Novo compromisso";$("compromissoForm").reset();
+ $("publicado").checked=false;$("excluir").hidden=true;aviso("mensagem","");
+}
+function editar(id){
+ const i=items.find(x=>Number(x.id)===id);if(!i)return;
+ editando=id;$("editarTitulo").textContent="Editar compromisso";
+ $("titulo").value=i.titulo||"";$("tipo").value=i.tipo||"outro";$("situacao").value=i.situacao||"agendado";
+ $("inicio").value=toLocal(i.inicio_em);$("fim").value=toLocal(i.fim_em);
+ $("localPublico").value=i.local_publico||"";$("descricaoPublica").value=i.descricao_publica||"";
+ $("localPrivado").value=i.local_privado||"";$("notas").value=i.notas_privadas||"";
+ $("publicado").checked=!!i.publicado;$("excluir").hidden=false;aviso("mensagem","");
+ $("formAgenda").scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("novo").onclick=()=>{limpar();$("formAgenda").scrollIntoView({behavior:"smooth"})};
+$("cancelar").onclick=limpar;
+$("recarregar").onclick=()=>carregar().catch(e=>aviso("msgLogin",e.message,true));
+$("busca").oninput=render;
+$("filtros").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+ filtro=b.dataset.filtro;$("filtros").querySelectorAll("button").forEach(x=>x.classList.toggle("sel",x===b));render();
+});
+$("compromissoForm").onsubmit=async e=>{
+ e.preventDefault();const b=$("salvar");b.disabled=true;
+ try{
+  const inicio=toISO($("inicio").value),fim=toISO($("fim").value);
+  if(fim&&new Date(fim)<=new Date(inicio))throw Error("O término deve ser depois do início.");
+  const payload={titulo:$("titulo").value.trim(),tipo:$("tipo").value,situacao:$("situacao").value,
+    inicio_em:inicio,fim_em:fim,local_publico:$("localPublico").value.trim(),
+    descricao_publica:$("descricaoPublica").value.trim(),local_privado:$("localPrivado").value.trim(),
+    notas_privadas:$("notas").value.trim(),publicado:$("publicado").checked,
+    atualizado_em:new Date().toISOString()};
+  if(payload.titulo.length<3)throw Error("Informe um título com pelo menos 3 caracteres.");
+  const anterior=items.find(x=>Number(x.id)===editando);
+  if(payload.publicado&&!anterior?.publicado){
+   if(!confirm("Publicar este compromisso para os moradores? O título, horário e os campos públicos ficarão visíveis, mas as notas e o local particulares não."))return;
+  }
+  const path=editando?"/rest/v1/agenda_mandato?id=eq."+editando:"/rest/v1/agenda_mandato";
+  const resposta=await chamar(path,{method:editando?"PATCH":"POST",body:JSON.stringify(payload)});
+  if(!Array.isArray(resposta)||!resposta.length)throw Error("O banco não confirmou a gravação.");
+  const id=resposta[0].id;await carregar();editar(Number(id));aviso("mensagem","Compromisso salvo! "+(payload.publicado?"Publicado na agenda pública.":"Permanece particular."));
+ }catch(err){aviso("mensagem","Não foi possível salvar: "+err.message,true);}finally{b.disabled=false}
+};
+$("excluir").onclick=async()=>{
+ if(editando==null)return;
+ if(!confirm("Excluir definitivamente este compromisso da sua agenda?"))return;
+ try{
+  await chamar("/rest/v1/agenda_mandato?id=eq."+editando,{method:"DELETE",headers:{Prefer:"return=minimal"}});
+  limpar();await carregar();
+ }catch(e){aviso("mensagem","Não foi possível excluir: "+e.message,true)}
+};
+limpar();carregarSessao();
+</script></body></html>
