@@ -929,13 +929,12 @@ function renderLinhaTempoAdmin(historico,statusAtual,criadoEm,atualizadoEm){
     if(idx!==undefined && !porEtapa[idx] && h.criado_em) porEtapa[idx]=h.criado_em;
   });
 
-  // Fallback: garante pelo menos a data/hora do recebimento e da etapa atual.
+  // Somente etapas registradas no histórico recebem confirmação e data.
+  // A data de atualização geral pode mudar por anotação/resposta e não prova mudança de status.
   if(!porEtapa[0] && criadoEm) porEtapa[0]=criadoEm;
-  if(!porEtapa[atual] && atualizadoEm) porEtapa[atual]=atualizadoEm;
-  if(atual===0 && !porEtapa[0] && atualizadoEm) porEtapa[0]=atualizadoEm;
 
   return '<div class="timeline-admin">'+etapas.map((e,i)=>{
-    const cls=i<atual?"done":i===atual?"current":"";
+    const cls=i===atual?"current":(i<atual && porEtapa[i]?"done":"");
     const dt=porEtapa[i] ? formatarData(porEtapa[i]) : "";
     return '<div class="timeline-step '+cls+'">'+
       '<span class="timeline-dot"></span>'+
