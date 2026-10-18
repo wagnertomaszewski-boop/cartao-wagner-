@@ -447,6 +447,14 @@
     .conteudo-acoes .vermelho{background:#fff0ef;color:#a1332a}
     @media(max-width:520px){.conteudo-grid{grid-template-columns:1fr}}
     @media(max-width:420px){.resumo-card strong{font-size:24px}.painel-marca h1{font-size:23px}}
+
+    /* Contagem geral visível antes das categorias de status */
+    .total-solicitacoes-banner{width:100%;min-height:93px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 20px;background:linear-gradient(120deg,#0868b7,#094579);color:#fff;border:1px solid #d7eafa;border-radius:18px;margin:0 0 13px;text-align:left;box-shadow:0 8px 24px #103f7024;cursor:pointer}
+    .total-solicitacoes-banner small{font-size:11px;font-weight:800;letter-spacing:1px;color:#cce5fc;display:block;margin-bottom:4px}
+    .total-solicitacoes-banner strong{color:#fff;font-size:34px;line-height:1.1;display:block}
+    .total-banner-descricao{font-size:13px;color:#e2f2ff;line-height:1.4;text-align:right;max-width:220px}
+    .status-resumo .sr-card.recebida small{font-size:11px}
+    @media(max-width:450px){.total-solicitacoes-banner{padding:15px;min-height:85px}.total-solicitacoes-banner strong{font-size:30px}.total-banner-descricao{font-size:12px;max-width:165px}}
 </style>
 </head>
 <body>
@@ -489,8 +497,11 @@
 
     <section id="viewSolicitacoes" class="painel-view">
       <h2 class="titulo" id="secSolicitacoes">Solicitações da comunidade</h2>
+      <button class="total-solicitacoes-banner" type="button" onclick="selecionarStatusRapido('Todos')" aria-label="Mostrar todas as solicitações cadastradas">
+        <span><small>TOTAL DE SOLICITAÇÕES</small><strong id="cntTotalSolicitacoes">—</strong></span><span class="total-banner-descricao">Todos os protocolos, independentemente da situação ↗</span>
+      </button>
       <div class="status-resumo">
-        <button class="sr-card recebida" type="button" onclick="selecionarStatusRapido('Recebida')"><small>Recebidas</small><strong id="cntRecebida">—</strong></button>
+        <button class="sr-card recebida" type="button" onclick="selecionarStatusRapido('Recebida')"><small>Recebidas (aguardando análise)</small><strong id="cntRecebida">—</strong></button>
         <button class="sr-card analise" type="button" onclick="selecionarStatusRapido('Em análise')"><small>Em análise</small><strong id="cntAnalise">—</strong></button>
         <button class="sr-card encaminhado" type="button" onclick="selecionarStatusRapido('Encaminhado')"><small>Encaminhadas</small><strong id="cntEncaminhado">—</strong></button>
         <button class="sr-card andamento" type="button" onclick="selecionarStatusRapido('Em andamento')"><small>Em andamento</small><strong id="cntAndamento">—</strong></button>
@@ -824,6 +835,7 @@ async function atualizarContadoresStatus(){
     const hoje=dataHojeISO();
     const atrasados=(Array.isArray(dados)?dados:[]).filter(x=>x.lembrete_em && x.lembrete_em<hoje).length;
     const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+    set("cntTotalSolicitacoes",Array.isArray(dados)?dados.length:0);
     set("cntRecebida",conta("Recebida")+conta("Recebido"));
     set("cntAnalise",conta("Em análise"));
     set("cntEncaminhado",conta("Encaminhado"));
