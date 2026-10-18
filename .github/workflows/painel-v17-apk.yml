@@ -22,10 +22,11 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - name: Instalar Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Android plataforma e ferramentas
-        run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Android SDK disponivel no runner
+        run: |
+          echo "SDK no runner: ${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          sdkmanager --version
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
       - name: Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
