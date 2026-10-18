@@ -477,6 +477,12 @@
     .novo-projeto-detalhes{margin:20px 0}
     .novo-projeto-detalhes>summary{background:#086ab8;color:white;font-weight:800;padding:16px;border-radius:13px;cursor:pointer}
     .novo-projeto-detalhes .conteudo-form{margin-top:12px}
+
+    /* A pesquisa fica visível; o filtro duplicado fica recolhido */
+    .filtros-avancados{border:1px solid #e0eaf4;border-radius:13px;padding:10px 12px;background:#f8fbff;margin-top:10px}
+    .filtros-avancados summary{font-size:13px;font-weight:750;color:#0a659f;cursor:pointer;list-style:disclosure-closed}
+    .filtros-avancados label{display:block;font-size:12px;font-weight:750;color:#546d83;margin-top:11px}
+    .filtros-avancados select{margin-top:7px}
 </style>
 </head>
 <body>
@@ -541,6 +547,8 @@
           <button type="button" data-status="Concluído">Concluídas</button>
         </div>
         <input id="filtroBusca" type="text" placeholder="Buscar por nome ou protocolo">
+        <details class="filtros-avancados"><summary>Mais filtros de situação ▾</summary>
+        <label for="filtroStatus">Situação da solicitação</label>
         <select id="filtroStatus">
           <option value="Todos">Todos os status</option>
           <option value="Recebida">Recebida</option>
@@ -549,7 +557,7 @@
           <option value="Encaminhado">Encaminhado</option>
           <option value="Em andamento">Em andamento</option>
           <option value="Concluído">Concluído</option>
-        </select>
+        </select></details>
       </div>
       <div id="lista">Carregando solicitações...</div>
     </section>
