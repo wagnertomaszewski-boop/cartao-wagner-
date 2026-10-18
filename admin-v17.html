@@ -506,7 +506,7 @@
         <div><small>WT · MANDATO EM AÇÃO</small><h1>Painel do Mandato</h1></div>
         <div style="display:flex;gap:7px"><button type="button" onclick="recarregarSemCache()" style="width:auto;margin:0;padding:9px 11px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);font-size:13px">↻ Atualizar</button><button id="btnSair" type="button">Sair</button></div>
       </div>
-      <p>Organize atendimentos, lembretes, respostas e resultados do mandato.</p><div style="margin-top:7px;font-size:11px;color:#bcd9ee">V17 · atualização 18/10</div>
+      <p>Organize atendimentos, lembretes, respostas e resultados do mandato.</p><div style="margin-top:7px;font-size:11px;color:#bcd9ee">V17 · revisão 18/10 — histórico</div>
     </div>
   </header>
 
@@ -649,7 +649,7 @@
         <div class="atalho" onclick="irPainel('projetos',null,true)"><b>🏛️</b><strong>Projetos e ações</strong><span>Gerenciar conteúdos do mandato</span></div>
         <div class="atalho em-preparacao" aria-label="Agenda em preparação"><b>📅</b><strong>Agenda</strong><span>Compromissos e atividades públicas · Em preparação</span></div>
         <div class="atalho em-preparacao" aria-label="Notícias em preparação"><b>📰</b><strong>Notícias</strong><span>Publicações do mandato · Em preparação</span></div>
-        <a class="atalho" href="./gerenciar-enquetes.html"><b>📊</b><strong>Enquetes</strong><span>Criar e acompanhar consultas ↗</span></a>
+        <a class="atalho" href="./gerenciar-enquetes.html?v=20261018b"><b>📊</b><strong>Enquetes</strong><span>Criar e acompanhar consultas ↗</span></a>
         <div class="atalho em-preparacao" aria-label="Documentos em preparação"><b>📁</b><strong>Documentos</strong><span>Arquivos e materiais do mandato · Em preparação</span></div>
         <div class="atalho em-preparacao" aria-label="Configurações em preparação"><b>⚙️</b><strong>Configurações</strong><span>Preferências do painel · Em preparação</span></div>
       </div>
@@ -1278,7 +1278,7 @@ async function carregarProjetosPainel(){
         </div>
         <div class="conteudo-acoes">
           <button type="button" class="azul" onclick="alternarPublicacaoProjeto(${item.id},${!item.publicado})">${item.publicado?"Ocultar do app":"Publicar no app"}</button>
-          <a class="btn-editar-projeto" href="./gerenciar-projetos.html?id=${Number(item.id)}">Editar este projeto ↗</a>
+          <a class="btn-editar-projeto" href="./gerenciar-projetos.html?id=${Number(item.id)}&v=20261018b">Editar este projeto ↗</a>
           <button type="button" class="vermelho" onclick="excluirProjetoAcao(${item.id})">Excluir</button>
         </div>
         </details>
