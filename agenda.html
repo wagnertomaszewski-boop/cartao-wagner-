@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#096bbb"><title>Agenda pública | Mandato em Ação</title>
+<style>
+:root{--azul:#086bb5;--escuro:#173a59;--cinza:#637e96}
+*{box-sizing:border-box}
+body{margin:0;background:#eaf1f8;color:var(--escuro);font:15px/1.5 system-ui,Arial,sans-serif}
+.app{max-width:720px;margin:0 auto;min-height:100vh;background:#f7faff;padding-bottom:83px}
+header{background:linear-gradient(135deg,#0b74c1,#07447d);border-radius:0 0 28px 28px;color:white;padding:20px 18px 26px}
+header a{color:white;text-decoration:none;font-weight:700}h1{margin:19px 0 5px;font-size:27px}header p{margin:0;color:#e1f1ff}
+main{padding:15px}.intro,.card{background:white;border:1px solid #e0eaf2;border-radius:19px;padding:17px;margin:0 0 13px;box-shadow:0 6px 21px #133c6810}
+.intro h2{font-size:19px;margin:3px 0 7px}.intro p{color:#657b8f;margin:0}
+.card .top{display:flex;gap:11px;align-items:flex-start}
+.date{background:#e8f3fd;color:#0b609e;padding:8px 12px;min-width:68px;text-align:center;border-radius:12px}
+.date strong{display:block;font-size:25px;line-height:1}.date small{font-size:11px;font-weight:800}
+.card h3{font-size:19px;margin:0 0 3px}.info{font-size:13px;color:#617a90;margin:5px 0}
+.tag{display:inline-block;border-radius:13px;padding:4px 9px;font-size:11px;font-weight:800;background:#eaf4ff;color:#0d6baa}
+.tag.cancelado{background:#fff0ed;color:#a24a35}.tag.realizado{background:#e7f6ef;color:#217248}
+.desc{white-space:pre-wrap;color:#526a80;margin:11px 0 0;font-size:14px}
+.sectiontitle{font-weight:800;font-size:15px;margin:20px 3px 9px;color:#315d84}
+.notice{padding:19px;text-align:center;background:white;border-radius:17px;border:1px solid #dfe9f4;color:#617c91}
+nav{display:flex;position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:720px;background:white;z-index:9;border-top:1px solid #dfe9f2;justify-content:space-around;padding:8px 4px calc(8px + env(safe-area-inset-bottom))}
+nav a{flex:1;text-align:center;text-decoration:none;color:#667d8f;font-size:11px}nav b{display:block;font-size:21px}nav .ativo{color:#066ab5;font-weight:800}
+</style></head>
+<body><div class="app"><header><a href="./index.html">‹ Voltar ao início</a><h1>Agenda pública do mandato</h1><p>Acompanhe sessões, reuniões, visitas e eventos divulgados pelo vereador.</p></header>
+<main><section class="intro"><h2>Próximos compromissos</h2><p>Somente compromissos autorizados para divulgação aparecem nesta página. Informações pessoais e anotações internas permanecem privadas.</p></section>
+<div id="agenda" aria-live="polite"><div class="notice">Carregando agenda...</div></div>
+</main><nav><a href="./index.html"><b>⌂</b>Início</a><a href="./projetos.html"><b>🏛</b>Projetos</a><a class="ativo" href="./agenda.html"><b>▦</b>Agenda</a><a href="./enquetes.html"><b>▥</b>Enquetes</a></nav>
+</div><script>
+"use strict";
+const API="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
+const KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+const el=document.getElementById("agenda");
+const esc=x=>String(x==null?"":x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const tipos={reuniao:"Reunião",sessao:"Sessão da Câmara",visita:"Visita",audiencia:"Audiência pública",evento:"Evento",tarefa:"Atividade",outro:"Compromisso"};
+const situacoes={agendado:"Agendado",confirmado:"Confirmado",cancelado:"Cancelado",realizado:"Realizado"};
+const fmt=x=>new Date(x).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo",hour:"2-digit",minute:"2-digit"});
+const mes=x=>new Date(x).toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo",month:"short"}).replace(".","");
+const dia=x=>new Date(x).toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo",day:"2-digit"});
+const diaInteiro=x=>new Date(x).toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo",weekday:"long",day:"2-digit",month:"long",year:"numeric"});
+async function carregar(){
+ try{
+  const r=await fetch(API+"/rest/v1/rpc/agenda_publica_mandato",{method:"POST",headers:{"apikey":KEY,"Content-Type":"application/json"},body:"{}"});
+  const d=await r.json();if(!r.ok)throw Error(d.message||"Falha ao carregar agenda");
+  const itens=Array.isArray(d)?d:[];
+  if(!itens.length){el.innerHTML='<div class="notice"><strong>Nenhum compromisso público divulgado por enquanto.</strong><p>Novas atividades aparecerão aqui quando forem publicadas pelo mandato.</p></div>';return}
+  const hoje=new Date();
+  const proximos=itens.filter(i=>new Date(i.inicio_em)>=new Date(hoje.getTime()-86400000));
+  const anteriores=itens.filter(i=>new Date(i.inicio_em)<new Date(hoje.getTime()-86400000));
+  const render=arr=>arr.map(i=>{
+   const hora=fmt(i.inicio_em)+(i.fim_em?" – "+fmt(i.fim_em):"");
+   return '<article class="card"><div class="top"><div class="date"><strong>'+esc(dia(i.inicio_em))+'</strong><small>'+esc(mes(i.inicio_em).toUpperCase())+'</small></div><div style="flex:1"><span class="tag '+esc(i.situacao)+'">'+esc(situacoes[i.situacao]||"Agendado")+'</span><h3>'+esc(i.titulo)+'</h3><div class="info">'+esc(diaInteiro(i.inicio_em))+' · '+esc(hora)+'</div><div class="info">'+esc(tipos[i.tipo]||"Compromisso")+(i.local_publico?" · 📍 "+esc(i.local_publico):"")+'</div></div></div>'+(i.descricao_publica?'<div class="desc">'+esc(i.descricao_publica)+'</div>':"")+'</article>'
+  }).join("");
+  el.innerHTML=(proximos.length?'<h2 class="sectiontitle">Próximos compromissos</h2>'+render(proximos):'<div class="notice">Não há compromissos futuros publicados.</div>')+
+   (anteriores.length?'<h2 class="sectiontitle">Atividades recentes</h2>'+render(anteriores):"");
+ }catch(err){el.innerHTML='<div class="notice">Não foi possível carregar a agenda. Verifique sua conexão e tente novamente. <button style="display:block;margin:12px auto;padding:10px" type="button" onclick="carregar()">Tentar novamente</button></div>';}
+}
+carregar();
+</script></body></html>
