@@ -586,13 +586,13 @@ async function solicitarOtpEnquete(){
   b.disabled=true;b.textContent='Enviando...';
   await pollApi('/auth/v1/otp',{method:'POST',body:JSON.stringify({email:emailEnquete,create_user:true})});
   ultimaTentativaOtp=Date.now();
-  $poll('pollAuth').innerHTML='<div class="poll-form"><label for="pollCodigo">Código recebido por e-mail</label><input id="pollCodigo" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="6 dígitos"><button type="button" id="pollValidarCodigo" class="poll-action">Verificar código e registrar voto</button><p class="poll-small">Não compartilhe seu código com ninguém.</p></div>';
+  $poll('pollAuth').innerHTML='<div class="poll-form"><label for="pollCodigo">Código recebido por e-mail</label><input id="pollCodigo" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" placeholder="6 a 8 dígitos"><button type="button" id="pollValidarCodigo" class="poll-action">Verificar código e registrar voto</button><p class="poll-small">Não compartilhe seu código com ninguém.</p></div>';
   $poll('pollValidarCodigo').onclick=verificarOtpEnquete;
   pollAlerta('Código solicitado. Confira a caixa de entrada ou spam do seu e-mail.');
  }catch(err){pollAlerta('Não foi possível enviar o código por e-mail. '+err.message,'erro');b.disabled=false;b.textContent='Receber código por e-mail'}
 }
 async function verificarOtpEnquete(){
- const b=$poll('pollValidarCodigo'),codigo=($poll('pollCodigo')?.value||'').trim();if(!/^\d{6}$/.test(codigo)){pollAlerta('Digite os 6 números do código.','erro');return}
+ const b=$poll('pollValidarCodigo'),codigo=($poll('pollCodigo')?.value||'').trim();if(!/^\d{6,8}$/.test(codigo)){pollAlerta('Digite o código numérico de 6 a 8 dígitos.','erro');return}
  b.disabled=true;
  try{
   const r=await pollApi('/auth/v1/verify',{method:'POST',body:JSON.stringify({email:emailEnquete,token:codigo,type:'email'})});
