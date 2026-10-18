@@ -57,6 +57,22 @@ $('login').onsubmit=async ev=>{
  }catch(e){token=null;$('loginBox').style.display='block';$('editor').style.display='none';notice(e.message,true)}
  finally{b.disabled=false}
 };
+
+/* Reutiliza somente uma sessão de administrador válida já criada na V17. */
+async function entrarComSessaoDaV17(){
+ try{
+  const sessao=JSON.parse(localStorage.getItem('wagner_admin_session_v2')||'null');
+  if(!sessao?.access_token || (sessao.expires_at && sessao.expires_at<=Date.now()+10000))return;
+  const resp=await fetch(API+'/auth/v1/user',{headers:{apikey:KEY,Authorization:'Bearer '+sessao.access_token}});
+  if(!resp.ok)return;
+  const usuario=await resp.json();
+  if(usuario?.id!=='ca5c30ec-828e-4c95-a0b9-a415bb9b3643')return;
+  token=sessao.access_token;
+  await loadPolls();
+  $('loginBox').style.display='none';$('editor').style.display='block';
+ }catch(e){token=null;$('loginBox').style.display='block';$('editor').style.display='none'}
+}
+
 async function loadPolls(){
  if(!token)return;
  polls=await api('/rest/v1/enquetes_mandato?select=*&order=criada_em.desc');
@@ -90,7 +106,7 @@ function blank(){
 $('pollSelect').onchange=async()=>{try{await showPoll(polls.find(x=>x.id===Number($('pollSelect').value)))}catch(e){notice(e.message,true)}};
 $('createNew').onclick=blank;
 $('refresh').onclick=async()=>{try{await loadPolls();notice('Lista atualizada.')}catch(e){notice(e.message,true)}};
-$('logout').onclick=()=>{token=null;$('loginBox').style.display='block';$('editor').style.display='none';$('message').style.display='none';$('senha').value=''};
+$('logout').onclick=()=>{localStorage.removeItem('wagner_admin_session_v2');token=null;$('loginBox').style.display='block';$('editor').style.display='none';$('message').style.display='none';$('senha').value=''};
 $('pollForm').onsubmit=async ev=>{
  ev.preventDefault();const b=$('save');b.disabled=true;
  try{
@@ -128,4 +144,5 @@ $('pollForm').onsubmit=async ev=>{
  }catch(e){notice('Não foi possível salvar: '+e.message,true)}
  finally{b.disabled=false}
 };
+entrarComSessaoDaV17();
 </script></body></html>
