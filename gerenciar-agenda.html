@@ -41,6 +41,21 @@ button.primary{color:#fff;background:#0a68b4}button:disabled{opacity:.6}
 #formAgenda{scroll-margin-top:16px}
 #editarTitulo{margin-bottom:3px}
 @media(max-width:420px){.card{padding:14px}.grid{grid-template-columns:1fr}.stats{gap:6px}.stat{padding:10px}.stat strong{font-size:21px}}
+
+.cal-head{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.cal-head h2{margin:0}.cal-head button{font-size:23px;padding:4px 13px;margin-left:5px}
+.cal-titulo{text-align:center;text-transform:capitalize;font-size:15px;font-weight:800;margin:14px 0}
+.cal-semana,.cal-dias{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-semana span{text-align:center;font-size:11px;color:#698297;font-weight:800;padding:5px 0}
+.cal-dia{height:56px;margin:0;padding:4px 1px;border:1px solid #e2ecf5;background:#f9fbfe;border-radius:9px;color:#274862}
+.cal-dia strong{display:block;font-size:14px}
+.cal-dia.hoje{border-color:#0c6cb6}.cal-dia.sel{background:#0c6cb6;color:#fff}
+.cal-bolinhas{display:flex;gap:3px;justify-content:center;margin-top:4px;height:7px}
+.cal-bolinhas i{width:6px;height:6px;border-radius:50%;display:inline-block}.cal-bolinhas i.pub{background:#1685c9}.cal-bolinhas i.priv{background:#976ca9}
+.cal-dia.sel .cal-bolinhas i{background:#fff}
+.cal-legenda{display:flex;align-items:center;flex-wrap:wrap;gap:11px;font-size:11px;color:#6d8093;margin-top:12px}
+.cal-legenda span:first-child{color:#1685c9}.cal-legenda span:nth-child(2){color:#976ca9}
+@media(max-width:420px){.cal-dia{height:49px;padding:4px 0}.cal-dia strong{font-size:13px}}
 </style></head><body>
 <header><div class="inner"><a href="./admin-v17.html#mais">‹ Voltar ao Painel V17</a><h1>Minha agenda do mandato</h1><p>Organize seus compromissos e escolha o que será divulgado aos moradores.</p></div></header>
 <main>
@@ -56,6 +71,10 @@ button.primary{color:#fff;background:#0a68b4}button:disabled{opacity:.6}
 <div class="filters" id="filtros"><button type="button" class="sel" data-filtro="proximos">Próximos</button><button type="button" data-filtro="hoje">Hoje</button><button type="button" data-filtro="semana">7 dias</button><button type="button" data-filtro="mes">Este mês</button><button type="button" data-filtro="todos">Todos</button></div>
 <label for="busca">Buscar compromisso</label><input id="busca" type="search" placeholder="Título, local ou categoria">
 </section>
+<section class="card" id="calendario"><div class="cal-head"><h2>Calendário mensal</h2><div><button type="button" id="mesAnterior" aria-label="Mês anterior">‹</button><button type="button" id="mesSeguinte" aria-label="Mês seguinte">›</button></div></div>
+<div id="mesTitulo" class="cal-titulo"></div><div class="cal-semana"><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span></div>
+<div id="calDias" class="cal-dias"></div>
+<div class="cal-legenda"><span>● Público</span><span>● Particular</span><span id="diaFiltroInfo"></span></div></section>
 <div id="lista" aria-live="polite"><section class="card">Carregando compromissos…</section></div>
 <section class="card" id="formAgenda">
 <h2 id="editarTitulo">Novo compromisso</h2>
@@ -91,7 +110,7 @@ const esc=x=>String(x==null?"":x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;"
 const norm=x=>String(x||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
 const tipos={reuniao:"Reunião",sessao:"Sessão da Câmara",visita:"Visita",audiencia:"Audiência",evento:"Evento",tarefa:"Tarefa",outro:"Outro"};
 const situacoes={agendado:"Agendado",confirmado:"Confirmado",realizado:"Realizado",cancelado:"Cancelado"};
-let token="",items=[],editando=null,filtro="proximos";
+let token="",items=[],editando=null,filtro="proximos",diaSelecionado=null,mesVisivel=new Date(new Date().getFullYear(),new Date().getMonth(),1);
 function aviso(id,texto,erro=false){const e=$(id);e.textContent=texto;e.style.display=texto?"block":"none";e.classList.toggle("error",erro)}
 function toLocal(iso){if(!iso)return"";const d=new Date(iso),p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes())}
 function toISO(val){if(!val)return null;const d=new Date(val);if(!Number.isFinite(d.getTime()))throw Error("Informe uma data válida.");return d.toISOString()}
@@ -137,7 +156,33 @@ async function carregar(){
  if(!Array.isArray(items))throw Error("A agenda retornou dados inesperados.");
  render(); 
 }
+function dataLocal(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function renderCalendario(){
+ const ano=mesVisivel.getFullYear(),mes=mesVisivel.getMonth();
+ $("mesTitulo").textContent=mesVisivel.toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
+ const primeiro=new Date(ano,mes,1),diasNoMes=new Date(ano,mes+1,0).getDate();
+ const offset=(primeiro.getDay()+6)%7;
+ const porDia={};
+ items.forEach(i=>{const chave=dataLocal(new Date(i.inicio_em));(porDia[chave]??=[]).push(i)});
+ let html="";
+ for(let x=0;x<offset;x++)html+='<span class="cal-vazio" aria-hidden="true"></span>';
+ for(let n=1;n<=diasNoMes;n++){
+  const data=new Date(ano,mes,n),key=dataLocal(data),lista=porDia[key]||[];
+  const publico=lista.some(x=>x.publicado),privado=lista.some(x=>!x.publicado);
+  html+='<button type="button" class="cal-dia '+(diaSelecionado===key?"sel ":"")+(key===dataLocal(new Date())?"hoje":"")+'" data-dia="'+key+'" aria-label="'+n+' de '+mesVisivel.toLocaleDateString("pt-BR",{month:"long"})+', '+lista.length+' compromisso(s)"><strong>'+n+'</strong><span class="cal-bolinhas">'+(publico?'<i class="pub"></i>':"")+(privado?'<i class="priv"></i>':"")+'</span></button>';
+ }
+ $("calDias").innerHTML=html;
+ $("calDias").querySelectorAll("button[data-dia]").forEach(b=>b.onclick=()=>{
+  diaSelecionado=b.dataset.dia;filtro="dia";
+  $("filtros").querySelectorAll("button").forEach(x=>x.classList.remove("sel"));
+  render();
+ });
+ $("diaFiltroInfo").textContent=diaSelecionado?"Dia selecionado: "+diaSelecionado.split("-").reverse().join("/"):"";
+}
+$("mesAnterior").onclick=()=>{mesVisivel=new Date(mesVisivel.getFullYear(),mesVisivel.getMonth()-1,1);diaSelecionado=null;render()};
+$("mesSeguinte").onclick=()=>{mesVisivel=new Date(mesVisivel.getFullYear(),mesVisivel.getMonth()+1,1);diaSelecionado=null;render()};
 function render(){
+ renderCalendario();
  const hoje=new Date(),startDay=new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate()),endDay=new Date(startDay.getTime()+86400000);
  const week=new Date(startDay.getTime()+7*86400000),startMonth=new Date(hoje.getFullYear(),hoje.getMonth(),1),endMonth=new Date(hoje.getFullYear(),hoje.getMonth()+1,1);
  const proximos=items.filter(i=>new Date(i.inicio_em)>=startDay);
@@ -147,7 +192,7 @@ function render(){
  const busca=norm($("busca").value);
  const filtrados=items.filter(i=>{
   const data=new Date(i.inicio_em);
-  const periodo=filtro==="todos"||filtro==="proximos"&&data>=startDay||filtro==="hoje"&&data>=startDay&&data<endDay||filtro==="semana"&&data>=startDay&&data<week||filtro==="mes"&&data>=startMonth&&data<endMonth;
+  const periodo=filtro==="todos"||filtro==="proximos"&&data>=startDay||filtro==="hoje"&&data>=startDay&&data<endDay||filtro==="semana"&&data>=startDay&&data<week||filtro==="mes"&&data>=startMonth&&data<endMonth||filtro==="dia"&&dataLocal(data)===diaSelecionado;
   return periodo&&(!busca||norm([i.titulo,i.tipo,i.local_publico,i.local_privado,i.situacao].join(" ")).includes(busca));
  });
  const alvo=$("lista");
@@ -177,7 +222,7 @@ $("cancelar").onclick=limpar;
 $("recarregar").onclick=()=>carregar().catch(e=>aviso("msgLogin",e.message,true));
 $("busca").oninput=render;
 $("filtros").querySelectorAll("button").forEach(b=>b.onclick=()=>{
- filtro=b.dataset.filtro;$("filtros").querySelectorAll("button").forEach(x=>x.classList.toggle("sel",x===b));render();
+ filtro=b.dataset.filtro;diaSelecionado=null;$("filtros").querySelectorAll("button").forEach(x=>x.classList.toggle("sel",x===b));render();
 });
 $("compromissoForm").onsubmit=async e=>{
  e.preventDefault();const b=$("salvar");b.disabled=true;
