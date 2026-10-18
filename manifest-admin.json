@@ -1,23 +1,26 @@
 {
-  "name": "Painel do Mandato | Wagner Tomaszewski",
-  "short_name": "Painel Mandato",
-  "description": "Painel Administrativo do Vereador Wagner Tomaszewski",
+  "name": "Painel do Mandato V17",
+  "short_name": "Painel do Mandato",
+  "description": "Painel administrativo do mandato do vereador Wagner Tomaszewski, Cristal/RS",
   "start_url": "./admin-v17.html#inicio",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#061c31",
-  "theme_color": "#061c31",
+  "background_color": "#05164b",
+  "theme_color": "#085bb1",
   "lang": "pt-BR",
   "icons": [
     {
-      "src": "./icon-192.png",
+      "src": "./icon-painel-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "./icon-512.png",
+      "src": "./icon-painel-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
-  ]
+  ],
+  "id": "/cartao-wagner-/painel-do-mandato-v17"
 }
