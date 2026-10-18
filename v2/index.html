@@ -57,6 +57,8 @@ label{display:block;font-weight:700;margin:13px 0 6px;font-size:14px}input,texta
 /* Detalhes de projetos - padrão azul e branco */
 .detail-frame{background:#fff;border:1px solid #e4eaf1;border-radius:23px;overflow:hidden;box-shadow:0 10px 24px rgba(12,43,77,.08)}
 .detail-cover{width:100%;height:225px;object-fit:cover;display:block;background:#dae9f8}
+/* Nas duas emendas dos tratores, exibir a fotografia completa, sem cortes. */
+.detail-cover.trator-completo{height:auto;max-height:none;object-fit:contain;object-position:center;background:#edf4fb}
 .detail-body{padding:18px}
 .detail-title{font-size:25px;margin:4px 0 10px;color:#102542;line-height:1.18}
 .detail-meta{display:flex;flex-wrap:wrap;gap:9px 14px;color:#748396;font-size:12px;margin-bottom:12px}
@@ -88,6 +90,8 @@ button.project-card{
 button.project-card:active{background:#f2f8ff}
 button.project-card:focus-visible{outline:3px solid #0868bd;outline-offset:2px}
 .project-card-photo{display:block;width:100%;aspect-ratio:1.66;object-fit:cover;border-radius:13px;margin:12px 0 15px;pointer-events:none}
+/* Miniaturas dos tratores mantêm todo o equipamento visível. */
+.project-card-photo.trator-completo{object-fit:contain;object-position:center;background:#edf4fb}
 .project-card .project-tap{display:block;margin-top:11px;color:#0768bd;font-size:13px;font-weight:800}
 
 /* Enquetes comunitarias: mesmo visual azul e branco do Mandato em Acao V2 */
@@ -357,7 +361,7 @@ async function carregarProjetosPublicos(){
    const imagem=(Number(x.id)===1?CAPA_ALUNO_NOTA_DEZ:Number(x.id)===2?CAPA_MES_DO_ESPORTE_LAZER:Number(x.id)===9?CAPA_COMBATE_AO_ALCOOLISMO:Number(x.id)===10?CAPA_INTERNET_SEGURA:Number(x.id)===12?CAPA_PROMIE:imagemSegura(x.foto_url));
    a.innerHTML='<span class="tag">'+seguroTxt(tipos[x.tipo]||'AÇÃO')+(x.destaque?' · DESTAQUE':'')+(x.tipo==='sugestivo'&&/transformad|convertid/i.test(x.situacao||'')?' · VIROU LEI':'')+'</span>'+ 
    '<h3>'+seguroTxt(x.titulo)+'</h3>'+
-   (imagem?'<img class="project-card-photo" src="'+seguroTxt(imagem)+'" alt="Imagem do projeto">':'')+
+   (imagem?'<img class="project-card-photo'+([4,6].includes(Number(x.id))?' trator-completo':'')+'" src="'+seguroTxt(imagem)+'" alt="'+([4,6].includes(Number(x.id))?'Fotografia do trator':'Imagem do projeto')+'">':'')+
    '<p>'+seguroTxt(x.resumo)+'</p>'+ 
    '<div class="project-meta"><span>📄 '+seguroTxt(x.referencia||'')+'</span><span>🏛 '+seguroTxt(x.area||'')+'</span></div>'+ 
    '<div class="project-meta"><span>🔵 '+seguroTxt(x.situacao||'Em acompanhamento')+'</span></div>'+ 
@@ -377,7 +381,7 @@ async function abrirDetalhesProjeto(id){
   const x=await projetoRpc('consulta_publica_detalhe_projeto',{p_id:Number(id)});
   if(!x||!x.id)throw new Error('Este projeto não está publicado.');
   const capa=Number(x.id)===1?CAPA_ALUNO_NOTA_DEZ:Number(x.id)===2?CAPA_MES_DO_ESPORTE_LAZER:Number(x.id)===9?CAPA_COMBATE_AO_ALCOOLISMO:Number(x.id)===10?CAPA_INTERNET_SEGURA:Number(x.id)===12?CAPA_PROMIE:imagemSegura(x.foto_url);
-  let html=(capa?'<img class="detail-cover" src="'+seguroTxt(capa)+'" alt="Imagem ilustrativa do tema do projeto">':'')+'<div class="detail-body">';
+  let html=(capa?'<img class="detail-cover'+([4,6].includes(Number(x.id))?' trator-completo':'')+'" src="'+seguroTxt(capa)+'" alt="'+([4,6].includes(Number(x.id))?'Fotografia do trator completo':'Imagem do projeto')+'">':'')+'<div class="detail-body">';
   if(capa&&Number(x.id)===2)html+='<div class="detail-caption">Imagem ilustrativa de futebol, ciclismo e vôlei.</div>';
   if(capa&&Number(x.id)===9)html+='<div class="detail-caption">Arte ilustrativa de prevenção e acolhimento, sem representar evento efetivamente realizado.</div>';
   if(capa&&Number(x.id)===10)html+='<div class="detail-caption">Imagem ilustrativa de educação e segurança na internet. Não retrata uma atividade realizada em Cristal.</div>';
