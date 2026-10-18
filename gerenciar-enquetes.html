@@ -8,10 +8,10 @@ label{display:block;font-weight:bold;margin:13px 0 4px}input:not([type=checkbox]
 .row{display:flex;gap:12px;flex-wrap:wrap}.row>div{flex:1;min-width:210px}button{font:700 14px Arial,sans-serif;border:1px solid #1272b8;color:#0b60a0;background:#fff;border-radius:12px;padding:12px;cursor:pointer;margin:6px 6px 6px 0}
 button.primary{background:#0969b1;color:white}button:disabled{opacity:.6;cursor:not-allowed}.muted{font-size:13px;color:var(--muted)}.note{background:#eaf5ff;border:1px solid #c3dff3;border-radius:13px;padding:13px}
 .warning{border-color:#edcdb1;background:#fff6eb;color:#7d4c23}.error{background:#fff0f0;border-color:#ebc0c0;color:#9b2f2f}
-#message{display:none;white-space:pre-line}#editor{display:none}
+#message{display:none;white-space:pre-line}#editor{display:none}#loginBox{display:none}
 </style></head><body>
 <header><div style="max-width:760px;margin:auto"><a href="./admin-v17.html#mais">‹ Voltar ao painel</a><h1>Gerenciar enquetes</h1><p style="margin:0">Mandato em Ação · Participação popular</p></div></header>
-<main><section class="card" id="loginBox"><h2>Entrar no painel</h2><p class="muted">Use a conta administrativa já autorizada no Mandato em Ação.</p>
+<main><section class="card" id="authLoading" role="status"><h2>Verificando acesso...</h2><p class="muted">Conferindo sua sessão do Painel do Mandato.</p></section><section class="card" id="loginBox"><h2>Entrar no painel</h2><p class="muted">Use a conta administrativa já autorizada no Mandato em Ação.</p>
 <form id="login"><label for="email">E-mail</label><input type="email" id="email" autocomplete="username" required><label for="senha">Senha</label><input type="password" id="senha" autocomplete="current-password" required>
 <button class="primary" type="submit">Entrar</button></form></section>
 <div id="message" class="note" role="status"></div>
@@ -60,6 +60,7 @@ $('login').onsubmit=async ev=>{
 
 /* Reutiliza somente uma sessão de administrador válida já criada na V17. */
 async function entrarComSessaoDaV17(){
+ let autenticado=false;
  try{
   const sessao=JSON.parse(localStorage.getItem('wagner_admin_session_v2')||'null');
   if(!sessao?.access_token || (sessao.expires_at && sessao.expires_at<=Date.now()+10000))return;
@@ -69,8 +70,13 @@ async function entrarComSessaoDaV17(){
   if(usuario?.id!=='ca5c30ec-828e-4c95-a0b9-a415bb9b3643')return;
   token=sessao.access_token;
   await loadPolls();
-  $('loginBox').style.display='none';$('editor').style.display='block';
- }catch(e){token=null;$('loginBox').style.display='block';$('editor').style.display='none'}
+  autenticado=true;
+ }catch(e){token=null;
+ }finally{
+  $('authLoading').hidden=true;
+  $('loginBox').style.display=autenticado?'none':'block';
+  $('editor').style.display=autenticado?'block':'none';
+ }
 }
 
 async function loadPolls(){
