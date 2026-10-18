@@ -24,9 +24,12 @@ jobs:
           java-version: "17"
       - name: Android SDK disponivel no runner
         run: |
-          echo "SDK no runner: ${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          sdkmanager --version
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "SDK no runner: $SDK"
+          SDKMANAGER="$(find "$SDK/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          test -x "$SDKMANAGER"
+          "$SDKMANAGER" --version
+          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
       - name: Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
