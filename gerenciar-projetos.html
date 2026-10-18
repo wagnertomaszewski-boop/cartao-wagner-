@@ -75,7 +75,23 @@ $("loginForm").onsubmit=async e=>{
   $("loginCard").hidden=true;$("editor").hidden=false;notice("loginStatus","",false);
  }catch(err){token="";notice("loginStatus","Não foi possível entrar: "+err.message,true)}
 };
-$("logout").onclick=()=>{token="";draft=null;$("editor").hidden=true;$("loginCard").hidden=false;notice("loginStatus","Sessão encerrada.",false)};
+$("logout").onclick=()=>{localStorage.removeItem("wagner_admin_session_v2");token="";draft=null;$("editor").hidden=true;$("loginCard").hidden=false;notice("loginStatus","Sessão encerrada.",false)};
+
+/* Sessão administrativa compartilhada com o Painel V17; validada no servidor. */
+async function entrarComSessaoDaV17(){
+ try{
+  const sessao=JSON.parse(localStorage.getItem('wagner_admin_session_v2')||'null');
+  if(!sessao?.access_token || (sessao.expires_at && sessao.expires_at<=Date.now()+10000))return;
+  const resp=await fetch(BASE+'/auth/v1/user',{headers:{apikey:KEY,Authorization:'Bearer '+sessao.access_token}});
+  if(!resp.ok)return;
+  const usuario=await resp.json();
+  if(usuario?.id!=='ca5c30ec-828e-4c95-a0b9-a415bb9b3643')return;
+  token=sessao.access_token;
+  await loadItems(projetoSelecionadoInicial);
+  $('loginCard').hidden=true;$('editor').hidden=false;
+ }catch(e){token='';$('loginCard').hidden=false;$('editor').hidden=true}
+}
+
 async function loadItems(selectId){
  items=await call("/rest/v1/projetos_acoes_publicos?select=*&order=ordem.asc,id.asc","GET");
  if(!Array.isArray(items))throw Error("Não foi possível carregar os projetos.");
@@ -126,4 +142,5 @@ $("form").onsubmit=async e=>{
  const id=saved[0].id;await loadItems(id);notice("saveStatus","Alterações salvas no banco. Se estiver publicado, já aparecerão no app após atualizar a tela.",false);
  }catch(err){notice("saveStatus","Erro ao salvar: "+err.message,true)}
 };
+entrarComSessaoDaV17();
 </script></body></html>
