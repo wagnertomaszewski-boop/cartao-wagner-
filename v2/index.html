@@ -92,9 +92,18 @@ button.project-card:focus-visible{outline:3px solid #0868bd;outline-offset:2px}
 .project-card-photo{display:block;width:100%;aspect-ratio:1.66;object-fit:cover;border-radius:13px;margin:12px 0 15px;pointer-events:none}
 /* Miniaturas dos tratores mantêm todo o equipamento visível. */
 /* Fotos verticais dos tratores, em um cartão maior e com fundo da própria fotografia. */
-.trator-foto-area{position:relative;width:100%;aspect-ratio:0.95;border-radius:13px;margin:12px 0 15px;overflow:hidden;background:#dfeaf5}
+.trator-foto-area{position:relative;width:100%;aspect-ratio:1.2;max-height:430px;border-radius:13px;margin:12px 0 15px;overflow:hidden;background:#dfeaf5;cursor:zoom-in}
 .trator-foto-area .trator-foto-fundo{position:absolute;inset:-22px;width:calc(100% + 44px);height:calc(100% + 44px);object-fit:cover;filter:blur(20px) brightness(.65);opacity:.85;pointer-events:none}
 .trator-foto-area .project-card-photo.trator-completo{position:relative;display:block;width:100%;height:100%;margin:0;aspect-ratio:auto;object-fit:contain;object-position:center;border-radius:0;background:transparent;pointer-events:none;filter:drop-shadow(0 2px 9px rgba(0,0,0,.2))}
+.trator-ampliar-selo{position:absolute;bottom:11px;right:11px;z-index:2;border-radius:16px;padding:8px 12px;background:rgba(5,38,72,.85);color:#fff;font-size:12px;font-weight:700;pointer-events:none;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.detail-cover.trator-completo{cursor:zoom-in}
+.foto-lightbox[hidden]{display:none!important}
+.foto-lightbox{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;padding:64px 12px 24px;background:rgba(5,16,32,.96);color:white}
+.foto-lightbox img{display:block;max-width:100%;width:auto;max-height:calc(100dvh - 145px);object-fit:contain;border-radius:7px}
+.foto-lightbox-close{position:absolute;right:15px;top:calc(14px + env(safe-area-inset-top));border:1px solid rgba(255,255,255,.3);border-radius:35px;padding:10px 16px;background:#fff;color:#103452;font-weight:800;font-size:15px;cursor:pointer}
+.foto-lightbox-close:focus-visible{outline:3px solid #5fb3fb}
+.foto-lightbox-desc{font-size:12px;color:#d6e1eb;text-align:center}
+body.com-foto-ampliada{overflow:hidden}
 .project-card .project-tap{display:block;margin-top:11px;color:#0768bd;font-size:13px;font-weight:800}
 
 /* Enquetes comunitarias: mesmo visual azul e branco do Mandato em Acao V2 */
@@ -289,6 +298,11 @@ body{background:#e9eff6}
 <button id="nav-enquetes" type="button" onclick="go('enquetes')"><b aria-hidden="true">▥</b>Enquetes</button>
 <button id="nav-noticias" type="button" onclick="go('noticias')"><b aria-hidden="true">▤</b>Notícias</button>
 </nav>
+<div class="foto-lightbox" id="ampliadorFotos" role="dialog" aria-modal="true" aria-label="Fotografia ampliada do equipamento" hidden>
+  <button type="button" id="fecharFotoAmpliada" class="foto-lightbox-close">✕ Fechar</button>
+  <img id="fotoAmpliada" alt="Fotografia do equipamento">
+  <span class="foto-lightbox-desc">Toque fora da foto ou em Fechar para voltar</span>
+</div>
 </div>
 <script>
 const SUPABASE_URL='https://pmmsdjozyyxkbuqlkfpb.supabase.co',SUPABASE_KEY='sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_';
@@ -364,7 +378,7 @@ async function carregarProjetosPublicos(){
    const imagem=(Number(x.id)===1?CAPA_ALUNO_NOTA_DEZ:Number(x.id)===2?CAPA_MES_DO_ESPORTE_LAZER:Number(x.id)===9?CAPA_COMBATE_AO_ALCOOLISMO:Number(x.id)===10?CAPA_INTERNET_SEGURA:Number(x.id)===12?CAPA_PROMIE:imagemSegura(x.foto_url));
    a.innerHTML='<span class="tag">'+seguroTxt(tipos[x.tipo]||'AÇÃO')+(x.destaque?' · DESTAQUE':'')+(x.tipo==='sugestivo'&&/transformad|convertid/i.test(x.situacao||'')?' · VIROU LEI':'')+'</span>'+ 
    '<h3>'+seguroTxt(x.titulo)+'</h3>'+
-   (imagem?([4,6].includes(Number(x.id))?'<div class="trator-foto-area"><img class="trator-foto-fundo" src="'+seguroTxt(imagem)+'" alt="" aria-hidden="true" loading="lazy"><img class="project-card-photo trator-completo" src="'+seguroTxt(imagem)+'" alt="Fotografia completa do trator" loading="lazy"></div>':'<img class="project-card-photo" src="'+seguroTxt(imagem)+'" alt="Imagem do projeto" loading="lazy">'):'')+
+   (imagem?([4,6].includes(Number(x.id))?'<div class="trator-foto-area"><img class="trator-foto-fundo" src="'+seguroTxt(imagem)+'" alt="" aria-hidden="true" loading="lazy"><img class="project-card-photo trator-completo" src="'+seguroTxt(imagem)+'" alt="Fotografia completa do trator" loading="lazy"><span class="trator-ampliar-selo">⤢ Ampliar foto</span></div>':'<img class="project-card-photo" src="'+seguroTxt(imagem)+'" alt="Imagem do projeto" loading="lazy">'):'')+
    '<p>'+seguroTxt(x.resumo)+'</p>'+ 
    '<div class="project-meta"><span>📄 '+seguroTxt(x.referencia||'')+'</span><span>🏛 '+seguroTxt(x.area||'')+'</span></div>'+ 
    '<div class="project-meta"><span>🔵 '+seguroTxt(x.situacao||'Em acompanhamento')+'</span></div>'+ 
@@ -409,6 +423,8 @@ async function abrirDetalhesProjeto(id){
   html+='</section><div class="detail-actions"><button type="button" id="compartilharProjeto">↗ Compartilhar</button><button type="button" id="solicitarProjeto">✉ Solicitar informação</button></div></div>';
   alvo.innerHTML=html;
   if(Number(x.id)===1){const imagemCapa=alvo.querySelector('.detail-cover');if(imagemCapa)imagemCapa.addEventListener('error',()=>{imagemCapa.src=CAPA_ALUNO_NOTA_DEZ;},{once:true});}
+  const fotoDetalhe=alvo.querySelector('.detail-cover.trator-completo');
+  if(fotoDetalhe)fotoDetalhe.addEventListener('click',()=>abrirFotoAmpliada(fotoDetalhe.currentSrc||fotoDetalhe.src,'Fotografia completa do trator'));
   document.getElementById('solicitarProjeto').onclick=()=>go('solicitar');
   document.getElementById('compartilharProjeto').onclick=async()=>{
    const url='https://wagnertomaszewski-boop.github.io/cartao-wagner-/projetos.html?id='+x.id;
@@ -417,7 +433,41 @@ async function abrirDetalhesProjeto(id){
  }catch(e){alvo.innerHTML='<div class="detail-body"><h2>Detalhes indisponíveis</h2><p class="muted">'+seguroTxt(e.message)+'</p><button class="primary" type="button" id="btnVoltarFalhaProjeto">Voltar aos projetos</button></div>';const b=document.getElementById('btnVoltarFalhaProjeto');if(b)b.onclick=()=>go('projetos')}
 }
 
+let focoAnteriorFoto=null;
+function abrirFotoAmpliada(url,descricao){
+ const modal=document.getElementById('ampliadorFotos');
+ const img=document.getElementById('fotoAmpliada');
+ if(!modal||!img||!url)return;
+ focoAnteriorFoto=document.activeElement;
+ img.src=url;
+ img.alt=descricao||'Fotografia do equipamento';
+ modal.hidden=false;
+ document.body.classList.add('com-foto-ampliada');
+ document.getElementById('fecharFotoAmpliada').focus();
+}
+function fecharFotoAmpliada(){
+ const modal=document.getElementById('ampliadorFotos');
+ if(!modal||modal.hidden)return;
+ modal.hidden=true;
+ document.body.classList.remove('com-foto-ampliada');
+ document.getElementById('fotoAmpliada').removeAttribute('src');
+ if(focoAnteriorFoto&&typeof focoAnteriorFoto.focus==='function')focoAnteriorFoto.focus({preventScroll:true});
+ focoAnteriorFoto=null;
+}
+document.getElementById('fecharFotoAmpliada').addEventListener('click',fecharFotoAmpliada);
+document.getElementById('ampliadorFotos').addEventListener('click',e=>{if(e.target.id==='ampliadorFotos')fecharFotoAmpliada();});
+document.addEventListener('keydown',e=>{
+ const modal=document.getElementById('ampliadorFotos');
+ if(!modal.hidden&&e.key==='Escape'){e.preventDefault();fecharFotoAmpliada();}
+});
 document.getElementById('projectList').addEventListener('click',function(e){
+ const fotoArea=e.target.closest('.trator-foto-area');
+ if(fotoArea&&this.contains(fotoArea)){
+  e.preventDefault();e.stopPropagation();
+  const foto=fotoArea.querySelector('.project-card-photo');
+  if(foto)abrirFotoAmpliada(foto.currentSrc||foto.src,'Fotografia completa do trator');
+  return;
+ }
  const card=e.target.closest('button.project-card[data-project-id]');
  if(!card || !this.contains(card))return;
  const id=Number(card.dataset.projectId);
