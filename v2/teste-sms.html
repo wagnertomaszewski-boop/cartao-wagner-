@@ -109,7 +109,7 @@ el("enviar").onclick=async()=>{
   await api("/auth/v1/otp",{phone:number,create_user:true});
   telefoneConfirmacao=number;el("etapaCodigo").hidden=false;el("telefone").disabled=true;
   inform("O serviço aceitou o pedido. Confira as mensagens SMS no celular. Se não chegar, nos informe a mensagem de erro exibida aqui.");
- }catch(e){inform("Não foi possível solicitar o SMS. "+e.message,"error");}
+ }catch(e){const providerError=/unsupported phone provider|sms provider|phone provider/i.test(e.message||"");inform(providerError?"O envio de SMS ainda não foi configurado no Supabase. Precisamos ativar um fornecedor de SMS (como Twilio ou Vonage) antes de continuar. A enquete está preservada; não foi enviado nenhum código.":"Não foi possível solicitar o SMS. "+e.message,"error");}
  finally{busy("enviar",false);}
 };
 el("verificar").onclick=async()=>{
