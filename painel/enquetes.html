@@ -1,0 +1,154 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerenciar Enquetes | Painel Wagner Tomaszewski</title>
+<style>
+:root{--blue:#0b67ad;--navy:#183554;--muted:#61788c}*{box-sizing:border-box}body{margin:0;background:#f1f5fa;color:var(--navy);font:15px/1.5 Arial,sans-serif}
+header{background:linear-gradient(135deg,#0d78c3,#08477f);color:#fff;padding:19px}header h1{margin:8px 0 2px;font-size:25px}header a{color:#fff}
+main{max-width:760px;margin:22px auto;padding:0 14px}.card{background:white;padding:19px;margin:14px 0;border:1px solid #dfebf4;border-radius:20px;box-shadow:0 7px 22px #163b5c12}
+label{display:block;font-weight:bold;margin:13px 0 4px}input:not([type=checkbox]),textarea,select{width:100%;padding:12px;border:1px solid #bbd0e3;border-radius:11px;background:#fff;color:#183554;font:inherit}textarea{min-height:100px;resize:vertical}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>div{flex:1;min-width:210px}button{font:700 14px Arial,sans-serif;border:1px solid #1272b8;color:#0b60a0;background:#fff;border-radius:12px;padding:12px;cursor:pointer;margin:6px 6px 6px 0}
+button.primary{background:#0969b1;color:white}button:disabled{opacity:.6;cursor:not-allowed}.muted{font-size:13px;color:var(--muted)}.note{background:#eaf5ff;border:1px solid #c3dff3;border-radius:13px;padding:13px}
+.warning{border-color:#edcdb1;background:#fff6eb;color:#7d4c23}.error{background:#fff0f0;border-color:#ebc0c0;color:#9b2f2f}
+#message{display:none;white-space:pre-line}#editor{display:none}#loginBox{display:none}
+</style></head><body>
+<header><div style="max-width:760px;margin:auto"><a href="./index.html#mais">‹ Voltar ao painel</a><h1>Gerenciar enquetes</h1><p style="margin:0">Mandato em Ação · Participação popular</p></div></header>
+<main><section class="card" id="authLoading" role="status"><h2>Verificando acesso...</h2><p class="muted">Conferindo sua sessão do Painel do Mandato.</p></section><section class="card" id="loginBox" style="display:none"><h2>Entrar no painel</h2><p class="muted">Use a conta administrativa já autorizada no Mandato em Ação.</p>
+<form id="login"><label for="email">E-mail</label><input type="email" id="email" autocomplete="username" required><label for="senha">Senha</label><input type="password" id="senha" autocomplete="current-password" required>
+<button class="primary" type="submit">Entrar</button></form></section>
+<div id="message" class="note" role="status"></div>
+<section id="editor"><div class="card">
+<h2>Enquetes cadastradas</h2><label for="pollSelect">Selecione uma enquete</label><select id="pollSelect"></select>
+<button id="createNew" type="button">+ Criar nova enquete</button><button type="button" id="refresh">Atualizar lista</button>
+<p class="muted">Enquetes em rascunho são invisíveis aos moradores. A primeira proposta foi deixada como rascunho.</p><div id="pollStats" class="note">Selecione uma enquete para ver os totais de votos.</div>
+</div>
+<form class="card" id="pollForm"><h2 id="editorTitle">Editar enquete</h2>
+<label for="titulo">Pergunta</label><input id="titulo" required maxlength="220" minlength="8">
+<label for="descricao">Descrição</label><textarea id="descricao" placeholder="Explique o objetivo da consulta."></textarea>
+<div class="row"><div><label for="inicio">Início</label><input id="inicio" type="datetime-local" required></div><div><label for="fim">Encerramento</label><input id="fim" type="datetime-local" required></div></div>
+<label for="opcoes">Alternativas (uma por linha, no mínimo duas)</label><textarea id="opcoes" required rows="8"></textarea>
+<p class="muted">Por segurança, não é permitido alterar as alternativas de uma enquete publicada ou que já recebeu votos.</p>
+<label><input type="checkbox" id="resultados" checked> Mostrar resultados parciais depois de votar</label>
+<div class="note warning"><strong>Importante sobre SMS:</strong> é necessário ativar o login por telefone e configurar um provedor de SMS no Supabase antes da publicação. Esse serviço pode ter custo por mensagem. Nunca publique antes de testar o envio e a confirmação do código no seu celular.</div>
+<label><input type="checkbox" id="publicada"> Publicar enquete para os moradores</label>
+<label><input type="checkbox" id="smsPronto"> Confirmo que configurei e testei o envio de SMS (obrigatório ao publicar)</label>
+<div><button class="primary" type="submit" id="save">Salvar enquete</button><button type="button" id="logout">Sair</button></div>
+<p class="muted">Uma enquete publicada precisa ter início, encerramento e no mínimo duas alternativas. Você pode encerrá-la antecipadamente ajustando a data final, desde que permaneça após o início.</p>
+</form></section></main>
+<script>
+'use strict';
+const API='https://pmmsdjozyyxkbuqlkfpb.supabase.co',KEY='sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_';
+const $=x=>document.getElementById(x);
+let token=null,polls=[],selected=null,options=[];
+function notice(s,bad=false){const el=$('message');el.style.display='block';el.className='note'+(bad?' error':'');el.textContent=s;el.scrollIntoView({block:'nearest',behavior:'smooth'})}
+async function api(path,opt={}){
+ const r=await fetch(API+path,{...opt,headers:{apikey:KEY,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{}),...(opt.headers||{})}});
+ let data;try{data=await r.json()}catch{data=null}
+ if(!r.ok)throw new Error(data?.message||data?.msg||data?.error_description||'Não foi possível concluir a operação.');
+ return data
+}
+const isoInput=v=>{if(!v)return'';const d=new Date(v);if(!Number.isFinite(d.getTime()))return'';const offset=d.getTimezoneOffset()*60000;return new Date(d.getTime()-offset).toISOString().slice(0,16)};
+const isoDb=v=>{const d=new Date(v);if(!v||!Number.isFinite(d.getTime()))throw new Error('Informe uma data válida.');return d.toISOString()};
+$('login').onsubmit=async ev=>{
+ ev.preventDefault();const b=ev.target.querySelector('button');b.disabled=true;
+ try{
+  const r=await fetch(API+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email:$('email').value.trim(),password:$('senha').value})});
+  const d=await r.json();if(!r.ok||!d.access_token)throw new Error(d.msg||d.message||'Não foi possível entrar.');
+  token=d.access_token;$('senha').value='';$('loginBox').style.display='none';$('editor').style.display='block';
+  await loadPolls();notice('Painel aberto. Escolha uma enquete para editar.');
+ }catch(e){token=null;$('loginBox').style.display='block';$('editor').style.display='none';notice(e.message,true)}
+ finally{b.disabled=false}
+};
+
+/* Reutiliza somente uma sessão de administrador válida já criada na V17. */
+async function entrarComSessaoDaV17(){
+ let autenticado=false;
+ try{
+  const sessao=JSON.parse(localStorage.getItem('wagner_admin_session_v2')||'null');
+  if(!sessao?.access_token || (sessao.expires_at && sessao.expires_at<=Date.now()+10000))return;
+  const resp=await fetch(API+'/auth/v1/user',{headers:{apikey:KEY,Authorization:'Bearer '+sessao.access_token}});
+  if(!resp.ok)return;
+  const usuario=await resp.json();
+  if(usuario?.id!=='ca5c30ec-828e-4c95-a0b9-a415bb9b3643')return;
+  token=sessao.access_token;
+  await loadPolls();
+  autenticado=true;
+ }catch(e){token=null;
+ }finally{
+  $('authLoading').hidden=true;
+  $('loginBox').style.display=autenticado?'none':'block';
+  $('editor').style.display=autenticado?'block':'none';
+ }
+}
+
+async function loadPolls(){
+ if(!token)return;
+ polls=await api('/rest/v1/enquetes_mandato?select=*&order=criada_em.desc');
+ const select=$('pollSelect');select.innerHTML='';
+ for(const p of polls){const o=document.createElement('option');o.value=p.id;o.textContent=(p.publicada?'[PÚBLICA] ':'[RASCUNHO] ')+p.titulo;select.appendChild(o)}
+ if(!polls.length){blank();return}
+ const found=polls.find(p=>p.id===selected?.id)||polls[0];selected=found;select.value=String(found.id);await showPoll(found)
+}
+async function showPoll(p){
+ selected=p;options=await api('/rest/v1/enquete_opcoes_mandato?select=id,texto,ordem&enquete_id=eq.'+p.id+'&order=ordem.asc,id.asc');
+ $('editorTitle').textContent='Enquete nº '+p.id;
+ $('titulo').value=p.titulo||'';$('descricao').value=p.descricao||'';
+ $('inicio').value=isoInput(p.inicio_em);$('fim').value=isoInput(p.fim_em);
+ $('opcoes').value=options.map(o=>o.texto).join('\n');$('opcoes').disabled=!!p.publicada;
+ $('resultados').checked=!!p.resultados_apos_voto;$('publicada').checked=!!p.publicada;$('smsPronto').checked=false;
+ await atualizarContagem(p.id);
+}
+async function atualizarContagem(id){
+ try{
+  const r=await api('/rest/v1/rpc/resumo_admin_enquete',{method:'POST',body:JSON.stringify({p_enquete_id:id})});
+  const total=Number(r?.total||0);
+  $('pollStats').textContent='Total de votos: '+total+' · '+(r?.opcoes||[]).map(o=>o.texto+': '+Number(o.votos||0)).join(' · ');
+ }catch(e){$('pollStats').textContent='Não foi possível consultar a contagem: '+e.message}
+}
+function blank(){
+ selected=null;options=[];$('pollStats').textContent='Salve a nova enquete para consultar a contagem.';$('editorTitle').textContent='Nova enquete';
+ $('titulo').value='';$('descricao').value='';$('inicio').value=isoInput(new Date().toISOString());
+ const end=new Date(Date.now()+7*86400000);$('fim').value=isoInput(end.toISOString());$('opcoes').value='';
+ $('opcoes').disabled=false;$('resultados').checked=true;$('publicada').checked=false;$('smsPronto').checked=false;
+}
+$('pollSelect').onchange=async()=>{try{await showPoll(polls.find(x=>x.id===Number($('pollSelect').value)))}catch(e){notice(e.message,true)}};
+$('createNew').onclick=blank;
+$('refresh').onclick=async()=>{try{await loadPolls();notice('Lista atualizada.')}catch(e){notice(e.message,true)}};
+$('logout').onclick=()=>{localStorage.removeItem('wagner_admin_session_v2');token=null;$('loginBox').style.display='block';$('editor').style.display='none';$('message').style.display='none';$('senha').value=''};
+$('pollForm').onsubmit=async ev=>{
+ ev.preventDefault();const b=$('save');b.disabled=true;
+ try{
+  const titulo=$('titulo').value.trim(),descricao=$('descricao').value.trim(),inicio=isoDb($('inicio').value),fim=isoDb($('fim').value);
+  const choice=$('opcoes').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(new Date(fim)<=new Date(inicio))throw new Error('O encerramento precisa ocorrer depois do início.');
+  if(choice.length<2||new Set(choice.map(x=>x.toLowerCase())).size!==choice.length)throw new Error('Cadastre ao menos duas alternativas diferentes.');
+  if(choice.some(x=>x.length>180))throw new Error('Alternativa com mais de 180 caracteres.');
+  const publish=$('publicada').checked;
+  if(publish && !selected?.publicada && !$('smsPronto').checked)throw new Error('Antes de publicar, confirme que o envio de SMS já foi configurado e testado.');
+  const base={titulo,descricao,inicio_em:inicio,fim_em:fim,resultados_apos_voto:$('resultados').checked};
+  let id;
+  if(!selected){
+   const obj=await api('/rest/v1/enquetes_mandato',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...base,publicada:false})});
+   id=obj?.[0]?.id;if(!id)throw new Error('Enquete criada, mas não recebemos o número.');
+   await api('/rest/v1/enquete_opcoes_mandato',{method:'POST',body:JSON.stringify(choice.map((texto,i)=>({enquete_id:id,texto,ordem:i*10+10})))});
+  }else{
+   id=selected.id;
+   await api('/rest/v1/enquetes_mandato?id=eq.'+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({...base,publicada:selected.publicada&&publish})});
+   if(!selected.publicada){
+    const old=options.map(x=>x.texto);
+    if(JSON.stringify(old)!==JSON.stringify(choice)){
+     await api('/rest/v1/enquete_opcoes_mandato?enquete_id=eq.'+id,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+     await api('/rest/v1/enquete_opcoes_mandato',{method:'POST',body:JSON.stringify(choice.map((texto,i)=>({enquete_id:id,texto,ordem:i*10+10})))});
+    }
+   }else if(JSON.stringify(options.map(x=>x.texto))!==JSON.stringify(choice)){
+    throw new Error('Para editar alternativas, despublique a enquete, desde que ela ainda não tenha recebido votos.');
+   }
+  }
+  if(publish){
+   await api('/rest/v1/enquetes_mandato?id=eq.'+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({publicada:true})});
+  }
+  await loadPolls();selected=polls.find(p=>p.id===id)||selected;
+  notice(publish?'Enquete publicada! Confirme que o código SMS chega aos participantes.':'Enquete salva como rascunho.');
+ }catch(e){notice('Não foi possível salvar: '+e.message,true)}
+ finally{b.disabled=false}
+};
+entrarComSessaoDaV17();
+</script></body></html>
