@@ -91,7 +91,10 @@ button.project-card:active{background:#f2f8ff}
 button.project-card:focus-visible{outline:3px solid #0868bd;outline-offset:2px}
 .project-card-photo{display:block;width:100%;aspect-ratio:1.66;object-fit:cover;border-radius:13px;margin:12px 0 15px;pointer-events:none}
 /* Miniaturas dos tratores mantêm todo o equipamento visível. */
-.project-card-photo.trator-completo{object-fit:contain;object-position:center;background:#edf4fb}
+/* Fotos verticais dos tratores, em um cartão maior e com fundo da própria fotografia. */
+.trator-foto-area{position:relative;width:100%;aspect-ratio:0.95;border-radius:13px;margin:12px 0 15px;overflow:hidden;background:#dfeaf5}
+.trator-foto-area .trator-foto-fundo{position:absolute;inset:-22px;width:calc(100% + 44px);height:calc(100% + 44px);object-fit:cover;filter:blur(20px) brightness(.65);opacity:.85;pointer-events:none}
+.trator-foto-area .project-card-photo.trator-completo{position:relative;display:block;width:100%;height:100%;margin:0;aspect-ratio:auto;object-fit:contain;object-position:center;border-radius:0;background:transparent;pointer-events:none;filter:drop-shadow(0 2px 9px rgba(0,0,0,.2))}
 .project-card .project-tap{display:block;margin-top:11px;color:#0768bd;font-size:13px;font-weight:800}
 
 /* Enquetes comunitarias: mesmo visual azul e branco do Mandato em Acao V2 */
@@ -361,13 +364,13 @@ async function carregarProjetosPublicos(){
    const imagem=(Number(x.id)===1?CAPA_ALUNO_NOTA_DEZ:Number(x.id)===2?CAPA_MES_DO_ESPORTE_LAZER:Number(x.id)===9?CAPA_COMBATE_AO_ALCOOLISMO:Number(x.id)===10?CAPA_INTERNET_SEGURA:Number(x.id)===12?CAPA_PROMIE:imagemSegura(x.foto_url));
    a.innerHTML='<span class="tag">'+seguroTxt(tipos[x.tipo]||'AÇÃO')+(x.destaque?' · DESTAQUE':'')+(x.tipo==='sugestivo'&&/transformad|convertid/i.test(x.situacao||'')?' · VIROU LEI':'')+'</span>'+ 
    '<h3>'+seguroTxt(x.titulo)+'</h3>'+
-   (imagem?'<img class="project-card-photo'+([4,6].includes(Number(x.id))?' trator-completo':'')+'" src="'+seguroTxt(imagem)+'" alt="'+([4,6].includes(Number(x.id))?'Fotografia do trator':'Imagem do projeto')+'">':'')+
+   (imagem?([4,6].includes(Number(x.id))?'<div class="trator-foto-area"><img class="trator-foto-fundo" src="'+seguroTxt(imagem)+'" alt="" aria-hidden="true" loading="lazy"><img class="project-card-photo trator-completo" src="'+seguroTxt(imagem)+'" alt="Fotografia completa do trator" loading="lazy"></div>':'<img class="project-card-photo" src="'+seguroTxt(imagem)+'" alt="Imagem do projeto" loading="lazy">'):'')+
    '<p>'+seguroTxt(x.resumo)+'</p>'+ 
    '<div class="project-meta"><span>📄 '+seguroTxt(x.referencia||'')+'</span><span>🏛 '+seguroTxt(x.area||'')+'</span></div>'+ 
    '<div class="project-meta"><span>🔵 '+seguroTxt(x.situacao||'Em acompanhamento')+'</span></div>'+ 
    '<span class="project-tap">Toque aqui para ver detalhes ›</span>';
    const img=a.querySelector('.project-card-photo');
-   if(img)img.addEventListener('error',()=>img.remove());
+   if(img)img.addEventListener('error',()=>{const quadro=img.closest('.trator-foto-area');if(quadro)quadro.remove();else img.remove();});
    el.appendChild(a)
   });
   if(!dados.length)el.innerHTML='<div class="project-empty">Nenhum projeto publicado no momento.</div>';
