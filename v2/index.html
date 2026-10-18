@@ -406,7 +406,7 @@ async function carregarProjetosPublicos(){
    const a=document.createElement('button');a.type='button';a.className='project-card';
    a.dataset.projectId=String(Number(x.id));
    a.setAttribute('aria-label','Abrir detalhes de '+x.titulo);
-   const result=/entreg|conclu|resultado|executad|adquirid/i.test(x.situacao||'')?' resultado':'';
+   const result=/entreg|conclu|resultado|executad|adquirid|aquisiç[aã]o por/i.test(x.situacao||'')?' resultado':'';
    a.dataset.type=String(x.tipo||'').trim().toLowerCase()+result;
    a.dataset.ordemOriginal=String(el.childElementCount);
    const imagem=(Number(x.id)===1?CAPA_ALUNO_NOTA_DEZ:Number(x.id)===2?CAPA_MES_DO_ESPORTE_LAZER:Number(x.id)===9?CAPA_COMBATE_AO_ALCOOLISMO:Number(x.id)===10?CAPA_INTERNET_SEGURA:Number(x.id)===12?CAPA_PROMIE:imagemSegura(x.foto_url));
