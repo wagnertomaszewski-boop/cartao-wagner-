@@ -22,7 +22,8 @@ h2{margin:0 0 8px;font-size:23px}h3{font-size:17px;margin:21px 0 9px}
 </style></head>
 <body><header><a href="./admin-v17.html#projetos">‹ Voltar ao painel de solicitações</a><h1>Gerenciar projetos e ações</h1><p>Informações publicadas no aplicativo Wagner Tomaszewski</p></header>
 <main>
-<section id="loginCard" class="card"><h2>Acesso administrativo</h2><p class="muted">Entre com o mesmo acesso autorizado do painel do mandato.</p><form id="loginForm">
+<section id="authLoading" class="card" role="status"><h2>Verificando acesso...</h2><p class="muted">Conferindo sua sessão do Painel do Mandato.</p></section>
+<section id="loginCard" class="card" hidden><h2>Acesso administrativo</h2><p class="muted">Entre com o mesmo acesso autorizado do painel do mandato.</p><form id="loginForm">
 <label for="email">E-mail</label><input id="email" type="email" required autocomplete="username">
 <label for="password">Senha</label><input id="password" type="password" required autocomplete="current-password">
 <button class="primary">Entrar</button></form><div class="notice" id="loginStatus"></div></section>
@@ -79,6 +80,7 @@ $("logout").onclick=()=>{localStorage.removeItem("wagner_admin_session_v2");toke
 
 /* Sessão administrativa compartilhada com o Painel V17; validada no servidor. */
 async function entrarComSessaoDaV17(){
+ let autenticado=false;
  try{
   const sessao=JSON.parse(localStorage.getItem('wagner_admin_session_v2')||'null');
   if(!sessao?.access_token || (sessao.expires_at && sessao.expires_at<=Date.now()+10000))return;
@@ -88,8 +90,13 @@ async function entrarComSessaoDaV17(){
   if(usuario?.id!=='ca5c30ec-828e-4c95-a0b9-a415bb9b3643')return;
   token=sessao.access_token;
   await loadItems(projetoSelecionadoInicial);
-  $('loginCard').hidden=true;$('editor').hidden=false;
- }catch(e){token='';$('loginCard').hidden=false;$('editor').hidden=true}
+  autenticado=true;
+ }catch(e){token='';
+ }finally{
+  $('authLoading').hidden=true;
+  $('loginCard').hidden=autenticado;
+  $('editor').hidden=!autenticado;
+ }
 }
 
 async function loadItems(selectId){
