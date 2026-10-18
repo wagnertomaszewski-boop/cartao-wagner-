@@ -20,7 +20,7 @@ h2{margin:0 0 8px;font-size:23px}h3{font-size:17px;margin:21px 0 9px}
 #loginCard{max-width:520px;margin:24px auto}
 .checks{display:flex;gap:19px;margin:17px 0}.checks label{display:flex;align-items:center;gap:8px;margin:0}
 </style></head>
-<body><header><a href="./admin-v17.html#mais">‹ Voltar ao painel de solicitações</a><h1>Gerenciar projetos e ações</h1><p>Informações publicadas no aplicativo Wagner Tomaszewski</p></header>
+<body><header><a href="./admin-v17.html#projetos">‹ Voltar ao painel de solicitações</a><h1>Gerenciar projetos e ações</h1><p>Informações publicadas no aplicativo Wagner Tomaszewski</p></header>
 <main>
 <section id="loginCard" class="card"><h2>Acesso administrativo</h2><p class="muted">Entre com o mesmo acesso autorizado do painel do mandato.</p><form id="loginForm">
 <label for="email">E-mail</label><input id="email" type="email" required autocomplete="username">
@@ -55,6 +55,7 @@ const BASE="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
 const KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 const $=id=>document.getElementById(id);
 let token="",items=[],draft=null;
+const projetoSelecionadoInicial=Number(new URLSearchParams(location.search).get("id"))||null;
 const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 async function call(path,method,body,admin=true){
  const headers={apikey:KEY,"Content-Type":"application/json",Prefer:"return=representation"};
@@ -70,7 +71,7 @@ $("loginForm").onsubmit=async e=>{
  try{
   const d=await call("/auth/v1/token?grant_type=password","POST",{email:$("email").value.trim(),password:$("password").value},false);
   if(!d.access_token)throw Error("Não foi possível autenticar.");
-  token=d.access_token;$("password").value="";await loadItems();
+  token=d.access_token;$("password").value="";await loadItems(projetoSelecionadoInicial);
   $("loginCard").hidden=true;$("editor").hidden=false;notice("loginStatus","",false);
  }catch(err){token="";notice("loginStatus","Não foi possível entrar: "+err.message,true)}
 };
