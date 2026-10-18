@@ -463,6 +463,20 @@
     .resultado-total{color:#145b98;font-weight:700;margin:10px 0}
     .resultado-card .resultado-meta{font-size:12px;color:#718398}
     .resultado-card button{background:#0e71b8;color:#fff;border:0;border-radius:11px;padding:11px 13px;font-weight:750;margin-top:8px}
+
+    .projetos-filtros-v17{background:#fff;border:1px solid #deeaf3;border-radius:17px;padding:13px;margin:13px 0 8px}
+    .projetos-filtros-v17 label{font-size:12px;font-weight:800;color:#45617c;display:block}
+    .projetos-filtros-v17 input,.projetos-filtros-v17 select{width:100%;border:1px solid #ccdeed;background:#fafcff;border-radius:12px;padding:11px;margin:6px 0 11px;font-size:14px}
+    .projeto-filtros-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+    .projetos-contador{color:#647e93;font-size:12px;margin:10px 0}
+    .conteudo-item{margin-bottom:10px}
+    .conteudo-item[hidden]{display:none!important}
+    .conteudo-item-detalhes{border-top:1px solid #e5eef7;margin-top:8px;padding-top:7px}
+    .conteudo-item-detalhes summary{font-size:13px;font-weight:800;color:#0b69ae;cursor:pointer;padding:7px 0}
+    .btn-editar-projeto{display:inline-flex;border-radius:10px;background:#e6f2ff;color:#0a5b98;font-size:13px;font-weight:750;padding:10px 13px;text-decoration:none}
+    .novo-projeto-detalhes{margin:20px 0}
+    .novo-projeto-detalhes>summary{background:#086ab8;color:white;font-weight:800;padding:16px;border-radius:13px;cursor:pointer}
+    .novo-projeto-detalhes .conteudo-form{margin-top:12px}
 </style>
 </head>
 <body>
@@ -559,11 +573,39 @@
       <h2 class="titulo">Projetos e ações</h2>
       <div class="view-card" style="padding:14px"><h3 style="font-size:16px">Conteúdo do app público</h3><p>O que estiver marcado como publicado aparece na aba Projetos do app Wagner Tomaszewski.</p></div>
 
-      <div class="conteudo-form">
-        <h3>Novo conteúdo</h3>
+
+      <div class="projetos-filtros-v17">
+        <label for="buscaProjetos">Buscar conteúdo</label>
+        <input type="search" id="buscaProjetos" placeholder="Título, lei, localidade, área ou situação">
+        <div class="projeto-filtros-grid">
+          <label for="projetoFiltroTipo">Tipo
+            <select id="projetoFiltroTipo">
+              <option value="todos">Todos os tipos</option>
+              <option value="projeto">Projetos de lei</option>
+              <option value="sugestivo">Projetos sugestivos</option>
+              <option value="pedido">Pedidos</option>
+              <option value="emenda">Emendas</option>
+              <option value="resultado">Resultados</option>
+            </select>
+          </label>
+          <label for="projetoFiltroPublicacao">Publicação
+            <select id="projetoFiltroPublicacao">
+              <option value="todos">Todos</option>
+              <option value="publicado">Publicados</option>
+              <option value="rascunho">Rascunhos</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div id="contagemProjetosPainel" class="projetos-contador"></div>
+      <div id="listaProjetosPainel" class="conteudo-lista">Carregando conteúdos...</div>
+      <details id="formNovoProjeto" class="novo-projeto-detalhes">
+        <summary>＋ Adicionar novo projeto ou ação</summary>
+        <div class="conteudo-form">
+        <h3>Nova publicação do mandato</h3>
         <div class="conteudo-grid">
           <select id="projTipo">
-            <option value="projeto">Projeto de lei</option>
+            <option value="projeto">Projeto de lei</option><option value="sugestivo">Projeto sugestivo</option>
             <option value="pedido">Pedido de providência</option>
             <option value="emenda">Emenda</option>
             <option value="resultado">Resultado</option>
@@ -584,8 +626,7 @@
         </div>
         <button type="button" class="btn-publicar" onclick="salvarProjetoAcao()">Salvar conteúdo</button>
       </div>
-
-      <div id="listaProjetosPainel" class="conteudo-lista">Carregando conteúdos...</div>
+      </details>
     </section>
 
     <section id="viewMais" class="painel-view">
@@ -1204,9 +1245,9 @@ async function carregarProjetosPainel(){
       alvo.innerHTML='<div class="vazio">Nenhum projeto ou ação cadastrado ainda.</div>';
       return;
     }
-    const nomes={projeto:"Projeto de lei",pedido:"Pedido",emenda:"Emenda",resultado:"Resultado"};
+    const nomes={projeto:"Projeto de lei",sugestivo:"Projeto sugestivo",pedido:"Pedido",emenda:"Emenda",resultado:"Resultado"};
     alvo.innerHTML=dados.map(item=>`
-      <article class="conteudo-item">
+      <article class="conteudo-item" data-tipo="${escCampo(item.tipo)}" data-publicado="${item.publicado?"sim":"nao"}">
         <div class="conteudo-item-top">
           <div>
             <div class="tipo">${esc(nomes[item.tipo]||item.tipo)}</div>
@@ -1214,6 +1255,7 @@ async function carregarProjetosPainel(){
           </div>
           <span class="publicacao-chip ${item.publicado?"on":""}">${item.publicado?"Publicado":"Rascunho"}</span>
         </div>
+        <details class="conteudo-item-detalhes"><summary>Ver resumo e ações ▾</summary>
         ${item.foto_url?'<img class="conteudo-foto" src="'+esc(item.foto_url)+'" alt="Foto do conteúdo">':""}
         <p>${esc(item.resumo||"")}</p>
         <div class="conteudo-meta">
@@ -1223,12 +1265,35 @@ async function carregarProjetosPainel(){
         </div>
         <div class="conteudo-acoes">
           <button type="button" class="azul" onclick="alternarPublicacaoProjeto(${item.id},${!item.publicado})">${item.publicado?"Ocultar do app":"Publicar no app"}</button>
+          <a class="btn-editar-projeto" href="./gerenciar-projetos.html">Editar detalhes ↗</a>
           <button type="button" class="vermelho" onclick="excluirProjetoAcao(${item.id})">Excluir</button>
         </div>
+        </details>
       </article>`).join("");
+    filtrarProjetosPainel();
   }catch(e){
     alvo.innerHTML='<div class="erro">'+esc(mensagemDeErro(e))+'</div>';
   }
+}
+
+function filtrarProjetosPainel(){
+  const lista=document.getElementById("listaProjetosPainel");
+  if(!lista)return;
+  const busca=normalizar(document.getElementById("buscaProjetos")?.value);
+  const tipo=document.getElementById("projetoFiltroTipo")?.value||"todos";
+  const publicado=document.getElementById("projetoFiltroPublicacao")?.value||"todos";
+  const itens=Array.from(lista.querySelectorAll(".conteudo-item"));
+  let visiveis=0;
+  itens.forEach(item=>{
+    const combinaTipo=tipo==="todos"||item.dataset.tipo===tipo;
+    const combinaPublicacao=publicado==="todos"||(publicado==="publicado"&&item.dataset.publicado==="sim")||(publicado==="rascunho"&&item.dataset.publicado==="nao");
+    const combinaBusca=!busca||normalizar(item.textContent).includes(busca);
+    const mostrar=combinaTipo&&combinaPublicacao&&combinaBusca;
+    item.hidden=!mostrar;
+    if(mostrar)visiveis++;
+  });
+  const contador=document.getElementById("contagemProjetosPainel");
+  if(contador)contador.textContent=itens.length?visiveis+" de "+itens.length+" publicações":"";
 }
 
 async function enviarFotoProjeto(arquivo,sessao){
@@ -2016,6 +2081,10 @@ document.getElementById("senhaLogin").addEventListener("keydown", e => {
 });
 
 document.getElementById("filtroStatus").addEventListener("change", carregarSolicitacoes);
+["buscaProjetos","projetoFiltroTipo","projetoFiltroPublicacao"].forEach(id=>{
+  const campo=document.getElementById(id);
+  if(campo)campo.addEventListener(id==="buscaProjetos"?"input":"change",filtrarProjetosPainel);
+});
 
 let atrasoBusca;
 document.getElementById("filtroBusca").addEventListener("input", () => {
