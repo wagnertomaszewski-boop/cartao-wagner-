@@ -342,7 +342,7 @@ async function consultar(){const p=document.getElementById("protocolo").value.tr
 document.getElementById("consultar").onclick=consultar;document.getElementById("protocolo").addEventListener("keydown",e=>{if(e.key==="Enter")consultar()});
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));t.classList.add("active");document.querySelectorAll(".pane").forEach(x=>x.style.display="none");document.getElementById(t.dataset.tab).style.display="block"});
 
-// Filtros exclusivos por categoria: emendas entregues nao devem virar "Resultados".
+// A aba Resultados reune entregas de varias categorias; Emendas mostra todas as emendas.
 function aplicarFiltroProjetos(filtro){
  const lista=document.getElementById('projectList');
  const cards=Array.from(lista.querySelectorAll('.project-card'));
@@ -356,13 +356,13 @@ function aplicarFiltroProjetos(filtro){
  };
  // Para Emendas, as tres com foto aparecem no inicio; nos demais filtros, ordem original.
  const ordenados=filtro==='emenda'
-   ?cards.filter(c=>c.dataset.type==='emenda').sort(ordenarEmendas)
-         .concat(cards.filter(c=>c.dataset.type!=='emenda').sort(original))
+   ?cards.filter(c=>c.dataset.type.split(' ')[0]==='emenda').sort(ordenarEmendas)
+         .concat(cards.filter(c=>c.dataset.type.split(' ')[0]!=='emenda').sort(original))
    :cards.sort(original);
  for(const card of ordenados)lista.appendChild(card);
  let total=0;
  for(const card of ordenados){
-  const visivel=filtro==='todos'||card.dataset.type===filtro;
+  const visivel=filtro==='todos'||card.dataset.type.split(' ').includes(filtro);
   card.style.display=visivel?'block':'none';
   if(visivel)total++;
  }
@@ -370,7 +370,8 @@ function aplicarFiltroProjetos(filtro){
  if(resumo){
   const nomes={todos:'registros',projeto:'projetos de lei',sugestivo:'projetos sugestivos',pedido:'pedidos',emenda:'emendas',resultado:'resultados'};
   resumo.textContent=total+' '+(nomes[filtro]||'registros')
-   +(filtro==='emenda'&&total>=3?' · Tratores John Deere e Solis 90, e carreta-prancha em destaque.':'')
+   +(filtro==='emenda'&&total>=3?' · John Deere, Solis 90 e carreta-prancha primeiro.':'')
+   +(filtro==='resultado'?' · Entregas concluídas de projetos, pedidos e emendas.':'')
    +(total===0?' · Nenhum registro publicado nesta categoria.':'');
  }
 }
@@ -405,7 +406,8 @@ async function carregarProjetosPublicos(){
    const a=document.createElement('button');a.type='button';a.className='project-card';
    a.dataset.projectId=String(Number(x.id));
    a.setAttribute('aria-label','Abrir detalhes de '+x.titulo);
-   a.dataset.type=String(x.tipo||'').trim().toLowerCase();
+   const result=/entreg|conclu|resultado|executad|adquirid/i.test(x.situacao||'')?' resultado':'';
+   a.dataset.type=String(x.tipo||'').trim().toLowerCase()+result;
    a.dataset.ordemOriginal=String(el.childElementCount);
    const imagem=(Number(x.id)===1?CAPA_ALUNO_NOTA_DEZ:Number(x.id)===2?CAPA_MES_DO_ESPORTE_LAZER:Number(x.id)===9?CAPA_COMBATE_AO_ALCOOLISMO:Number(x.id)===10?CAPA_INTERNET_SEGURA:Number(x.id)===12?CAPA_PROMIE:imagemSegura(x.foto_url));
    a.innerHTML='<span class="tag">'+seguroTxt(tipos[x.tipo]||'AÇÃO')+(x.destaque?' · DESTAQUE':'')+(x.tipo==='sugestivo'&&/transformad|convertid/i.test(x.situacao||'')?' · VIROU LEI':'')+'</span>'+ 
