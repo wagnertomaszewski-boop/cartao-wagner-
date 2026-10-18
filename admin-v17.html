@@ -1279,7 +1279,7 @@ async function carregarProjetosPainel(){
         </div>
         <div class="conteudo-acoes">
           <button type="button" class="azul" onclick="alternarPublicacaoProjeto(${item.id},${!item.publicado})">${item.publicado?"Ocultar do app":"Publicar no app"}</button>
-          <a class="btn-editar-projeto" href="./gerenciar-projetos.html">Editar detalhes ↗</a>
+          <a class="btn-editar-projeto" href="./gerenciar-projetos.html?id=${Number(item.id)}">Editar este projeto ↗</a>
           <button type="button" class="vermelho" onclick="excluirProjetoAcao(${item.id})">Excluir</button>
         </div>
         </details>
