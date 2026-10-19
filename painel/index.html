@@ -446,6 +446,10 @@
     .conteudo-item .tipo{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#0b70c9}
     .conteudo-item h4{margin:4px 0 5px;font-size:15px}
     .conteudo-foto{width:100%;height:170px;object-fit:cover;border-radius:13px;margin:10px 0 4px;background:#eef3f7}
+    .painel-fotos-duplas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0}
+    .painel-fotos-duplas figure{margin:0;background:#edf5fc;border-radius:12px;overflow:hidden}
+    .painel-fotos-duplas img{width:100%;height:120px;object-fit:cover;display:block}
+    .painel-fotos-duplas figcaption{text-align:center;font-size:11px;font-weight:800;padding:6px;color:#135a92}
     .conteudo-item p{margin:0;color:#718095;font-size:12px;line-height:1.4}
     .conteudo-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:10px;color:#687a8d}
     .publicacao-chip{padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800;background:#edf2f7;color:#5a6d7e}
@@ -472,6 +476,8 @@
     .resultado-total{color:#145b98;font-weight:700;margin:10px 0}
     .resultado-card .resultado-meta{font-size:12px;color:#718398}
     .resultado-card button{background:#0e71b8;color:#fff;border:0;border-radius:11px;padding:11px 13px;font-weight:750;margin-top:8px}
+    .resultado-antes-depois{display:inline-flex;align-items:center;min-height:43px;padding:10px 13px;border-radius:11px;background:#e8f5ef;color:#15613d;text-decoration:none;font-size:13px;font-weight:800;margin:8px 0 0 7px;border:1px solid #c6e7d2}
+    .resultado-antes-depois:focus-visible{outline:3px solid #8cbee2;outline-offset:2px}
 
     .projetos-filtros-v17{background:#fff;border:1px solid #deeaf3;border-radius:17px;padding:13px;margin:13px 0 8px}
     .projetos-filtros-v17 label{font-size:12px;font-weight:800;color:#45617c;display:block}
@@ -595,7 +601,7 @@
 
     <section id="viewProjetos" class="painel-view">
       <h2 class="titulo">Projetos e ações</h2>
-      <div class="view-card" style="padding:14px"><h3 style="font-size:16px">Conteúdo do app público</h3><p>O que estiver marcado como publicado aparece na aba Projetos do app Wagner Tomaszewski.</p></div>
+      <div class="view-card" style="padding:14px"><h3 style="font-size:16px">Conteúdo do app público</h3><p>O que estiver marcado como publicado aparece na aba Projetos do app Wagner Tomaszewski. As fotos do antes e depois só são exibidas após sua aprovação.</p><a class="resultado-antes-depois" href="./projetos.html?novo=resultado">📸 Criar resultado com antes e depois ↗</a></div>
 
 
       <div class="projetos-filtros-v17">
@@ -1281,6 +1287,9 @@ async function carregarProjetosPainel(){
         </div>
         <details class="conteudo-item-detalhes"><summary>Ver resumo e ações ▾</summary>
         ${item.foto_url?'<img class="conteudo-foto" src="'+esc(item.foto_url)+'" alt="Foto do conteúdo">':""}
+        ${item.foto_antes_url&&item.foto_depois_url
+          ? '<div class="painel-fotos-duplas"><figure><img src="'+esc(item.foto_antes_url)+'" alt="Foto antes"><figcaption>ANTES</figcaption></figure><figure><img src="'+esc(item.foto_depois_url)+'" alt="Foto depois"><figcaption>DEPOIS</figcaption></figure></div>'
+          : ""}
         <p>${esc(item.resumo||"")}</p>
         <div class="conteudo-meta">
           ${item.referencia?'<span>📄 '+esc(item.referencia)+'</span>':""}
@@ -1429,7 +1438,8 @@ async function carregarResultadosConcluidos(){
         '<p>'+esc(item.assunto)+'</p>'+
         (item.localidade?'<p class="resultado-meta">Localidade: '+esc(item.localidade)+'</p>':'')+
         '<p class="resultado-meta">Atualização: '+esc(formatarData(item.atualizado_em||item.criado_em))+'</p>'+
-        '<button type="button" onclick="abrirSolicitacaoPorId('+id+')">Abrir histórico e documentos ↗</button></article>';
+        '<button type="button" onclick="abrirSolicitacaoPorId('+id+')">Abrir histórico e documentos ↗</button>'+
+        '<a class="resultado-antes-depois" href="./projetos.html?novo=resultado&amp;protocolo='+encodeURIComponent(item.protocolo||"")+'">📸 Preparar antes e depois ↗</a></article>';
     }).join("");
   }catch(e){alvo.innerHTML='<div class="erro">'+esc(mensagemDeErro(e))+'<button type="button" onclick="carregarResultadosConcluidos()">Tentar novamente</button></div>';}
 }

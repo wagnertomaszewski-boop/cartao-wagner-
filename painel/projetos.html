@@ -19,6 +19,15 @@ button.primary{color:#fff;background:var(--blue)}button.warn{color:#9c3b2d;borde
 h2{margin:0 0 8px;font-size:23px}h3{font-size:17px;margin:21px 0 9px}
 #loginCard{max-width:520px;margin:24px auto}
 .checks{display:flex;gap:19px;margin:17px 0}.checks label{display:flex;align-items:center;gap:8px;margin:0}
+.fotos-comparacao{border:1px solid #cde0f0;background:#f3f9ff;border-radius:16px;padding:15px;margin-top:17px}
+.fotos-comparacao h3{margin:0 0 5px;color:#095795}
+.foto-upload-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.foto-upload-grid>div{min-width:0}
+.fotos-comparacao .foto-preview{display:block;width:100%;height:135px;object-fit:cover;border-radius:10px;margin-top:7px}
+.fotos-comparacao .foto-preview[hidden]{display:none}
+.fotos-comparacao .confirmar-fotos{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:#34536e}
+.fotos-comparacao input[type="checkbox"]{width:auto;margin-top:3px}
+@media(max-width:540px){.foto-upload-grid{grid-template-columns:1fr}}
 </style></head>
 <body><header><a href="./index.html#projetos">‹ Voltar ao painel de solicitações</a><h1>Gerenciar projetos e ações</h1><p>Informações publicadas no aplicativo Wagner Tomaszewski</p></header>
 <main>
@@ -42,6 +51,16 @@ h2{margin:0 0 8px;font-size:23px}h3{font-size:17px;margin:21px 0 9px}
 <div class="row"><div><label>Referência / nº da lei</label><input name="referencia"></div><div><label>Área</label><input name="area"></div></div>
 <label>Situação atual</label><input name="situacao" placeholder="Ex.: Vigente · execução sendo acompanhada">
 <label>Endereço da imagem de capa (https://)</label><input name="foto_url" type="url" placeholder="https://..."><p class="muted">Use imagem autorizada. Para alunos, prefira imagem ilustrativa sem identificação de estudantes locais.</p>
+<section class="fotos-comparacao">
+<h3>📸 Antes e depois</h3>
+<p class="muted">Selecione duas fotografias que representem a mesma situação, antes da providência e após a execução. Fotos recebidas dos moradores continuam privadas até você escolher e autorizar uma cópia para divulgação.</p>
+<div class="foto-upload-grid">
+<div><label for="fotoAntesArquivo">Foto do ANTES</label><input type="file" id="fotoAntesArquivo" accept="image/jpeg,image/png,image/webp"><label>Link atual do antes</label><input name="foto_antes_url" type="url" placeholder="Será preenchido após selecionar uma foto"><img id="previewAntes" class="foto-preview" alt="Prévia da foto antes" hidden></div>
+<div><label for="fotoDepoisArquivo">Foto do DEPOIS</label><input type="file" id="fotoDepoisArquivo" accept="image/jpeg,image/png,image/webp"><label>Link atual do depois</label><input name="foto_depois_url" type="url" placeholder="Será preenchido após selecionar uma foto"><img id="previewDepois" class="foto-preview" alt="Prévia da foto depois" hidden></div>
+</div>
+<label class="confirmar-fotos"><input id="fotosAutorizadas" type="checkbox"><span>Confirmo que as imagens foram revisadas e autorizadas para divulgação pública, sem dados pessoais ou rostos identificáveis. As fotos enviadas ficarão acessíveis por link público.</span></label>
+<p class="muted">Tamanho máximo de 10 MB por imagem. Formatos JPG, PNG ou WebP. Para exibir no aplicativo, salve as duas imagens e marque a publicação.</p>
+</section>
 <label>Objetivo</label><textarea name="objetivo"></textarea>
 <label>O que já foi feito</label><textarea name="feito"></textarea>
 <label>O que falta fazer</label><textarea name="falta"></textarea>
@@ -56,7 +75,10 @@ const BASE="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
 const KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 const $=id=>document.getElementById(id);
 let token="",items=[],draft=null;
-const projetoSelecionadoInicial=Number(new URLSearchParams(location.search).get("id"))||null;
+const parametrosIniciais=new URLSearchParams(location.search);
+const projetoSelecionadoInicial=Number(parametrosIniciais.get("id"))||null;
+const iniciarNovoResultado=parametrosIniciais.get("novo")==="resultado";
+const protocoloResultado=/^20\d{2}-\d{6}$/.test(parametrosIniciais.get("protocolo")||"")?parametrosIniciais.get("protocolo"):"";
 const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 async function call(path,method,body,admin=true){
  const headers={apikey:KEY,"Content-Type":"application/json",Prefer:"return=representation"};
@@ -104,15 +126,26 @@ async function loadItems(selectId){
  items=await call("/rest/v1/projetos_acoes_publicos?select=*&order=ordem.asc,id.asc","GET");
  if(!Array.isArray(items))throw Error("Não foi possível carregar os projetos.");
  const s=$("itemSelect");s.innerHTML=items.map(x=>'<option value="'+Number(x.id)+'">'+esc(x.titulo)+(x.publicado?"":" (rascunho)")+'</option>').join("");
- if(items.length){s.value=String(selectId&&items.some(x=>x.id===selectId)?selectId:items[0].id);editSelected()}else createItem();
+ if(iniciarNovoResultado&&!selectId){
+  createItem();const f=$("form");
+  f.elements.tipo.value="resultado";
+  f.elements.referencia.value=protocoloResultado;
+  f.elements.titulo.value=protocoloResultado?"Resultado da solicitação "+protocoloResultado:"Resultado do mandato";
+  f.elements.situacao.value="Concluído";
+ }else if(items.length){s.value=String(selectId&&items.some(x=>x.id===selectId)?selectId:items[0].id);editSelected()}else createItem();
 }
-function defaultItem(){return {tipo:"projeto",titulo:"",resumo:"",referencia:"",area:"",situacao:"",foto_url:"",objetivo:"",feito:"",falta:"",ordem:items.length*10+10,publicado:false,destaque:false,etapas:[],documentos:[]}}
+function defaultItem(){return {tipo:"projeto",titulo:"",resumo:"",referencia:"",area:"",situacao:"",foto_url:"",foto_antes_url:"",foto_depois_url:"",objetivo:"",feito:"",falta:"",ordem:items.length*10+10,publicado:false,destaque:false,etapas:[],documentos:[]}}
 function editSelected(){const x=items.find(y=>String(y.id)===$("itemSelect").value);if(x)fill(x)}
 $("itemSelect").onchange=editSelected;
 function fill(x){
  draft=JSON.parse(JSON.stringify(x));$("formTitle").textContent=x.id?"Editar: "+x.titulo:"Novo projeto / ação";
- const f=$("form");for(const name of ["tipo","titulo","resumo","referencia","area","situacao","foto_url","objetivo","feito","falta","ordem"]){f.elements[name].value=x[name]==null?"":x[name]}
+ const f=$("form");for(const name of ["tipo","titulo","resumo","referencia","area","situacao","foto_url","foto_antes_url","foto_depois_url","objetivo","feito","falta","ordem"]){f.elements[name].value=x[name]==null?"":x[name]}
  f.elements.publicado.checked=!!x.publicado;f.elements.destaque.checked=!!x.destaque;
+ $("fotoAntesArquivo").value="";$("fotoDepoisArquivo").value="";$("fotosAutorizadas").checked=false;
+ for(const [campo,preview] of [["foto_antes_url","previewAntes"],["foto_depois_url","previewDepois"]]){
+  const src=f.elements[campo].value.trim(),img=$(preview);
+  img.hidden=!/^https:\/\//i.test(src);if(!img.hidden)img.src=src;else img.removeAttribute("src");
+ }
  paintRows();notice("saveStatus","",false);
 }
 function createItem(){fill(defaultItem());$("itemSelect").value=""}
@@ -131,18 +164,42 @@ function collectArrays(){
 }
 $("addStep").onclick=()=>{collectArrays();draft.etapas.push({titulo:"",data:null,descricao:""});paintRows()};
 $("addDoc").onclick=()=>{collectArrays();draft.documentos.push({nome:"",url:""});paintRows()};
+async function enviarFotoComparativa(arquivo,etapa){
+ if(!arquivo)return "";
+ const extensoes={"image/jpeg":"jpg","image/png":"png","image/webp":"webp"};
+ const extensao=extensoes[arquivo.type];
+ if(!extensao)throw Error("Use imagem JPG, PNG ou WebP.");
+ if(arquivo.size>10*1024*1024)throw Error("Cada fotografia deve ter no máximo 10 MB.");
+ const caminho="antes-depois/"+Date.now()+"-"+Math.random().toString(36).slice(2,10)+"-"+etapa+"."+extensao;
+ const r=await fetch(BASE+"/storage/v1/object/conteudos-mandato/"+caminho,{
+  method:"POST",headers:{apikey:KEY,Authorization:"Bearer "+token,"Content-Type":arquivo.type,"x-upsert":"false"},body:arquivo
+ });
+ if(!r.ok)throw Error("Falha ao enviar a foto do "+etapa+". Verifique sua conexão.");
+ return BASE+"/storage/v1/object/public/conteudos-mandato/"+caminho;
+}
+
 $("form").onsubmit=async e=>{
  e.preventDefault();
  try{
  collectArrays();const f=$("form");
  const payload={};
- for(const name of ["tipo","titulo","resumo","referencia","area","situacao","foto_url","objetivo","feito","falta"])payload[name]=f.elements[name].value.trim();
+ for(const name of ["tipo","titulo","resumo","referencia","area","situacao","foto_url","foto_antes_url","foto_depois_url","objetivo","feito","falta"])payload[name]=f.elements[name].value.trim();
  payload.ordem=Number(f.elements.ordem.value)||0;payload.publicado=f.elements.publicado.checked;payload.destaque=f.elements.destaque.checked;
  payload.etapas=draft.etapas;payload.documentos=draft.documentos;
  if(!payload.titulo)throw Error("Informe o título.");
  if(payload.foto_url&&!/^https:\/\//i.test(payload.foto_url))throw Error("A imagem precisa de um link HTTPS.");
+ const arquivoAntes=$("fotoAntesArquivo").files[0],arquivoDepois=$("fotoDepoisArquivo").files[0];
+ const temAntes=!!(arquivoAntes||payload.foto_antes_url),temDepois=!!(arquivoDepois||payload.foto_depois_url);
+ if((temAntes||temDepois)&&payload.publicado&&(!temAntes||!temDepois))throw Error("Para publicar o comparativo, selecione as duas fotos: antes e depois.");
+ if((arquivoAntes||arquivoDepois||(payload.publicado&&(temAntes||temDepois)))&&!$("fotosAutorizadas").checked)
+  throw Error("Confirme a autorização das imagens antes de enviar ou publicar o comparativo.");
+ for(const campo of ["foto_antes_url","foto_depois_url"]){
+  if(payload[campo]&&!/^https:\/\//i.test(payload[campo]))throw Error("Os links das fotografias devem começar com https://.");
+ }
  if(payload.documentos.some(x=>!x.nome||!/^https:\/\//i.test(x.url)))throw Error("Cada documento precisa de nome e link HTTPS.");
- notice("saveStatus","Salvando...",false);
+ notice("saveStatus","Enviando e salvando...",false);
+ if(arquivoAntes)payload.foto_antes_url=await enviarFotoComparativa(arquivoAntes,"antes");
+ if(arquivoDepois)payload.foto_depois_url=await enviarFotoComparativa(arquivoDepois,"depois");
  let saved;
  if(draft.id){saved=await call("/rest/v1/projetos_acoes_publicos?id=eq."+encodeURIComponent(draft.id),"PATCH",payload)}
  else saved=await call("/rest/v1/projetos_acoes_publicos","POST",payload);

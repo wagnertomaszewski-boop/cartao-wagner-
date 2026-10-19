@@ -70,6 +70,13 @@ label{display:block;font-weight:700;margin:13px 0 6px;font-size:14px}input,texta
 .detail-sec{padding:14px 0;border-top:1px solid #e6ecf4}
 .detail-sec h3{font-size:17px;margin:0 0 7px;color:#132c4d}
 .detail-sec p{font-size:14px;line-height:1.6;color:#65788e;margin:0;white-space:pre-line}
+.comparativo-fotos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.comparativo-fotos figure{margin:0;overflow:hidden;border:1px solid #dce9f5;border-radius:14px;background:#f5f9fd}
+.comparativo-fotos img{display:block;width:100%;height:175px;object-fit:cover}
+.comparativo-fotos figcaption{padding:10px 12px;background:#eaf4ff;color:#135a94;font-weight:900;font-size:13px;text-align:center}
+.comparativo-fotos figure:last-child figcaption{background:#e8f7ef;color:#176747}
+.comparativo-nota{margin-top:10px!important;font-size:12px!important}
+@media(max-width:380px){.comparativo-fotos img{height:125px}}
 .detail-line{border-left:2px solid #bed9f7;margin:12px 0 0 10px}
 .detail-step{position:relative;padding:0 0 18px 22px}
 .detail-step:before{content:'';position:absolute;left:-8px;top:4px;width:14px;height:14px;background:#0872d0;border-radius:50%}
@@ -482,6 +489,13 @@ async function abrirDetalhesProjeto(id){
   else if(x.tipo==='sugestivo')html+='<div class="project-empty" style="text-align:left;background:#e8f4fd;border:1px solid #beddf4;margin:12px 0"><strong>Esta é uma sugestão ao Poder Executivo.</strong> Não significa que o programa já tenha sido criado ou que os benefícios estejam disponíveis.</div>';
   function sec(t,v){return v?'<section class="detail-sec"><h3>'+t+'</h3><p>'+seguroTxt(v)+'</p></section>':''}
   html+=sec('📄 Sobre o projeto',x.resumo)+sec('🎯 Objetivo',x.objetivo)+sec('📊 Situação atual',x.situacao)+sec('✅ O que já foi feito',x.feito)+sec('🕒 O que falta fazer',x.falta);
+  const fotoAntes=documentoSeguro(x.foto_antes_url),fotoDepois=documentoSeguro(x.foto_depois_url);
+  if(fotoAntes&&fotoDepois){
+   html+='<section class="detail-sec"><h3>📸 Antes e depois</h3><div class="comparativo-fotos">'+
+     '<figure><img src="'+seguroTxt(fotoAntes)+'" alt="Situação antes da providência" loading="lazy"><figcaption>ANTES</figcaption></figure>'+
+     '<figure><img src="'+seguroTxt(fotoDepois)+'" alt="Situação depois da providência" loading="lazy"><figcaption>DEPOIS</figcaption></figure>'+
+     '</div><p class="comparativo-nota">Imagens selecionadas e autorizadas para publicação pela equipe do mandato.</p></section>';
+  }
   let etapas=Array.isArray(x.etapas)?x.etapas:[];html+='<section class="detail-sec"><h3>🗓 Linha do tempo</h3>';
   if(etapas.length){html+='<div class="detail-line">';etapas.forEach(y=>{html+='<div class="detail-step"><strong>'+seguroTxt(y.titulo)+'</strong>'+(y.data?'<small>📅 '+seguroTxt(dataProjeto(y.data))+'</small>':'')+'<span>'+seguroTxt(y.descricao||'')+'</span></div>'});html+='</div>'}
   else html+='<p>O histórico será publicado conforme os registros forem confirmados.</p>';
