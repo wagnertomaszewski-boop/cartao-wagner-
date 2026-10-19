@@ -182,8 +182,38 @@ body{background:#e9eff6}
 .bottom button.active{color:#086bc3}
 @media(max-width:385px){.content.v2-main{padding:12px 10px 20px}.home-grid{gap:8px}.home-grid .tile{min-height:139px;padding:11px}.home-grid .tile strong{font-size:16px}.home-grid .tile span{font-size:11.5px}.contact-grid{gap:4px}.contact-link{font-size:10px}.agenda-feature{padding:13px 10px;gap:10px}.agenda-feature-body strong{font-size:15px}.agenda-feature-body small{font-size:11px}}
 @media(min-width:580px){.content.v2-main{padding:21px}.home-grid .tile{min-height:165px}.contact-link{min-height:84px;font-size:12px}}
+
+/* Tela de abertura da V2 — exibida por cerca de 2 segundos */
+#mandatoV2Splash{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:linear-gradient(155deg,#075baf 0%,#06366a 58%,#041d40 100%);color:#fff;opacity:1;transition:opacity .35s ease;box-sizing:border-box}
+#mandatoV2Splash.splash-saindo{opacity:0;pointer-events:none}
+#mandatoV2Splash .splash-conteudo{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:24px}
+#mandatoV2Splash img{width:152px;height:152px;object-fit:contain;border-radius:33px;box-shadow:0 12px 35px rgba(0,0,0,.22)}
+#mandatoV2Splash strong{font:700 27px/1.15 Arial,Helvetica,sans-serif;letter-spacing:.01em}
+#mandatoV2Splash span{font:500 14px/1.4 Arial,Helvetica,sans-serif;letter-spacing:.04em;color:#d8ebff}
+#mandatoV2Splash .splash-linha{height:3px;width:70px;border-radius:99px;background:linear-gradient(90deg,#22a763 50%,#f3b736 50%);margin-top:6px}
+@media(prefers-reduced-motion:reduce){#mandatoV2Splash{transition:none}}
+
 </style></head>
-<body><div class="app">
+<body>
+<div id="mandatoV2Splash" role="status" aria-label="Abrindo Mandato em Ação">
+  <div class="splash-conteudo">
+    <img src="./icon-v2-512.png" alt="">
+    <strong>Mandato em Ação</strong>
+    <span>Vereador Wagner Tomaszewski</span>
+    <div class="splash-linha" aria-hidden="true"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var tela=document.getElementById('mandatoV2Splash');
+  window.setTimeout(function(){
+    if(!tela)return;
+    tela.classList.add('splash-saindo');
+    window.setTimeout(function(){if(tela.parentNode)tela.parentNode.removeChild(tela)},400);
+  },1850);
+})();
+</script>
+<div class="app">
 
 <section id="home" class="page active">
 <header class="hero"><img class="hero-bg" src="../imagens/v2-inicio-fundo-v2.webp"><div class="shade"></div>
