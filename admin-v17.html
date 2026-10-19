@@ -1696,6 +1696,7 @@ async function carregarSolicitacoes() {
               <div class="dado"><small>Nome</small><strong>${esc(item.nome)}</strong></div>
               <div class="dado"><small>WhatsApp</small><strong>${esc(item.whatsapp)}</strong></div>
               <div class="dado"><small>Localidade</small><strong>${esc(item.localidade)}</strong></div>
+              ${item.latitude !== null && item.longitude !== null && item.latitude !== undefined && item.longitude !== undefined && Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude)) ? '<div class="dado"><small>📍 Local do problema</small><a href="https://www.google.com/maps?q='+Number(item.latitude)+','+Number(item.longitude)+'" target="_blank" rel="noopener noreferrer">Abrir localização no mapa ↗</a></div>' : ''}
               <div class="dado"><small>Assunto</small><strong>${esc(item.assunto)}</strong></div>
             </div>
             <div class="descricao-moderna"><small>Descrição</small>${esc(item.descricao)}</div>
