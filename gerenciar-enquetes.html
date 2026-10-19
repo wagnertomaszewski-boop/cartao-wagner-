@@ -27,10 +27,10 @@ button.primary{background:#0969b1;color:white}button:disabled{opacity:.6;cursor:
 <label for="opcoes">Alternativas (uma por linha, no mínimo duas)</label><textarea id="opcoes" required rows="8"></textarea>
 <p class="muted">Por segurança, não é permitido alterar as alternativas de uma enquete publicada ou que já recebeu votos.</p>
 <label><input type="checkbox" id="resultados" checked> Mostrar resultados parciais depois de votar</label>
-<div class="note warning"><strong>Antes de abrir ao público:</strong> o envio por e-mail já foi testado, mas o Gmail e o Supabase possuem limites de mensagens. Confira a capacidade do SMTP em Authentication &gt; Rate Limits e ative uma proteção contra robôs (CAPTCHA) no Supabase e na V2. Para participação maior, utilize um serviço próprio de e-mails transacionais. Faça uma abertura gradual.</div>
+<div class="note warning"><strong>Antes de abrir ao público:</strong> o envio por e-mail já foi testado, mas o Gmail e o Supabase possuem limites de mensagens. Confira a capacidade do SMTP em Authentication &gt; Rate Limits e planeje medidas contra abuso. Para participação maior, utilize um serviço próprio de e-mails transacionais. Faça uma abertura gradual. Antes de ativar CAPTCHA global, adapte também as demais telas de login do painel.</div>
 <label><input type="checkbox" id="publicada"> Publicar enquete para os moradores</label>
 <label><input type="checkbox" id="emailPronto"> Confirmo que configurei e testei o envio de códigos por e-mail (obrigatório ao publicar)</label>
-<label><input type="checkbox" id="protecaoPronta"> Confirmo que revisei os limites do SMTP e ativei/testei a proteção CAPTCHA para as enquetes (obrigatório ao publicar)</label>
+<label><input type="checkbox" id="protecaoPronta"> Confirmo que revisei os limites do SMTP e as medidas contra abuso para esta divulgação (obrigatório ao publicar)</label>
 <div><button class="primary" type="submit" id="save">Salvar enquete</button><button type="button" id="logout">Sair</button></div>
 <p class="muted">Uma enquete publicada precisa ter início, encerramento e no mínimo duas alternativas. Você pode encerrá-la antecipadamente ajustando a data final, desde que permaneça após o início.</p>
 </form></section></main>
@@ -124,7 +124,7 @@ $('pollForm').onsubmit=async ev=>{
   if(choice.some(x=>x.length>180))throw new Error('Alternativa com mais de 180 caracteres.');
   const publish=$('publicada').checked;
   if(publish && !selected?.publicada && !$('emailPronto').checked)throw new Error('Antes de publicar, confirme que o envio de códigos por e-mail foi configurado e testado.');
-  if(publish && !selected?.publicada && !$('protecaoPronta').checked)throw new Error('Antes de publicar, revise os limites do SMTP e ative/teste a proteção CAPTCHA contra abuso.');
+  if(publish && !selected?.publicada && !$('protecaoPronta').checked)throw new Error('Antes de publicar, revise os limites do SMTP e as medidas contra abuso.');
   const base={titulo,descricao,inicio_em:inicio,fim_em:fim,resultados_apos_voto:$('resultados').checked};
   let id;
   if(!selected){
