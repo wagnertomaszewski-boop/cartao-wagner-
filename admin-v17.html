@@ -1784,7 +1784,10 @@ async function carregarSolicitacoes() {
 
     atualizarContadoresStatus();
 
-    if(faixaSemMovimento) dados=dados.filter(item=>faixaMovimento(item)===faixaSemMovimento);
+    if(faixaSemMovimento){
+      dados=dados.filter(item=>faixaMovimento(item)===faixaSemMovimento);
+      dados.sort((a,b)=>diasSemMovimento(b)-diasSemMovimento(a));
+    }
     atualizarFiltroMovimento();
 
     if (termoBusca) {
@@ -2321,7 +2324,10 @@ document.getElementById("senhaLogin").addEventListener("keydown", e => {
   if (e.key === "Enter") fazerLogin();
 });
 
-document.getElementById("filtroStatus").addEventListener("change", carregarSolicitacoes);
+document.getElementById("filtroStatus").addEventListener("change", ()=>{
+  faixaSemMovimento=0;
+  carregarSolicitacoes();
+});
 ["buscaProjetos","projetoFiltroTipo","projetoFiltroPublicacao"].forEach(id=>{
   const campo=document.getElementById(id);
   if(campo)campo.addEventListener(id==="buscaProjetos"?"input":"change",filtrarProjetosPainel);
