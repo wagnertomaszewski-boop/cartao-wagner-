@@ -504,6 +504,30 @@
     a.atalho:focus-visible{outline:3px solid #75b6ef;outline-offset:2px}
     .atalho.em-preparacao{opacity:.64;cursor:default}
     .atalho.em-preparacao span{font-style:italic}
+
+.alertas-movimento{margin:14px 0;padding:14px;border:1px solid #d9e8f5;border-radius:14px;background:#f5f9ff}
+.alertas-movimento h3{color:#123b65;margin:0 0 5px;font-size:16px}
+.alertas-movimento p{font-size:12px;color:#60748b;line-height:1.45;margin:0 0 10px}
+.alertas-movimento-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.alertas-movimento-grid button{border:1px solid #d8e4ef;border-left:4px solid #d9a122;background:white;text-align:left;border-radius:11px;padding:10px;width:100%}
+.alertas-movimento-grid button.nivel-15{border-left-color:#e47429}
+.alertas-movimento-grid button.nivel-30{border-left-color:#bd3838}
+.alertas-movimento-grid strong{display:block;color:#183a5a;font-size:23px}
+.alertas-movimento-grid span{font-weight:700;font-size:11px;color:#526981}
+.filtro-movimento-ativo{margin-bottom:10px;padding:10px;border:1px solid #f2d7a9;background:#fff4df;color:#724500;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+.filtro-movimento-ativo[hidden]{display:none}
+.filtro-movimento-ativo button{width:auto;margin:0;padding:9px;background:#fff;color:#85520d;border:1px solid #edcc97;border-radius:8px}
+.alerta-sem-atualizacao{margin-bottom:8px;padding:8px;border-radius:9px;background:#fff2d8;color:#906100;font-size:12px;font-weight:750}
+.alerta-sem-atualizacao.nivel-15{background:#ffead7;color:#aa4d15}
+.alerta-sem-atualizacao.nivel-30{background:#ffe8e5;color:#b83535}
+.avaliacao-box{padding:12px;margin-top:12px;border-radius:12px;background:#f4f9ff;border:1px solid #dae8f5}
+.avaliacao-box strong{display:block;color:#19496f;margin-bottom:5px}
+.avaliacao-box p{font-size:12px;color:#5b6e80;margin:5px 0 10px}
+.avaliacao-box button,.avaliacao-box a{display:inline-flex;width:auto;min-height:42px;margin:4px 6px 0 0;padding:9px 11px;align-items:center;justify-content:center;background:#0b6db7;border:0;border-radius:9px;color:white;font-size:12px;font-weight:700;text-decoration:none}
+.avaliacao-box a{background:#168248}
+.avaliacao-box input{width:100%;margin-top:8px}
+.avaliacao-respondida{color:#11663c;font-weight:800}
+@media(max-width:460px){.alertas-movimento-grid{gap:5px}.alertas-movimento-grid button{padding:8px 6px}.alertas-movimento-grid strong{font-size:20px}.alertas-movimento-grid span{font-size:10px}}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
@@ -536,6 +560,15 @@
         <div class="resumo-card ok"><span>Concluídas</span><strong id="resumoConcluidas">—</strong></div>
       </section>
 
+      <section class="alertas-movimento" aria-label="Pedidos parados">
+        <h3>⏰ Solicitações sem atualização</h3>
+        <p>Pedidos em aberto por tempo desde a última movimentação. Toque para ver quais são.</p>
+        <div class="alertas-movimento-grid">
+          <button type="button" onclick="selecionarAlertaSemMovimento(7)"><strong id="alertaMov7">—</strong><span>7 a 14 dias</span></button>
+          <button type="button" class="nivel-15" onclick="selecionarAlertaSemMovimento(15)"><strong id="alertaMov15">—</strong><span>15 a 29 dias</span></button>
+          <button type="button" class="nivel-30" onclick="selecionarAlertaSemMovimento(30)"><strong id="alertaMov30">—</strong><span>30 dias ou mais</span></button>
+        </div>
+      </section>
       <div class="atalhos-grid">
         <div class="atalho" onclick="irPainel('solicitacoes')"><b>☷</b><strong>Solicitações</strong><span>Abrir atendimentos recebidos</span></div>
         <div class="atalho" onclick="irPainel('lembretes')"><b>⏰</b><strong>Lembretes</strong><span>Ver o que precisa de retorno</span></div>
@@ -559,6 +592,7 @@
         <button class="sr-card atrasado" type="button" onclick="irPainel('lembretes',null,true)"><small>Lembretes vencidos</small><strong id="cntAtrasado">—</strong></button>
       </div>
 
+        <div id="filtroMovimentoAtivo" class="filtro-movimento-ativo" hidden><span id="textoFiltroMovimento"></span><button type="button" onclick="limparAlertaSemMovimento()">Limpar filtro</button></div>
       <div class="filtros-box">
         <div class="status-filtros" id="statusFiltros">
           <button type="button" class="ativo" data-status="Todos">Todos</button>
@@ -895,7 +929,33 @@ function dataBrParaIso(v) {
   return `${String(ano).padStart(4, "0")}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
 }
 
+
+let faixaSemMovimento=0;
+function diasSemMovimento(item){
+  if(normalizar(item.status).includes("conclu"))return 0;
+  const ultima=new Date(item.atualizado_em||item.criado_em||0).getTime();
+  if(!Number.isFinite(ultima)||ultima<=0)return 0;
+  return Math.max(0,Math.floor((Date.now()-ultima)/86400000));
+}
+function faixaMovimento(item){
+  const dias=diasSemMovimento(item);
+  return dias>=30?30:dias>=15?15:dias>=7?7:0;
+}
+function selecionarAlertaSemMovimento(faixa){
+  faixaSemMovimento=faixa;
+  document.getElementById("filtroBusca").value="";
+  irPainel("solicitacoes",null,true);
+}
+function limparAlertaSemMovimento(){faixaSemMovimento=0;carregarSolicitacoes();}
+function atualizarFiltroMovimento(){
+  const el=document.getElementById("filtroMovimentoAtivo");
+  if(el)el.hidden=!faixaSemMovimento;
+  const s=document.getElementById("textoFiltroMovimento");
+  if(s)s.textContent="Pedidos sem atualização: "+({7:"7 a 14 dias",15:"15 a 29 dias",30:"30 dias ou mais"}[faixaSemMovimento]||"");
+}
+
 function selecionarStatusRapido(status){
+  faixaSemMovimento=0;
   const select=document.getElementById("filtroStatus");
   if(select) select.value=status;
   document.querySelectorAll("#statusFiltros button").forEach(b=>b.classList.toggle("ativo",b.dataset.status===status));
@@ -907,7 +967,7 @@ async function atualizarContadoresStatus(){
     const sessao=await obterSessaoValida();
     if(!sessao) return;
     const resp=await requisicao(
-      SUPABASE_URL + "/rest/v1/solicitacoes?select=status,lembrete_em",
+      SUPABASE_URL + "/rest/v1/solicitacoes?select=status,lembrete_em,criado_em,atualizado_em",
       {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token}}
     );
     if(!resp.ok) return;
@@ -925,6 +985,9 @@ async function atualizarContadoresStatus(){
     set("cntAndamento",conta("Em andamento"));
     set("cntConcluido",conta("Concluído"));
     set("cntAtrasado",atrasados);
+    set("alertaMov7",dados.filter(x=>faixaMovimento(x)===7).length);
+    set("alertaMov15",dados.filter(x=>faixaMovimento(x)===15).length);
+    set("alertaMov30",dados.filter(x=>faixaMovimento(x)===30).length);
   }catch(e){ console.warn("Contadores não disponíveis",e); }
 }
 
@@ -1422,10 +1485,20 @@ async function carregarResultadosConcluidos(){
   try{
     const sessao=await obterSessaoValida();
     if(!sessao)throw new Error("Sua sessão expirou. Entre novamente.");
-    const url=SUPABASE_URL+"/rest/v1/solicitacoes?select=id,protocolo,assunto,localidade,criado_em,atualizado_em&status=eq.Conclu%C3%ADdo&order=atualizado_em.desc";
+    const url=SUPABASE_URL+"/rest/v1/solicitacoes?select=id,protocolo,assunto,localidade,whatsapp,criado_em,atualizado_em&status=eq.Conclu%C3%ADdo&order=atualizado_em.desc";
     const resp=await requisicao(url,{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token}});
     const itens=await resp.json().catch(()=>[]);
     if(!resp.ok)throw new Error(itens?.message||"Não foi possível consultar os resultados.");
+    let avaliacoes={};
+    try{
+      const ar=await requisicao(SUPABASE_URL+"/rest/v1/avaliacoes_solicitacoes?select=solicitacao_id,avaliacao,respondido_em",{
+        headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token}
+      });
+      if(ar.ok){
+        const ad=await ar.json();
+        (Array.isArray(ad)?ad:[]).forEach(a=>{avaliacoes[Number(a.solicitacao_id)]=a;});
+      }
+    }catch(e){console.warn("Avaliações indisponíveis",e);}
     if(!Array.isArray(itens)||!itens.length){
       alvo.innerHTML='<div class="vazio"><strong>Nenhuma solicitação concluída ainda.</strong><p>Quando uma solicitação receber o status Concluído, será exibida aqui.</p></div>';
       return;
@@ -1433,13 +1506,19 @@ async function carregarResultadosConcluidos(){
     alvo.innerHTML='<p class="resultado-total">'+itens.length+' solicitação(ões) concluída(s)</p>'+itens.map(item=>{
       const id=Number(item.id);
       if(!Number.isSafeInteger(id))return "";
+      const aval=avaliacoes[id];
       return '<article class="resultado-card"><span class="resultado-chip">✓ Concluída</span>'+
         '<h3>'+esc(item.protocolo||"Solicitação #"+id)+'</h3>'+
         '<p>'+esc(item.assunto)+'</p>'+
         (item.localidade?'<p class="resultado-meta">Localidade: '+esc(item.localidade)+'</p>':'')+
         '<p class="resultado-meta">Atualização: '+esc(formatarData(item.atualizado_em||item.criado_em))+'</p>'+
         '<button type="button" onclick="abrirSolicitacaoPorId('+id+')">Abrir histórico e documentos ↗</button>'+
-        '<a class="resultado-antes-depois" href="./projetos.html?novo=resultado&amp;protocolo='+encodeURIComponent(item.protocolo||"")+'">📸 Preparar antes e depois ↗</a></article>';
+        '<a class="resultado-antes-depois" href="./projetos.html?novo=resultado&amp;protocolo='+encodeURIComponent(item.protocolo||"")+'">📸 Preparar antes e depois ↗</a>'+
+        '<div class="avaliacao-box" data-whatsapp="'+escCampo(item.whatsapp||"")+'" data-protocolo="'+escCampo(item.protocolo||"")+'">'+
+          '<strong>⭐ Avaliação do cidadão</strong>'+
+          '<p>'+(aval?.avaliacao?'✓ '+esc(textoAvaliacao(aval.avaliacao)):'Ainda sem avaliação')+'</p>'+
+          (aval?.avaliacao?'':'<button type="button" onclick="prepararConviteAvaliacao('+id+',this)">Preparar convite</button><div class="convite-resultado" aria-live="polite"></div>')+
+        '</div></article>';
     }).join("");
   }catch(e){alvo.innerHTML='<div class="erro">'+esc(mensagemDeErro(e))+'<button type="button" onclick="carregarResultadosConcluidos()">Tentar novamente</button></div>';}
 }
@@ -1543,6 +1622,61 @@ function montarMensagemAvisoStatus(item) {
     orientacao + "\n\n" +
     "Você pode acompanhar o protocolo pelo aplicativo.\n\n" +
     "Equipe Mandato em Ação\nVereador Wagner Tomaszewski";
+}
+
+
+function textoAvaliacao(valor){
+  return ({sim:"Sim, resolvido",parcialmente:"Parcialmente resolvido",nao:"Não foi resolvido"})[valor] || "";
+}
+async function prepararConviteAvaliacao(id, botao){
+  const box=botao.closest(".avaliacao-box");
+  const alvo=box?.querySelector(".convite-resultado");
+  if(!box||!alvo||!Number.isSafeInteger(Number(id)))return;
+  const textoAnterior=botao.textContent;
+  botao.disabled=true;
+  botao.textContent="Preparando...";
+  alvo.textContent="";
+  try{
+    const sessao=await obterSessaoValida();
+    if(!sessao)throw new Error("Sua sessão expirou. Entre novamente.");
+    const headers={"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token};
+    let resp=await requisicao(SUPABASE_URL+"/rest/v1/avaliacoes_solicitacoes?select=solicitacao_id,convite,avaliacao,respondido_em&solicitacao_id=eq."+encodeURIComponent(id),{headers});
+    let dados=await resp.json().catch(()=>[]);
+    if(!resp.ok)throw new Error(dados.message||"Não foi possível consultar a avaliação.");
+    let item=Array.isArray(dados)?dados[0]:null;
+    if(!item){
+      resp=await requisicao(SUPABASE_URL+"/rest/v1/avaliacoes_solicitacoes?select=solicitacao_id,convite,avaliacao,respondido_em",{
+        method:"POST",headers:{...headers,"Content-Type":"application/json","Prefer":"return=representation"},
+        body:JSON.stringify({solicitacao_id:Number(id)})
+      });
+      dados=await resp.json().catch(()=>[]);
+      if(!resp.ok)throw new Error(dados.message||"Não foi possível gerar o convite.");
+      item=Array.isArray(dados)?dados[0]:null;
+    }
+    if(!item?.convite)throw new Error("Convite indisponível.");
+    if(item.avaliacao){
+      alvo.innerHTML='<div class="avaliacao-respondida">✓ Avaliação recebida: '+esc(textoAvaliacao(item.avaliacao))+'</div>';
+      return;
+    }
+    const url=new URL(location.pathname.includes("/painel/")?"../v2/avaliar.html":"./v2/avaliar.html",location.href);
+    url.searchParams.set("convite",item.convite);
+    const link=url.toString();
+    const numero=normalizarNumeroWhatsapp(box.dataset.whatsapp||"");
+    const protocolo=box.dataset.protocolo||"";
+    const mensagem="Olá! A solicitação "+protocolo+" foi marcada como concluída. Queremos saber se o problema foi resolvido. Avalie pelo link individual: "+link;
+    const whats=numero?"https://wa.me/"+numero+"?text="+encodeURIComponent(mensagem):"";
+    alvo.innerHTML='<p>Convite individual: compartilhe apenas com o cidadão responsável. Ele poderá responder uma única vez.</p>'+
+      '<input class="link-avaliacao" readonly aria-label="Link privado da avaliação" value="'+escCampo(link)+'">'+
+      '<button type="button" onclick="copiarLinkAvaliacao(this)">📋 Copiar link</button>'+
+      (whats?'<a href="'+escCampo(whats)+'" target="_blank" rel="noopener noreferrer">📲 Enviar pelo WhatsApp</a>':'<p>Sem WhatsApp cadastrado; use o botão Copiar link.</p>');
+  }catch(e){alvo.textContent=mensagemDeErro(e);}
+  finally{botao.disabled=false;botao.textContent=textoAnterior;}
+}
+async function copiarLinkAvaliacao(botao){
+  const input=botao.closest(".avaliacao-box")?.querySelector(".link-avaliacao");
+  if(!input)return;
+  try{await navigator.clipboard.writeText(input.value);botao.textContent="✓ Link copiado";}
+  catch(e){input.focus();input.select();alert("Selecione e copie o link mostrado no campo.");}
 }
 
 function montarLinkAvisoStatus(item) {
@@ -1652,6 +1786,12 @@ async function carregarSolicitacoes() {
 
     atualizarContadoresStatus();
 
+    if(faixaSemMovimento){
+      dados=dados.filter(item=>faixaMovimento(item)===faixaSemMovimento);
+      dados.sort((a,b)=>diasSemMovimento(b)-diasSemMovimento(a));
+    }
+    atualizarFiltroMovimento();
+
     if (termoBusca) {
       dados = dados.filter(item =>
         normalizar(item.nome).includes(termoBusca) ||
@@ -1735,8 +1875,11 @@ async function carregarSolicitacoes() {
 
       const linhaTempoHtml = renderLinhaTempoAdmin(historicoPorSolicitacao[id] || [], status, item.criado_em, item.atualizado_em);
 
+      const diasParado=diasSemMovimento(item);
+      const faixaParado=faixaMovimento(item);
       card.innerHTML = `
         ${lembreteHtml}
+        ${faixaParado?`<div class="alerta-sem-atualizacao nivel-${faixaParado}">⚠️ Sem atualização há ${diasParado} dia(s)</div>`:""}
         <div class="protocolo">${esc(item.protocolo || ("Solicitação #" + id))}</div>
         <div class="data-info">
           <span>🕒 Recebida em ${esc(formatarData(item.criado_em))}</span>
@@ -1833,6 +1976,13 @@ async function carregarSolicitacoes() {
               </div>
             </div>
           </section>
+
+          ${statusNorm.includes("conclu") ? `<section class="avaliacao-box" data-whatsapp="${escCampo(item.whatsapp)}" data-protocolo="${escCampo(item.protocolo)}">
+            <strong>⭐ Avaliação do cidadão</strong>
+            <p>Prepare um convite individual para saber se o problema foi resolvido.</p>
+            <button type="button" onclick="prepararConviteAvaliacao(${id},this)">Preparar avaliação</button>
+            <div class="convite-resultado" aria-live="polite"></div>
+          </section>` : ""}
 
           <section class="gestao-card resposta">
             <div class="gestao-head">
@@ -2081,7 +2231,7 @@ async function atualizarStatus(id) {
           "Content-Type": "application/json",
           "Prefer": "return=representation"
         },
-        body: JSON.stringify({ status: seletor.value })
+        body: JSON.stringify({ status: seletor.value, atualizado_em: new Date().toISOString() })
       }
     );
 
@@ -2157,6 +2307,7 @@ document.addEventListener("visibilitychange",()=>{
 
 document.querySelectorAll("#statusFiltros button").forEach(btn=>{
   btn.addEventListener("click",()=>{
+    faixaSemMovimento=0;
     document.querySelectorAll("#statusFiltros button").forEach(b=>b.classList.remove("ativo"));
     btn.classList.add("ativo");
     const select=document.getElementById("filtroStatus");
@@ -2175,7 +2326,10 @@ document.getElementById("senhaLogin").addEventListener("keydown", e => {
   if (e.key === "Enter") fazerLogin();
 });
 
-document.getElementById("filtroStatus").addEventListener("change", carregarSolicitacoes);
+document.getElementById("filtroStatus").addEventListener("change", ()=>{
+  faixaSemMovimento=0;
+  carregarSolicitacoes();
+});
 ["buscaProjetos","projetoFiltroTipo","projetoFiltroPublicacao"].forEach(id=>{
   const campo=document.getElementById(id);
   if(campo)campo.addEventListener(id==="buscaProjetos"?"input":"change",filtrarProjetosPainel);
