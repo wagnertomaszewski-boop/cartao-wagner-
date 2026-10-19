@@ -156,6 +156,11 @@
     .acoes-rapidas a{text-decoration:none}
     .acoes-rapidas button{width:auto;margin:0;padding:10px 13px;font-size:13px;border-radius:11px}
     .btn-whatsapp{background:#168b4d!important}
+    .btn-aviso-status{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:11px 15px;border-radius:12px;background:#168b4d;color:#fff;text-decoration:none;font-size:13px;font-weight:800}
+    .btn-aviso-status:focus-visible{outline:3px solid #83bbeb;outline-offset:2px}
+    .aviso-status-acoes{display:flex;flex-direction:column;align-items:flex-start;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid #e2eaf1}
+    .aviso-status-ajuda{color:#60748b;font-size:12px;line-height:1.45}
+
     .status-area select{margin-top:0;border:1px solid #d6e0e8;border-radius:12px}
     .status-area button{border-radius:12px}
     .respostas-box{margin-top:0;background:transparent;border:0;padding:0}
@@ -1499,6 +1504,50 @@ async function abrirSolicitacaoPorId(id){
   card.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
+
+function normalizarNumeroWhatsapp(valor) {
+  const digitos = String(valor || "").replace(/\D/g, "");
+  const numeroNacional = digitos.startsWith("55") && (digitos.length === 12 || digitos.length === 13)
+    ? digitos.slice(2) : digitos;
+  return /^\d{10,11}$/.test(numeroNacional) ? "55" + numeroNacional : "";
+}
+
+function montarMensagemAvisoStatus(item) {
+  const nome = String(item.nome || "").trim().split(/\s+/)[0];
+  const saudacao = nome ? "Olá, " + nome + "!" : "Olá!";
+  const protocolo = String(item.protocolo || ("Solicitação #" + item.id)).trim();
+  const status = String(item.status || "Recebida").trim();
+  const orientacoes = {
+    recebida: "Recebemos sua solicitação e ela foi registrada em nosso sistema.",
+    recebido: "Recebemos sua solicitação e ela foi registrada em nosso sistema.",
+    "em analise": "Nossa equipe está analisando o pedido.",
+    encaminhado: "O pedido foi encaminhado ao setor responsável. Continuaremos acompanhando.",
+    "em andamento": "Estamos acompanhando as providências relacionadas ao seu pedido.",
+    concluido: "A solicitação foi marcada como concluída. Confira os detalhes pelo aplicativo."
+  };
+  const orientacao = orientacoes[normalizar(status)] || "Você pode consultar o andamento pelo aplicativo.";
+  return saudacao + "\n\n" +
+    "O status da sua solicitação *" + protocolo + "* no Mandato em Ação foi atualizado para *" + status + "*.\n\n" +
+    orientacao + "\n\n" +
+    "Você pode acompanhar o protocolo pelo aplicativo.\n\n" +
+    "Equipe Mandato em Ação\nVereador Wagner Tomaszewski";
+}
+
+function montarLinkAvisoStatus(item) {
+  const numero = normalizarNumeroWhatsapp(item.whatsapp);
+  return numero ? "https://wa.me/" + numero + "?text=" + encodeURIComponent(montarMensagemAvisoStatus(item)) : "";
+}
+
+function validarStatusParaAviso(link) {
+  const card = link.closest(".card");
+  const seletor = card && card.querySelector('select[id^="status-"]');
+  if (seletor && seletor.value !== link.dataset.status) {
+    alert("Salve o novo status antes de preparar o aviso pelo WhatsApp.");
+    return false;
+  }
+  return true;
+}
+
 async function carregarSolicitacoes() {
   const lista = document.getElementById("lista");
   lista.textContent = "Carregando solicitações...";
@@ -1608,8 +1657,7 @@ async function carregarSolicitacoes() {
     dados.forEach(item => {
       const id = Number(item.id);
       const status = item.status || "Recebida";
-      const telefone = String(item.whatsapp || "").replace(/\D/g, "");
-      const whatsapp = telefone.startsWith("55") ? telefone : "55" + telefone;
+      const whatsapp = normalizarNumeroWhatsapp(item.whatsapp);
 
       const card = document.createElement("div");
       card.dataset.id = String(id);
@@ -1764,6 +1812,12 @@ async function carregarSolicitacoes() {
                     .join("")}
                 </select>
                 <button id="botao-${id}" type="button" onclick="atualizarStatus(${id})">Salvar status</button>
+              </div>
+              <div class="aviso-status-acoes">
+                ${whatsapp
+                  ? `<a class="btn-aviso-status" href="${escCampo(montarLinkAvisoStatus(item))}" data-status="${escCampo(status)}" onclick="return validarStatusParaAviso(this)" target="_blank" rel="noopener noreferrer">📲 Avisar pelo WhatsApp</a>`
+                  : '<span class="aviso-status-ajuda">Não há um número de WhatsApp válido cadastrado.</span>'}
+                <span class="aviso-status-ajuda">O WhatsApp abrirá com a mensagem do status salvo. Confira e toque em Enviar. Avise apenas quem autorizou o contato.</span>
               </div>
             </div>
           </section>
@@ -2034,8 +2088,19 @@ async function atualizarStatus(id) {
       throw new Error("O servidor não permitiu alterar este registro.");
     }
 
-    alert("Status atualizado com sucesso!");
+    const statusSalvo = seletor.value;
+    const filtroAtual = document.getElementById("filtroStatus");
+    if (filtroAtual && filtroAtual.value !== "Todos" && filtroAtual.value !== statusSalvo) {
+      filtroAtual.value = "Todos";
+      document.querySelectorAll("#statusFiltros button").forEach(b => b.classList.toggle("ativo", b.dataset.status === "Todos"));
+    }
     await carregarSolicitacoes();
+    const cardAtualizado = document.querySelector('#lista .card[data-id="' + id + '"]');
+    if (cardAtualizado) {
+      cardAtualizado.classList.add("expandido");
+      cardAtualizado.querySelector(".gestao-card.status")?.scrollIntoView({behavior:"smooth",block:"center"});
+    }
+    alert("Status atualizado com sucesso! Você já pode avisar o cidadão pelo WhatsApp.");
 
   } catch (e) {
     console.error("Erro ao atualizar status:", e);
