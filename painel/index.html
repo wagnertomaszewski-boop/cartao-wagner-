@@ -494,6 +494,7 @@
     .atalho.em-preparacao{opacity:.64;cursor:default}
     .atalho.em-preparacao span{font-style:italic}
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
   <div id="telaLogin">
@@ -1128,6 +1129,7 @@ function removerDocumentoPendente(id, indice) {
 }
 
 function mostrarLogin(mensagem = "") {
+  window.painelMapaPrivadoLimpar?.();
   document.getElementById("telaLogin").style.display = "block";
   document.querySelector("header").style.display = "none";
   document.querySelector("main").style.display = "none";
@@ -2124,5 +2126,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
   });
 }
 </script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script src="./mapa-solicitacoes.js" defer></script>
 </body>
 </html>
