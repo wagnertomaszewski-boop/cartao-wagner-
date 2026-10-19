@@ -1,0 +1,26 @@
+{
+  "name": "Mandato em Ação — Vereador Wagner V2",
+  "short_name": "Mandato V2",
+  "description": "Versão 2 de teste do aplicativo do Vereador Wagner Tomaszewski, Cristal/RS",
+  "id": "/cartao-wagner-/v2/index.html",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b63ad",
+  "theme_color": "#0b63ad",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "./icon-v2-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-v2-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
