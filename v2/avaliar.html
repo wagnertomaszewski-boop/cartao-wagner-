@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b63ad">
+  <meta name="referrer" content="no-referrer">
+  <title>Avaliar atendimento | Mandato em Ação</title>
+  <link rel="icon" href="./icon-v2-192.png" type="image/png">
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(155deg,#082d56,#0e6aae);font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:#18334e;padding:20px 14px 38px}
+    main{width:min(100%,520px);margin:34px auto 0}
+    .marca{text-align:center;color:white;margin-bottom:24px}
+    .marca small{display:block;letter-spacing:.13em;font-size:12px;margin:8px auto;text-transform:uppercase}
+    .marca h1{font-size:28px;line-height:1.1;margin:8px 0}
+    .marca p{margin:6px 0;color:#d8eaff;font-size:14px}
+    .card{background:white;border-radius:22px;padding:24px 21px;box-shadow:0 16px 40px rgba(4,19,44,.25)}
+    .card h2{font-size:22px;color:#103d66;margin:0 0 8px}
+    .ajuda{line-height:1.55;font-size:14px;color:#59718a;margin:0 0 18px}
+    fieldset{padding:0;margin:0;border:0}legend{font-size:14px;font-weight:750;color:#203d57;margin-bottom:12px}
+    .opcao{display:flex;gap:12px;align-items:center;margin:10px 0;padding:15px 14px;border-radius:13px;border:1px solid #d5e3ef;background:#f7fbff;font-weight:720;cursor:pointer;min-height:58px}
+    .opcao:has(input:checked){border-color:#0b70c7;background:#e8f3ff;box-shadow:0 0 0 1px #0b70c7}
+    .opcao input{accent-color:#0b70c7;width:19px;height:19px;flex-shrink:0}
+    button{margin-top:15px;width:100%;min-height:50px;border:0;border-radius:12px;background:#086cbe;color:white;font-size:15px;font-weight:800;cursor:pointer}
+    button:disabled{opacity:.55;cursor:default}
+    button:focus-visible,.opcao:focus-within{outline:3px solid #5aa9f8;outline-offset:2px}
+    #mensagem{display:none;padding:14px;border-radius:12px;margin-top:15px;font-weight:650;font-size:14px;line-height:1.5}
+    #mensagem.sucesso{display:block;color:#12683d;background:#e4f7ec}
+    #mensagem.erro{display:block;color:#a03325;background:#fff0ea}
+    .rodape{text-align:center;padding-top:20px}.rodape a{color:white;font-size:13px;text-decoration:underline}
+    .nota{margin-top:16px;font-size:12px;line-height:1.45;color:#60768b}
+  </style>
+</head>
+<body>
+<main>
+  <div class="marca"><small>Vereador Wagner Tomaszewski</small><h1>Mandato em Ação</h1><p>Juntos por um Cristal melhor</p></div>
+  <section class="card" aria-labelledby="titulo">
+    <h2 id="titulo">Sua opinião é importante!</h2>
+    <p class="ajuda">Sua solicitação foi marcada como concluída. Conte para nossa equipe se o problema realmente foi resolvido.</p>
+    <form id="formAvaliacao">
+      <fieldset><legend>O problema foi resolvido?</legend>
+        <label class="opcao"><input type="radio" name="avaliacao" value="sim" required> ✅ Sim, foi resolvido</label>
+        <label class="opcao"><input type="radio" name="avaliacao" value="parcialmente"> 🟡 Parcialmente</label>
+        <label class="opcao"><input type="radio" name="avaliacao" value="nao"> ❌ Não foi resolvido</label>
+      </fieldset>
+      <button id="enviar" type="submit">Enviar minha avaliação</button>
+    </form>
+    <div id="mensagem" role="status" aria-live="polite"></div>
+    <p class="nota">Este convite é individual e aceita uma avaliação. Sua resposta será vista apenas pela equipe do mandato. Não é necessário informar CPF, endereço ou outros dados.</p>
+  </section>
+  <div class="rodape"><a href="./index.html">← Voltar ao Mandato em Ação</a></div>
+</main>
+<script>
+const SUPABASE_URL="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
+const SUPABASE_KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+const convite=new URLSearchParams(location.search).get("convite")||"";
+const valido=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(convite);
+const form=document.getElementById("formAvaliacao"),botao=document.getElementById("enviar"),mensagem=document.getElementById("mensagem");
+function aviso(texto,tipo){mensagem.textContent=texto;mensagem.className=tipo;}
+if(!valido){form.hidden=true;aviso("Este link de avaliação não é válido. Solicite um novo convite à equipe do mandato.","erro");}
+form.addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!valido)return;
+  const escolha=new FormData(form).get("avaliacao");
+  if(!["sim","parcialmente","nao"].includes(escolha))return;
+  botao.disabled=true;botao.textContent="Enviando...";
+  try{
+    const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/registrar_avaliacao_solicitacao",{
+      method:"POST",
+      headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({p_convite:convite,p_avaliacao:escolha})
+    });
+    if(!r.ok)throw new Error("Não foi possível registrar agora.");
+    const status=await r.json();
+    if(status!=="registrada"){
+      form.hidden=true;
+      aviso("Este convite já foi utilizado ou não está mais disponível. Se precisar, entre em contato com o mandato.","erro");
+      return;
+    }
+    form.hidden=true;
+    aviso("Obrigado! Sua avaliação foi registrada com sucesso e ajudará a melhorar nosso atendimento.","sucesso");
+    // O token nunca é apresentado ao publico nem enviado a outra origem.
+    history.replaceState(null,"",location.pathname);
+  }catch(err){
+    aviso("Não foi possível enviar sua avaliação. Verifique sua conexão e tente novamente.","erro");
+    botao.disabled=false;botao.textContent="Tentar novamente";
+  }
+});
+</script>
+</body>
+</html>
