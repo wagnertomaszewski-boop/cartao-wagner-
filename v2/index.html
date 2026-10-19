@@ -586,7 +586,7 @@ async function solicitarOtpEnquete(){
  const b=$poll('pollEnviarCodigo')||$poll('pollReenviarCodigo');if(!b)return;
  try{
   if(Date.now()-ultimaTentativaOtp<60000)throw new Error('Aguarde 60 segundos antes de solicitar outro código.');
-  emailEnquete=normalizarEmail($poll('pollEmail')?.value||emailEnquete);
+  const campoEmail=$poll('pollEmail');emailEnquete=normalizarEmail(campoEmail?campoEmail.value:emailEnquete);
   b.disabled=true;b.textContent='Enviando...';
   await pollApi('/auth/v1/otp',{method:'POST',body:JSON.stringify({email:emailEnquete,create_user:true})});
   ultimaTentativaOtp=Date.now();
