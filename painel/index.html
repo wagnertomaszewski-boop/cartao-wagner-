@@ -1698,6 +1698,7 @@ async function carregarSolicitacoes() {
               <div class="dado"><small>Nome</small><strong>${esc(item.nome)}</strong></div>
               <div class="dado"><small>WhatsApp</small><strong>${esc(item.whatsapp)}</strong></div>
               <div class="dado"><small>Localidade</small><strong>${esc(item.localidade)}</strong></div>
+              ${item.latitude !== null && item.longitude !== null && item.latitude !== undefined && item.longitude !== undefined && Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude)) ? '<div class="dado"><small>📍 Localização do problema</small><a href="https://www.google.com/maps?q='+Number(item.latitude)+','+Number(item.longitude)+'" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:10px;background:#e8f4ff;color:#07569b;font-weight:800;text-decoration:none">📍 Ver localização no mapa ↗</a></div>' : ''}
               <div class="dado"><small>Assunto</small><strong>${esc(item.assunto)}</strong></div>
             </div>
             <div class="descricao-moderna"><small>Descrição</small>${esc(item.descricao)}</div>
