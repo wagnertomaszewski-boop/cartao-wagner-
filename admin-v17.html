@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <script>
+    // Compatibilidade com atalhos instalados pela versão V17 antiga.
+    // O endereço oficial do painel é /painel/index.html.
+    (function () {
+      const destino = "./painel/index.html?v=20261020-atalho-unificado" +
+        (location.hash || "#inicio");
+      location.replace(destino);
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">

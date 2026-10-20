@@ -2,7 +2,7 @@
   "name": "Painel do Mandato V17",
   "short_name": "Painel do Mandato",
   "description": "Painel administrativo do mandato do vereador Wagner Tomaszewski, Cristal/RS",
-  "start_url": "./admin-v17.html#inicio",
+  "start_url": "./painel/index.html?v=20261020-atalho-unificado#inicio",
   "scope": "./",
   "display": "standalone",
   "background_color": "#05164b",
