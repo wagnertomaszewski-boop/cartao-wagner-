@@ -1,0 +1,67 @@
+name: Painel do Mandato - Play Store (teste interno)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gerar-aab:
+    name: Gerar AAB assinado para teste interno
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Obter codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Preparar Android SDK
+        run: |
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$(find "$SDK/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          test -x "$SDKMANAGER"
+          "$SDKMANAGER" --install 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Carregar assinatura privada
+        env:
+          KEYSTORE_B64: ${{ secrets.PAINEL_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.PAINEL_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.PAINEL_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.PAINEL_KEY_PASSWORD }}
+        run: |
+          if [[ -z "$KEYSTORE_B64" || -z "$STORE_PASSWORD" || -z "$KEY_ALIAS" || -z "$KEY_PASSWORD" ]]; then
+            echo 'Faltam os quatro GitHub Actions Secrets PAINEL_* da assinatura.' >&2
+            exit 1
+          fi
+          umask 077
+          mkdir -p "$RUNNER_TEMP/painel-assinatura"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/painel-assinatura/upload.jks"
+          test -s "$RUNNER_TEMP/painel-assinatura/upload.jks"
+
+      - name: Compilar AAB de producao
+        working-directory: android-painel
+        env:
+          PAINEL_KEYSTORE_FILE: ${{ runner.temp }}/painel-assinatura/upload.jks
+          PAINEL_KEYSTORE_PASSWORD: ${{ secrets.PAINEL_KEYSTORE_PASSWORD }}
+          PAINEL_KEY_ALIAS: ${{ secrets.PAINEL_KEY_ALIAS }}
+          PAINEL_KEY_PASSWORD: ${{ secrets.PAINEL_KEY_PASSWORD }}
+        run: gradle --no-daemon :app:bundleRelease
+
+      - name: Disponibilizar AAB para a Play Console
+        uses: actions/upload-artifact@v4
+        with:
+          name: Painel-do-Mandato-PlayStore-AAB
+          path: android-painel/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14
