@@ -71,6 +71,15 @@ button.primary{color:#fff;background:#0a68b4}button:disabled{opacity:.6}
 <div class="filters" id="filtros"><button type="button" class="sel" data-filtro="proximos">Próximos</button><button type="button" data-filtro="hoje">Hoje</button><button type="button" data-filtro="semana">7 dias</button><button type="button" data-filtro="mes">Este mês</button><button type="button" data-filtro="todos">Todos</button></div>
 <label for="busca">Buscar compromisso</label><input id="busca" type="search" placeholder="Título, local ou categoria">
 </section>
+<section class="card" id="avisosAndroid">
+<h2>🔔 Avisos no celular</h2>
+<p class="muted">Receba lembretes particulares dos compromissos 24 horas e 1 hora antes. Os avisos são programados no Android quando você abre esta agenda e continuam disponíveis ao fechar o aplicativo. O Android poderá entregá-los aproximadamente no horário previsto.</p>
+<div class="actions">
+<button type="button" id="alternarAvisos" class="primary">Ativar avisos</button>
+<button type="button" id="testarAviso">Enviar aviso de teste</button>
+</div>
+<p id="statusAvisos" class="muted" role="status" style="margin-bottom:0"></p>
+</section>
 <section class="card" id="calendario"><div class="cal-head"><h2>Calendário mensal</h2><div><button type="button" id="mesAnterior" aria-label="Mês anterior">‹</button><button type="button" id="mesSeguinte" aria-label="Mês seguinte">›</button></div></div>
 <div id="mesTitulo" class="cal-titulo"></div><div class="cal-semana"><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span></div>
 <div id="calDias" class="cal-dias"></div>
@@ -98,7 +107,7 @@ button.primary{color:#fff;background:#0a68b4}button:disabled{opacity:.6}
 <div class="notice" id="mensagem" role="status"></div>
 </form>
 </section>
-<section class="card"><h2>Agenda pública</h2><p class="muted">Veja exatamente o que os moradores conseguirão consultar. Lembretes automáticos e notificações ainda não foram ativados.</p><a class="button" style="display:block;text-align:center;text-decoration:none" href="../agenda.html" target="_blank" rel="noopener">↗ Visualizar agenda pública</a></section>
+<section class="card"><h2>Agenda pública</h2><p class="muted">Veja exatamente o que os moradores conseguirão consultar. Os avisos ativados no aplicativo Android são apenas para o administrador; não enviam notificações aos moradores.</p><a class="button" style="display:block;text-align:center;text-decoration:none" href="../agenda.html" target="_blank" rel="noopener">↗ Visualizar agenda pública</a></section>
 </div>
 </main>
 <script>
@@ -154,8 +163,49 @@ $("logout").onclick=()=>{token="";localStorage.removeItem(STORE);$("workspace").
 async function carregar(){
  items=await chamar("/rest/v1/agenda_mandato?select=*&order=inicio_em.asc");
  if(!Array.isArray(items))throw Error("A agenda retornou dados inesperados.");
- render(); 
+ render();
+ sincronizarAvisosAndroid();
 }
+function estadoAvisos(){
+ try {return window.MandatoLembretes?.estado?.()||"indisponivel"} catch {return "indisponivel"}
+}
+function atualizarEstadoLembretes(){
+ const estado=estadoAvisos(),botao=$("alternarAvisos"),teste=$("testarAviso"),rotulo=$("statusAvisos");
+ botao.disabled=estado==="indisponivel";teste.disabled=estado!=="ativo";
+ botao.textContent=estado==="ativo"?"Desativar avisos":"Ativar avisos";
+ rotulo.textContent=({
+  indisponivel:"Esta versão ainda não oferece avisos nativos. Instale o novo APK do Painel do Mandato para ativá-los.",
+  desativado:"Avisos desativados. Ative para receber os lembretes no celular.",
+  bloqueado:"O celular não permitiu as notificações. Autorize-as nas configurações do Android para este aplicativo.",
+  ativo:"Avisos ativados! Você receberá lembretes dos compromissos sincronizados, se as notificações do Android estiverem permitidas."
+ })[estado]||"";
+}
+window.atualizarEstadoLembretes=atualizarEstadoLembretes;
+function sincronizarAvisosAndroid(){
+ const ponte=window.MandatoLembretes;
+ if(!ponte?.sincronizar){atualizarEstadoLembretes();return}
+ try{
+  // Compartilhe com o Android apenas os campos necessários ao lembrete; nunca notas privadas.
+  const dados=items.filter(x=>x?.id&&x.inicio_em).map(x=>({
+   id:Number(x.id),titulo:String(x.titulo||"Compromisso do mandato"),
+   inicio:new Date(x.inicio_em).getTime(),situacao:x.situacao||"agendado"
+  }));
+  ponte.sincronizar(JSON.stringify(dados));
+ }catch(e){console.warn("Não foi possível sincronizar avisos",e)}
+ atualizarEstadoLembretes();
+}
+$("alternarAvisos").onclick=()=>{
+ const ponte=window.MandatoLembretes;
+ if(!ponte){atualizarEstadoLembretes();return}
+ if(estadoAvisos()==="ativo")ponte.desativar();
+ else ponte.ativar();
+ setTimeout(atualizarEstadoLembretes,700);
+};
+$("testarAviso").onclick=()=>{
+ if(estadoAvisos()!=="ativo")return;
+ window.MandatoLembretes?.testar?.();
+};
+atualizarEstadoLembretes();
 function dataLocal(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 function renderCalendario(){
  const ano=mesVisivel.getFullYear(),mes=mesVisivel.getMonth();
