@@ -239,6 +239,7 @@
     .status-chip.recebida{background:#edf2f7;color:#4c5f72}
     .status-chip.analise{background:#fff4d8;color:#8a6200}
     .status-chip.encaminhado{background:#e8f3ff;color:#1767a8}
+    .status-chip.aguardando{background:#fff1dc;color:#955b12}
     .status-chip.andamento{background:#e7f0ff;color:#315da8}
     .status-chip.concluido{background:#e7f8ee;color:#147a45}
     .bloco-painel.amarelo{border-left-color:#2c7db9}
@@ -252,6 +253,7 @@
     .status-resumo .sr-card.recebida{border-top:3px solid #8795a5}
     .status-resumo .sr-card.analise{border-top:3px solid #d39a18}
     .status-resumo .sr-card.encaminhado{border-top:3px solid #2b78b9}
+    .status-resumo .sr-card.aguardando{border-top:3px solid #d18a22}
     .status-resumo .sr-card.andamento{border-top:3px solid #526fb3}
     .status-resumo .sr-card.concluido{border-top:3px solid #2a8a55}
     .status-resumo .sr-card.atrasado{border-top:3px solid #c63d32}
@@ -587,6 +589,7 @@
         <button class="sr-card recebida" type="button" onclick="selecionarStatusRapido('Recebida')"><small>Recebidas (aguardando análise)</small><strong id="cntRecebida">—</strong></button>
         <button class="sr-card analise" type="button" onclick="selecionarStatusRapido('Em análise')"><small>Em análise</small><strong id="cntAnalise">—</strong></button>
         <button class="sr-card encaminhado" type="button" onclick="selecionarStatusRapido('Encaminhado')"><small>Encaminhadas</small><strong id="cntEncaminhado">—</strong></button>
+        <button class="sr-card aguardando" type="button" onclick="selecionarStatusRapido('Aguardando resposta')"><small>Aguardando resposta</small><strong id="cntAguardando">—</strong></button>
         <button class="sr-card andamento" type="button" onclick="selecionarStatusRapido('Em andamento')"><small>Em andamento</small><strong id="cntAndamento">—</strong></button>
         <button class="sr-card concluido" type="button" onclick="selecionarStatusRapido('Concluído')"><small>Concluídas</small><strong id="cntConcluido">—</strong></button>
         <button class="sr-card atrasado" type="button" onclick="irPainel('lembretes',null,true)"><small>Lembretes vencidos</small><strong id="cntAtrasado">—</strong></button>
@@ -599,6 +602,7 @@
           <button type="button" data-status="Recebida">Recebidas</button>
           <button type="button" data-status="Em análise">Em análise</button>
           <button type="button" data-status="Encaminhado">Encaminhadas</button>
+          <button type="button" data-status="Aguardando resposta">Aguardando resposta</button>
           <button type="button" data-status="Em andamento">Em andamento</button>
           <button type="button" data-status="Concluído">Concluídas</button>
         </div>
@@ -611,6 +615,7 @@
           <option value="Recebido">Recebido</option>
           <option value="Em análise">Em análise</option>
           <option value="Encaminhado">Encaminhado</option>
+          <option value="Aguardando resposta">Aguardando resposta</option>
           <option value="Em andamento">Em andamento</option>
           <option value="Concluído">Concluído</option>
         </select></details>
@@ -982,6 +987,7 @@ async function atualizarContadoresStatus(){
     set("cntRecebida",conta("Recebida")+conta("Recebido"));
     set("cntAnalise",conta("Em análise"));
     set("cntEncaminhado",conta("Encaminhado"));
+    set("cntAguardando",conta("Aguardando resposta"));
     set("cntAndamento",conta("Em andamento"));
     set("cntConcluido",conta("Concluído"));
     set("cntAtrasado",atrasados);
@@ -996,10 +1002,11 @@ function renderLinhaTempoAdmin(historico,statusAtual,criadoEm,atualizadoEm){
     ["Recebida","Solicitação registrada."],
     ["Em análise","Demanda em análise pelo mandato."],
     ["Encaminhada","Encaminhada ao órgão ou setor responsável."],
-    ["Em andamento","Acompanhamento e providências em curso."],
+    ["Aguardando resposta","Aguardando retorno do órgão responsável."],
+    ["Em andamento","Providências ou execução em curso."],
     ["Concluída","Solicitação finalizada."]
   ];
-  const ordem={"recebida":0,"recebido":0,"em analise":1,"encaminhada":2,"encaminhado":2,"em andamento":3,"concluida":4,"concluido":4};
+  const ordem={"recebida":0,"recebido":0,"em analise":1,"encaminhada":2,"encaminhado":2,"aguardando resposta":3,"em andamento":4,"concluida":5,"concluido":5};
   const atual=ordem[normalizar(statusAtual)] ?? 0;
   const porEtapa={};
 
@@ -1613,6 +1620,7 @@ function montarMensagemAvisoStatus(item) {
     recebido: "Recebemos sua solicitação e ela foi registrada em nosso sistema.",
     "em analise": "Nossa equipe está analisando o pedido.",
     encaminhado: "O pedido foi encaminhado ao setor responsável. Continuaremos acompanhando.",
+    "aguardando resposta": "O pedido já foi encaminhado. Estamos aguardando um retorno do órgão responsável.",
     "em andamento": "Estamos acompanhando as providências relacionadas ao seu pedido.",
     concluido: "A solicitação foi marcada como concluída. Confira os detalhes pelo aplicativo."
   };
@@ -1869,6 +1877,7 @@ async function carregarSolicitacoes() {
       const statusNorm = normalizar(status);
       const statusClasse = statusNorm.includes("concluido") ? "concluido" :
         statusNorm.includes("encaminhado") ? "encaminhado" :
+        statusNorm.includes("aguardando resposta") ? "aguardando" :
         statusNorm.includes("andamento") ? "andamento" :
         statusNorm.includes("analise") ? "analise" :
         "recebida";
@@ -1962,7 +1971,7 @@ async function carregarSolicitacoes() {
               </div>
               <div class="status-controles">
                 <select id="status-${id}">
-                  ${["Recebida","Recebido","Em análise","Encaminhado","Em andamento","Concluído"]
+                  ${["Recebida","Recebido","Em análise","Encaminhado","Aguardando resposta","Em andamento","Concluído"]
                     .map(s => `<option value="${s}" ${s === status ? "selected" : ""}>${s}</option>`)
                     .join("")}
                 </select>
