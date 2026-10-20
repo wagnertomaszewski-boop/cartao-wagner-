@@ -7,6 +7,10 @@ import android.graphics.Color;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.webkit.JavascriptInterface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
@@ -22,6 +26,8 @@ import android.widget.TextView;
 
 public final class MainActivity extends Activity {
     private static final String HOME = "https://wagnertomaszewski-boop.github.io/cartao-wagner-/painel/index.html";
+    private static final String AGENDA = "https://wagnertomaszewski-boop.github.io/cartao-wagner-/painel/agenda.html";
+    private static final int REQUEST_NOTIFICACAO = 2005;
     private static final String ALLOWED_PREFIX = "https://wagnertomaszewski-boop.github.io/cartao-wagner-/";
     private static final int REQUEST_FILE = 2011;
     private WebView web;
@@ -60,6 +66,7 @@ public final class MainActivity extends Activity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
+        web.addJavascriptInterface(new PonteLembretes(), "MandatoLembretes");
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
 
@@ -109,8 +116,63 @@ public final class MainActivity extends Activity {
         web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
             if (url.startsWith("https://")) openExternal(Uri.parse(url));
         });
-        if (savedInstanceState == null) web.loadUrl(HOME);
+        if (savedInstanceState == null) web.loadUrl(
+            getIntent().getBooleanExtra("abrirAgenda", false) ? AGENDA : HOME);
         else web.restoreState(savedInstanceState);
+    }
+
+    private final class PonteLembretes {
+        @JavascriptInterface public String estado() {
+            return Lembretes.estado(MainActivity.this);
+        }
+
+        @JavascriptInterface public void sincronizar(String eventos) {
+            runOnUiThread(() -> Lembretes.sincronizar(MainActivity.this, eventos));
+        }
+
+        @JavascriptInterface public void ativar() {
+            runOnUiThread(() -> {
+                Lembretes.ativar(MainActivity.this);
+                if (Build.VERSION.SDK_INT >= 33 && !Lembretes.permissao(MainActivity.this)) {
+                    requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICACAO);
+                } else atualizarEstadoNaPagina();
+            });
+        }
+
+        @JavascriptInterface public void desativar() {
+            runOnUiThread(() -> {
+                Lembretes.desativar(MainActivity.this);
+                atualizarEstadoNaPagina();
+            });
+        }
+
+        @JavascriptInterface public void testar() {
+            runOnUiThread(() -> {
+                if ("ativo".equals(Lembretes.estado(MainActivity.this)))
+                    LembreteReceiver.mostrar(MainActivity.this, 999999,
+                        "Este é um aviso de teste do Painel do Mandato.");
+                atualizarEstadoNaPagina();
+            });
+        }
+    }
+
+    private void atualizarEstadoNaPagina() {
+        if (web != null) web.evaluateJavascript(
+            "if(window.atualizarEstadoLembretes)window.atualizarEstadoLembretes();", null);
+    }
+
+    @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_NOTIFICACAO) {
+            if (Lembretes.permissao(this)) Lembretes.reagendar(this);
+            atualizarEstadoNaPagina();
+        }
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (web != null && intent.getBooleanExtra("abrirAgenda", false)) web.loadUrl(AGENDA);
     }
 
     private void openExternal(Uri uri) {
