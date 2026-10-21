@@ -6,13 +6,13 @@ def arquivoChave = System.getenv('PAINEL_KEYSTORE_FILE')
 
 android {
     namespace 'br.com.wagnertomaszewski.painelmandato'
-    compileSdk 35
+    compileSdk 36
     defaultConfig {
         applicationId 'br.com.wagnertomaszewski.painelmandato'
         minSdk 24
-        targetSdk 34
-        versionCode 2
-        versionName '1.1.0'
+        targetSdk 36
+        versionCode 3
+        versionName '1.1.1'
     }
     signingConfigs {
         release {
