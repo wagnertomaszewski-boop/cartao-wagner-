@@ -1,4 +1,4 @@
-name: Painel V17 - Gerar APK Android
+name: Painel V17 - APK DEBUG (nao distribuir)
 
 on:
   push:
@@ -42,6 +42,6 @@ jobs:
       - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-do-Mandato-V17-Lembretes-APK
+          name: Painel-do-Mandato-DEBUG-NAO-INSTALAR
           path: Painel_do_Mandato_V17_Lembretes.apk
           retention-days: 30

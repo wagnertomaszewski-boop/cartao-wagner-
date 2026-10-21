@@ -1,5 +1,9 @@
 plugins { id 'com.android.application' }
 
+// A chave de assinatura nunca fica no repositório. O workflow fornece os
+// dados da chave permanente por variáveis de ambiente protegidas.
+def arquivoChave = System.getenv('PAINEL_KEYSTORE_FILE')
+
 android {
     namespace 'br.com.wagnertomaszewski.painelmandato'
     compileSdk 35
@@ -10,9 +14,20 @@ android {
         versionCode 2
         versionName '1.1.0'
     }
+    signingConfigs {
+        release {
+            if (arquivoChave) {
+                storeFile file(arquivoChave)
+                storePassword System.getenv('PAINEL_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('PAINEL_KEY_ALIAS')
+                keyPassword System.getenv('PAINEL_KEY_PASSWORD')
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {

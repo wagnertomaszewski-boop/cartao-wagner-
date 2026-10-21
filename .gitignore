@@ -1,0 +1,7 @@
+# Nunca publicar arquivos ou credenciais de assinatura Android.
+*.jks
+*.keystore
+keystore.properties
+android-painel/.gradle/
+android-painel/**/build/
+android-painel/local.properties
