@@ -19,6 +19,13 @@ button.primary{background:#0969b1;color:white}button:disabled{opacity:.6;cursor:
 <h2>Enquetes cadastradas</h2><label for="pollSelect">Selecione uma enquete</label><select id="pollSelect"></select>
 <button id="createNew" type="button">+ Criar nova enquete</button><button type="button" id="refresh">Atualizar lista</button>
 <p class="muted">Enquetes em rascunho são invisíveis aos moradores. A primeira proposta foi deixada como rascunho.</p><div id="pollStats" class="note">Selecione uma enquete para ver os totais de votos.</div>
+<div class="note" style="margin-top:12px">
+<strong>🔒 Teste reservado por e-mail</strong>
+<p class="muted">Teste o recebimento do código e o bloqueio de um segundo voto. O convite não publica a enquete e expira automaticamente. Não compartilhe o link.</p>
+<button type="button" id="gerarTeste">Preparar link de teste</button>
+<a id="abrirTeste" href="#" target="_blank" rel="noopener noreferrer" hidden>Abrir teste privado</a>
+<p id="statusTeste" class="muted" role="status"></p>
+</div>
 </div>
 <form class="card" id="pollForm"><h2 id="editorTitle">Editar enquete</h2>
 <label for="titulo">Pergunta</label><input id="titulo" required maxlength="220" minlength="8">
@@ -111,6 +118,24 @@ function blank(){
 }
 $('pollSelect').onchange=async()=>{try{await showPoll(polls.find(x=>x.id===Number($('pollSelect').value)))}catch(e){notice(e.message,true)}};
 $('createNew').onclick=blank;
+$('gerarTeste').onclick=async()=>{
+ const botao=$('gerarTeste');
+ if(!selected){notice('Selecione uma enquete em rascunho para testar.',true);return;}
+ botao.disabled=true;$('statusTeste').textContent='Preparando teste reservado...';
+ $('abrirTeste').hidden=true;
+ try{
+  const data=await api('/rest/v1/rpc/preparar_teste_privado_enquete',{
+    method:'POST',body:JSON.stringify({p_enquete_id:selected.id})
+  });
+  if(!data?.convite)throw new Error('O servidor não confirmou o convite.');
+  const base=location.pathname.includes('/painel/')?'../v2/teste-email.html':'./v2/teste-email.html';
+  const url=new URL(base,location.href);
+  url.searchParams.set('convite',data.convite);
+  $('abrirTeste').href=url.toString();$('abrirTeste').hidden=false;
+  $('statusTeste').textContent='Teste preparado. Abra o link acima, confirme seu e-mail e registre um único voto de teste. Mantenha a enquete como rascunho.';
+ }catch(e){$('statusTeste').textContent=e.message;}
+ finally{botao.disabled=false;}
+};
 $('refresh').onclick=async()=>{try{await loadPolls();notice('Lista atualizada.')}catch(e){notice(e.message,true)}};
 $('logout').onclick=()=>{localStorage.removeItem('wagner_admin_session_v2');token=null;$('loginBox').style.display='block';$('editor').style.display='none';$('message').style.display='none';$('senha').value=''};
 $('pollForm').onsubmit=async ev=>{
