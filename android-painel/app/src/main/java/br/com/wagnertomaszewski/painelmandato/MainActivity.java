@@ -41,6 +41,17 @@ public final class MainActivity extends Activity {
         getWindow().setNavigationBarColor(Color.rgb(7, 45, 82));
         root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(7, 63, 119));
+        // No Android 15+, alocar espaço para barras do sistema com edge-to-edge.
+        // Evita que botões do painel fiquem atrás da barra de status/navegação.
+        if (Build.VERSION.SDK_INT >= 35) {
+            root.setOnApplyWindowInsetsListener((view, insets) -> {
+                android.graphics.Insets bars = insets.getInsets(
+                    android.view.WindowInsets.Type.systemBars()
+                    | android.view.WindowInsets.Type.displayCutout());
+                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                return insets;
+            });
+        }
         setContentView(root);
         web = new WebView(this);
         web.setBackgroundColor(Color.WHITE);
