@@ -18,15 +18,15 @@ label.choice{display:flex;gap:11px;align-items:center;padding:13px;margin:9px 0;
 .btn{display:block;border:1px solid #0969b4;padding:13px 15px;background:var(--blue);color:white;border-radius:13px;font-weight:700;cursor:pointer;font-size:15px;text-align:center;width:100%;margin:11px 0}
 .btn.secondary{display:inline-block;background:white;color:var(--blue);width:auto;font-size:14px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.field{display:block;font-weight:700;margin:10px 0 5px}input[type=tel],input[type=text]{width:100%;font-size:16px;border:1px solid #b9cfdd;border-radius:12px;padding:13px}
+.field{display:block;font-weight:700;margin:10px 0 5px}input[type=email],input[type=text]{width:100%;font-size:16px;border:1px solid #b9cfdd;border-radius:12px;padding:13px}
 .small{font-size:12px;color:#6d8292}.row{display:flex;justify-content:space-between;gap:9px;font-size:14px}.track{background:#e6eef6;height:11px;border-radius:12px;overflow:hidden}.fill{height:100%;background:#167cbd;border-radius:12px}
 nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:720px;width:100%;display:flex;background:white;border-top:1px solid #e3eaf1;padding:9px 0 calc(7px + env(safe-area-inset-bottom))}
 nav a{flex:1;text-align:center;color:#647990;text-decoration:none;font-size:11px}nav a span{display:block;font-size:21px}nav a.sel{color:#086db2;font-weight:bold}
 </style></head><body><div class="app">
 <header><a href="./index.html">‹ Voltar ao início</a><h1>Enquetes da comunidade</h1><p>Sua opinião ajuda a identificar as prioridades de Cristal.</p></header>
-<main><section class="card"><span class="tag">PARTICIPAÇÃO POPULAR</span><h2>O que a comunidade pensa?</h2><p>São consultas de opinião, e não votações oficiais. Cada conta com telefone verificado poderá votar uma vez por enquete.</p></section>
+<main><section class="card"><span class="tag">PARTICIPAÇÃO POPULAR</span><h2>O que a comunidade pensa?</h2><p>São consultas de opinião, e não votações oficiais. Cada conta com e-mail confirmado poderá votar uma vez por enquete.</p></section>
 <div id="pollList" aria-live="polite"><div class="note">Carregando enquetes...</div></div>
-<section class="card"><strong>Privacidade</strong><p class="small">O SMS confirma o controle de um número de telefone. Não coletamos CPF nesta votação. Votos individuais não são divulgados. Um número verificado equivale a uma conta: o sistema não garante que pessoas com dois números votem apenas uma vez.</p></section>
+<section class="card"><strong>Privacidade</strong><p class="small">O código enviado por e-mail confirma o acesso à conta. Não coletamos CPF nesta votação. Os votos individuais não são divulgados. O controle é por conta de e-mail verificada; isso não garante identificar uma pessoa única.</p></section>
 </main>
 <nav><a href="./index.html"><span>⌂</span>Início</a><a href="./agenda.html"><span>📅</span>Agenda</a><a href="./projetos.html"><span>🏛</span>Projetos</a><a href="./enquetes.html" class="sel"><span>▥</span>Enquetes</a></nav></div>
 <script>
@@ -35,7 +35,7 @@ const BASE='https://pmmsdjozyyxkbuqlkfpb.supabase.co';
 const KEY='sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_';
 const $=id=>document.getElementById(id);
 const safe=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let polls=[],current=null,optionId=null,session=null,phone='',lastSms=0,votePending=false;
+let polls=[],current=null,optionId=null,session=null,email='',lastEmail=0,votePending=false;
 async function api(path,opts={}){
  const r=await fetch(BASE+path,{...opts,headers:{apikey:KEY,Authorization:'Bearer '+(session?.access_token||KEY),'Content-Type':'application/json',...(opts.headers||{})}});
  let d;try{d=await r.json()}catch{d=null}
@@ -47,7 +47,7 @@ async function list(){
  const el=$('pollList');el.innerHTML='<div class="note">Consultando enquetes...</div>';
  try{
   polls=await api('/rest/v1/enquetes_mandato?select=id,titulo,descricao,fim_em,resultados_apos_voto&publicada=eq.true&order=inicio_em.desc');
-  if(!polls.length){el.innerHTML='<section class="card"><span class="tag">EM PREPARAÇÃO</span><h3>Enquetes em breve</h3><p>As consultas aparecerão aqui quando forem publicadas pelo mandato.</p><div class="note">A votação ainda não foi aberta. O envio de SMS precisa ser ativado e testado antes.</div></section>';return;}
+  if(!polls.length){el.innerHTML='<section class="card"><span class="tag">EM PREPARAÇÃO</span><h3>Enquetes em breve</h3><p>As consultas aparecerão aqui quando forem publicadas pelo mandato.</p><div class="note">A votação ainda não foi aberta. O envio dos códigos por e-mail precisa ser testado antes.</div></section>';return;}
   el.innerHTML='';
   for(const p of polls){
    const ended=new Date(p.fim_em).getTime()<=Date.now();
@@ -80,25 +80,25 @@ async function openPoll(id){
 async function startVote(){
  if(!current||!optionId)return;
  if(session?.access_token){try{await saveVote();return}catch(e){if(/já votou|ja votou/i.test(e.message)){await votoJaRegistrado();return;}if(!/jwt|token|sessão|401/i.test(e.message)){message(e.message,true);return;}session=null;}}
- $('auth').innerHTML='<label class="field" for="tel">Número do celular com DDD</label><input id="tel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(51) 99999-9999" maxlength="19"><button class="btn" id="send" type="button">Receber código SMS</button><p class="small">Sem senha: você recebe um código temporário. O SMS só funcionará depois que o serviço estiver configurado.</p>';
+ $('auth').innerHTML='<label class="field" for="email">Endereço de e-mail</label><input id="email" type="email" inputmode="email" autocomplete="email" placeholder="seuemail@exemplo.com" maxlength="254"><button class="btn" id="send" type="button">Receber código por e-mail</button><p class="small">Sem senha: você recebe um código temporário por e-mail. Não compartilhe esse código.</p>';
  $('send').onclick=sendOtp;
 }
-function formatPhone(v){let d=String(v||'').replace(/\D/g,'');if(d.startsWith('55')&&d.length===13)d=d.slice(2);if(!/^[1-9][0-9]9[0-9]{8}$/.test(d))throw new Error('Informe um celular brasileiro com DDD.');return '+55'+d;}
+function formatEmail(v){const email=String(v||'').trim().toLowerCase();if(email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('Informe um e-mail válido.');return email;}
 async function sendOtp(){
  const b=$('send');if(!b)return;
  try{
-  if(Date.now()-lastSms<60000)throw new Error('Aguarde 60 segundos antes de solicitar outro código.');
-  phone=formatPhone($('tel').value);b.disabled=true;b.textContent='Enviando código...';
-  await api('/auth/v1/otp',{method:'POST',body:JSON.stringify({phone,create_user:true})});
-  lastSms=Date.now();
-  $('auth').innerHTML='<label class="field" for="code">Código recebido por SMS</label><input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6 números"><button class="btn" type="button" id="verify">Confirmar código e registrar voto</button><p class="small">Nunca compartilhe seu código com ninguém.</p>';
-  $('verify').onclick=verifyOtp;message('Código solicitado. Confira a mensagem recebida em seu celular.');
- }catch(e){message('Não foi possível solicitar o código: '+e.message,true);b.disabled=false;b.textContent='Receber código SMS'}
+  if(Date.now()-lastEmail<60000)throw new Error('Aguarde 60 segundos antes de solicitar outro código.');
+  email=formatEmail($('email').value);b.disabled=true;b.textContent='Enviando código...';
+  await api('/auth/v1/otp',{method:'POST',body:JSON.stringify({email,create_user:true})});
+  lastEmail=Date.now();
+  $('auth').innerHTML='<label class="field" for="code">Código recebido por e-mail</label><input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="6 a 8 números"><button class="btn" type="button" id="verify">Confirmar código e registrar voto</button><p class="small">Nunca compartilhe seu código com ninguém.</p>';
+  $('verify').onclick=verifyOtp;message('Código solicitado. Confira a mensagem recebida em seu e-mail.');
+ }catch(e){message('Não foi possível solicitar o código: '+e.message,true);b.disabled=false;b.textContent='Receber código por e-mail'}
 }
 async function verifyOtp(){
- const b=$('verify'),code=($('code').value||'').trim();if(!/^\d{6}$/.test(code)){message('Digite os seis números do código.',true);return}
+ const b=$('verify'),code=($('code').value||'').trim();if(!/^\d{6,8}$/.test(code)){message('Digite o código numérico de 6 a 8 dígitos recebido por e-mail.',true);return}
  b.disabled=true;
- try{const d=await api('/auth/v1/verify',{method:'POST',body:JSON.stringify({phone,token:code,type:'sms'})});
+ try{const d=await api('/auth/v1/verify',{method:'POST',body:JSON.stringify({email,token:code,type:'email'})});
  if(!d?.access_token)throw new Error('Não recebemos uma sessão válida após confirmar o código.');
  session={access_token:d.access_token};await saveVote();
  }catch(e){if(/já votou|ja votou/i.test(e.message)){await votoJaRegistrado();return;}message(e.message,true);b.disabled=false}
@@ -106,7 +106,7 @@ async function verifyOtp(){
 async function votoJaRegistrado(){
  $('auth').innerHTML='';
  if($('vote')){$('vote').disabled=true;$('vote').textContent='Você já participou';}
- message('Este celular já participou desta enquete. Obrigado!');
+ message('Este e-mail já participou desta enquete. Obrigado!');
  if(current?.resultados_apos_voto)await results(current.id);
  else $('out').innerHTML='<p class="small">Os resultados serão exibidos após o encerramento da enquete.</p>';
 }

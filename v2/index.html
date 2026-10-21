@@ -265,9 +265,9 @@ body{background:#e9eff6}
 <header class="top"><div class="brand"><button type="button" class="back" onclick="go('home')">‹ Voltar</button><strong>WT · MANDATO EM AÇÃO</strong></div>
 <h1>Enquetes da comunidade</h1><p>Sua opinião ajuda a identificar prioridades para Cristal.</p></header>
 <main class="wrap">
- <div class="poll-card"><span class="poll-tag">PARTICIPAÇÃO POPULAR</span><h2>O que a comunidade pensa?</h2><p class="poll-intro">As enquetes são consultas de opinião, não votações oficiais. Cada conta com celular verificado pode participar uma vez de cada enquete. As respostas individuais não são divulgadas.</p><p class="poll-small">Para proteger a votação, o resultado parcial só aparece depois de participar, quando habilitado pelo responsável.</p></div>
+ <div class="poll-card"><span class="poll-tag">PARTICIPAÇÃO POPULAR</span><h2>O que a comunidade pensa?</h2><p class="poll-intro">As enquetes são consultas de opinião, não votações oficiais. Cada conta com e-mail confirmado pode participar uma vez por enquete. As respostas individuais não são divulgadas.</p><p class="poll-small">Para proteger a votação, o resultado parcial só aparece depois de participar, quando habilitado pelo responsável.</p></div>
  <div id="pollList" aria-live="polite"><div class="poll-info">Carregando enquetes disponíveis...</div></div>
- <div class="poll-card"><strong>Privacidade e transparência</strong><p class="poll-small">O celular será usado para autenticar sua participação. O nome e o número do telefone não aparecem nos resultados públicos. O controle é por conta verificada e não garante identificar uma pessoa única: quem usa números diferentes pode ter mais de uma conta.</p></div>
+ <div class="poll-card"><strong>Privacidade e transparência</strong><p class="poll-small">O e-mail será usado apenas para confirmar a participação. O endereço não aparece nos resultados públicos. O controle é por conta verificada: pessoas com e-mails diferentes podem ter mais de uma conta.</p></div>
 </main></section>
 
 <section id="solicitar" class="page">
@@ -559,8 +559,8 @@ document.getElementById('projectList').addEventListener('click',function(e){
 document.getElementById('nav-projetos').addEventListener('click',()=>go('projetos'));
 document.getElementById('voltarAosProjetos').addEventListener('click',()=>go('projetos'));
 
-// ------- Enquetes com login via codigo SMS (GoTrue) e voto unico no banco -------
-let enquetesPublicas=[], enqueteAtual=null, opcaoEscolhida=null, telefoneEnquete='', sessaoEnquete=null, ultimaTentativaOtp=0, votoEnviando=false;
+// ------- Enquetes com codigo por e-mail (GoTrue) e voto unico por conta -------
+let enquetesPublicas=[], enqueteAtual=null, opcaoEscolhida=null, emailEnquete='', sessaoEnquete=null, ultimaTentativaOtp=0, votoEnviando=false;
 const $poll=id=>document.getElementById(id);
 const pollTxt=v=>seguroTxt(v);
 async function pollApi(path,options={}){
@@ -581,7 +581,7 @@ async function carregarEnquetesPublicas(){
   const dados=await pollApi('/rest/v1/enquetes_mandato?select=id,titulo,descricao,fim_em,resultados_apos_voto&publicada=eq.true&order=inicio_em.desc');
   enquetesPublicas=Array.isArray(dados)?dados:[];
   if(!enquetesPublicas.length){
-   alvo.innerHTML='<div class="poll-card"><span class="poll-tag">EM PREPARAÇÃO</span><h3>Enquetes em breve</h3><p class="poll-intro">As enquetes serão exibidas aqui quando forem publicadas pelo mandato.</p><div class="poll-info">A votação ainda não foi aberta. Estamos finalizando a verificação por SMS para evitar votos duplicados.</div></div>';
+   alvo.innerHTML='<div class="poll-card"><span class="poll-tag">EM PREPARAÇÃO</span><h3>Enquetes em breve</h3><p class="poll-intro">As enquetes serão exibidas aqui quando forem publicadas pelo mandato.</p><div class="poll-info">A votação ainda não foi aberta. Estamos finalizando a verificação por e-mail antes de abrir a participação.</div></div>';
    return;
   }
   alvo.innerHTML='';
@@ -619,32 +619,32 @@ async function abrirEnquete(id){
 async function iniciarVotacao(id){
  if(!enqueteAtual||!opcaoEscolhida)return;
  if(sessaoEnquete?.access_token){try{await registrarEnquete(id,opcaoEscolhida);return}catch(err){if(/já votou|ja votou/i.test(err.message)){await mostrarVotoExistente();return;}if(!/jwt|token|sessão|sessao|401/i.test(err.message)){pollAlerta(err.message,'erro');return;}sessaoEnquete=null}}
- $poll('pollAuth').innerHTML='<div class="poll-form"><label for="pollTelefone">Seu celular com DDD</label><input id="pollTelefone" type="tel" autocomplete="tel" inputmode="tel" placeholder="(51) 99999-9999" maxlength="19"><button type="button" id="pollEnviarCodigo" class="poll-action">Receber código por SMS</button><p class="poll-small">Não é necessário criar senha. O código é enviado ao celular informado. O serviço de SMS precisa estar configurado para essa etapa funcionar.</p></div>';
+ $poll('pollAuth').innerHTML='<div class="poll-form"><label for="pollEmail">Seu endereço de e-mail</label><input id="pollEmail" type="email" autocomplete="email" inputmode="email" placeholder="seuemail@exemplo.com" maxlength="254"><button type="button" id="pollEnviarCodigo" class="poll-action">Receber código por e-mail</button><p class="poll-small">Não é necessário criar senha. Confira o código recebido no endereço informado. Não compartilhe esse código.</p></div>';
  $poll('pollEnviarCodigo').onclick=solicitarOtpEnquete;
 }
-function normalizarTelefoneBr(v){
- let d=String(v||'').replace(/\D/g,'');if(d.startsWith('55')&&(d.length===12||d.length===13))d=d.slice(2);
- if(!/^[1-9][0-9]9[0-9]{8}$/.test(d))throw new Error('Informe um celular válido com DDD, como (51) 99999-9999.');
- return '+55'+d;
+function normalizarEmailEnquete(v){
+ const email=String(v||'').trim().toLowerCase();
+ if(email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('Digite um endereço de e-mail válido.');
+ return email;
 }
 async function solicitarOtpEnquete(){
  const b=$poll('pollEnviarCodigo');if(!b)return;
  try{
   if(Date.now()-ultimaTentativaOtp<60000)throw new Error('Aguarde 60 segundos antes de solicitar outro código.');
-  telefoneEnquete=normalizarTelefoneBr($poll('pollTelefone').value);
+  emailEnquete=normalizarEmailEnquete($poll('pollEmail').value);
   b.disabled=true;b.textContent='Enviando...';
-  await pollApi('/auth/v1/otp',{method:'POST',body:JSON.stringify({phone:telefoneEnquete,create_user:true})});
+  await pollApi('/auth/v1/otp',{method:'POST',body:JSON.stringify({email:emailEnquete,create_user:true})});
   ultimaTentativaOtp=Date.now();
-  $poll('pollAuth').innerHTML='<div class="poll-form"><label for="pollCodigo">Código recebido por SMS</label><input id="pollCodigo" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="6 dígitos"><button type="button" id="pollValidarCodigo" class="poll-action">Verificar código e registrar voto</button><p class="poll-small">Não compartilhe seu código com ninguém.</p></div>';
+  $poll('pollAuth').innerHTML='<div class="poll-form"><label for="pollCodigo">Código recebido por e-mail</label><input id="pollCodigo" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" placeholder="6 a 8 dígitos"><button type="button" id="pollValidarCodigo" class="poll-action">Verificar código e registrar voto</button><p class="poll-small">Não compartilhe seu código com ninguém.</p></div>';
   $poll('pollValidarCodigo').onclick=verificarOtpEnquete;
-  pollAlerta('Código solicitado. Confira a mensagem recebida em seu celular.');
- }catch(err){pollAlerta('Não foi possível enviar o código. O envio de SMS pode ainda não estar configurado. '+err.message,'erro');b.disabled=false;b.textContent='Receber código por SMS'}
+  pollAlerta('Código solicitado. Confira a mensagem recebida em seu e-mail.');
+ }catch(err){pollAlerta('Não foi possível enviar o código. O envio de e-mails pode ainda não estar liberado. '+err.message,'erro');b.disabled=false;b.textContent='Receber código por e-mail'}
 }
 async function verificarOtpEnquete(){
- const b=$poll('pollValidarCodigo'),codigo=($poll('pollCodigo')?.value||'').trim();if(!/^\d{6}$/.test(codigo)){pollAlerta('Digite os 6 números do código.','erro');return}
+ const b=$poll('pollValidarCodigo'),codigo=($poll('pollCodigo')?.value||'').trim();if(!/^\d{6,8}$/.test(codigo)){pollAlerta('Digite o código numérico recebido por e-mail (6 a 8 dígitos).','erro');return}
  b.disabled=true;
  try{
-  const r=await pollApi('/auth/v1/verify',{method:'POST',body:JSON.stringify({phone:telefoneEnquete,token:codigo,type:'sms'})});
+  const r=await pollApi('/auth/v1/verify',{method:'POST',body:JSON.stringify({email:emailEnquete,token:codigo,type:'email'})});
   if(!r?.access_token)throw new Error('O código foi verificado, mas não recebemos uma sessão válida.');
   sessaoEnquete={access_token:r.access_token};
   await registrarEnquete(enqueteAtual.id,opcaoEscolhida);
@@ -654,7 +654,7 @@ async function mostrarVotoExistente(){
  const auth=$poll('pollAuth'),botao=$poll('pollVotar');
  if(auth)auth.innerHTML='';
  if(botao){botao.disabled=true;botao.textContent='Você já participou';}
- pollAlerta('Este celular já participou desta enquete. Obrigado!');
+ pollAlerta('Este e-mail já participou desta enquete. Obrigado!');
  if(enqueteAtual?.resultados_apos_voto)await mostrarResultadosEnquete(enqueteAtual.id);
  else if($poll('pollResultado'))$poll('pollResultado').innerHTML='<p class="poll-small">Os resultados serão exibidos após o encerramento da enquete.</p>';
 }
