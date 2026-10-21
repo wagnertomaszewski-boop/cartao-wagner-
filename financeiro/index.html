@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0a4878"><title>Meu Controle Financeiro | Família, Comercial e Agricultura</title>
+<style>
+:root{--ink:#17324a;--muted:#617588;--blue:#0a66aa;--navy:#093959;--back:#f0f5fa;--line:#d9e6f0;--green:#087966;--red:#b94743;--shadow:0 5px 20px #153d5b12}
+*{box-sizing:border-box}body{margin:0;background:var(--back);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink)}
+button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:default}
+header{color:white;background:linear-gradient(130deg,#103e64,#086aaf);padding:25px max(18px,env(safe-area-inset-left)) 25px;border-radius:0 0 28px 28px;box-shadow:var(--shadow)}
+.wrap{max-width:950px;margin:auto}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.11em;opacity:.85}header h1{margin:5px 0 4px;font-size:27px;letter-spacing:-.6px}header p{margin:0;opacity:.85;font-size:13px}
+main{max-width:950px;margin:auto;padding:15px 13px 65px}.card{background:white;border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:15px;box-shadow:var(--shadow)}
+h2{font-size:19px;margin:0 0 8px;letter-spacing:-.3px}h3{font-size:15px;margin:0 0 9px}
+.muted,small{color:var(--muted)}.small{font-size:12px}.hidden{display:none!important}
+.stack{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.between{justify-content:space-between}.grow{flex:1}
+.btn{border:1px solid #b9cfdc;background:white;color:var(--navy);border-radius:12px;padding:10px 14px;font-weight:750;min-height:43px}
+.btn.primary{color:white;background:var(--blue);border-color:var(--blue)}.btn.green{color:white;background:var(--green);border-color:var(--green)}.btn.ghost{background:#f1f7fb}
+input,select,textarea{width:100%;padding:12px;border:1px solid #cddce6;border-radius:11px;background:white;color:var(--ink);outline-color:var(--blue)}
+label{font-size:12px;font-weight:750;display:block;margin:12px 0 6px}.note{font-size:12px;color:var(--muted)}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:0 0 15px}.tab{background:white;border:1px solid var(--line);border-radius:14px;padding:12px 4px;font-weight:800;color:#42637e;font-size:13px}
+.tab.active{background:var(--navy);color:white;border-color:var(--navy)}.month{display:flex;align-items:center;gap:6px}.month button{width:39px;height:39px;padding:0;font-size:22px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.metric{background:#f6faff;border:1px solid #e2edf5;border-radius:14px;padding:12px}.metric span{display:block;color:var(--muted);font-size:11px}.metric strong{display:block;font-size:20px;word-break:break-word;margin-top:6px;letter-spacing:-.5px}
+.metric.in strong{color:var(--green)}.metric.out strong{color:var(--red)}.metric.net strong{color:var(--navy)}
+.hero-note{margin:12px 0 0;font-size:12px;color:var(--muted)}.inputrow{display:flex;gap:8px;align-items:stretch}.inputrow textarea{min-height:67px;flex:1;resize:vertical}
+.boxhint{border-radius:13px;background:#f0f7ff;border:1px solid #d5e8f6;padding:10px 12px;color:#2d5573;font-size:12px;margin:12px 0}
+.pill{font-size:11px;font-weight:800;background:#eaf4fd;color:#125b93;border-radius:100px;padding:4px 8px}
+.item{display:flex;align-items:center;gap:11px;border-top:1px solid #e8eff5;padding:13px 1px}
+.item:first-child{border-top:0}.symbol{display:flex;align-items:center;justify-content:center;width:39px;height:39px;border-radius:12px;background:#f1f7fb;font-size:19px;flex:none}
+.itemmid{flex:1;min-width:0}.itemmid strong{display:block;font-size:14px;overflow-wrap:anywhere}.itemmid span{font-size:11px;color:var(--muted)}
+.itemright{text-align:right}.itemright strong{font-size:14px;white-space:nowrap}.itemright button{border:0;background:transparent;font-size:11px;color:var(--blue);text-decoration:underline;padding:4px}
+.income{color:var(--green)}.expense{color:var(--red)}.barline{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}.barback{background:#ebf1f6;border-radius:999px;height:8px;overflow:hidden}.barfill{background:#287eb7;height:100%;border-radius:999px}
+.catr{margin:0 0 12px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.empty{text-align:center;padding:27px 10px;color:var(--muted);font-size:13px}.empty strong{display:block;color:var(--ink);font-size:16px;margin-bottom:5px}
+dialog{border:0;border-radius:22px;box-shadow:0 15px 80px #001c3388;max-width:520px;width:calc(100% - 24px);max-height:92vh;padding:0;color:var(--ink)}
+dialog::backdrop{background:#08223899}dialog .inner{padding:20px;max-height:85vh;overflow:auto}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}.message{padding:11px 13px;background:#fff4e6;border:1px solid #ecdabb;border-radius:12px;font-size:12px;color:#774e18;margin-top:12px}
+.message.ok{background:#eafaf3;color:#086145;border-color:#bce8d5}
+#notice{position:fixed;bottom:16px;left:14px;right:14px;max-width:550px;margin:auto;padding:13px 17px;border-radius:13px;color:white;background:#173a56;box-shadow:var(--shadow);z-index:20;font-size:13px}
+.divider{border-top:1px solid var(--line);margin:15px 0}.login{max-width:480px;margin:25px auto}.footer{text-align:center;color:#677f91;font-size:11px;margin-top:28px}
+@media(min-width:720px){.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.two>.card{align-self:start}.metric strong{font-size:25px}}
+@media(max-width:430px){main{padding:12px 10px 60px}.card{padding:14px}.metric{padding:10px 7px}.metric strong{font-size:16px}.metric span{font-size:10px}.tab{font-size:12px}header h1{font-size:24px}.btn{padding:9px 11px}}
+</style></head>
+<body>
+<header><div class="wrap"><div class="eyebrow">WT · FINANÇAS PRIVADAS</div><h1>Meu Controle Financeiro</h1><p>Família, Comercial Tomaszewski e Agricultura, cada um no seu lugar.</p></div></header>
+<main>
+<section id="login" class="card login">
+<h2>🔒 Acesso privado</h2><p class="muted">Use teu login administrativo já cadastrado no sistema do mandato. Nenhum lançamento aparece para visitantes.</p>
+<form id="loginForm"><label for="email">E-mail</label><input type="email" id="email" autocomplete="username" required placeholder="E-mail autorizado">
+<label for="password">Senha</label><input type="password" id="password" autocomplete="current-password" required>
+<div class="actions"><button class="btn primary grow" id="loginBtn" type="submit">Entrar nas finanças</button></div></form>
+<div class="message hidden" id="loginError"></div>
+</section>
+<section id="app" class="hidden">
+<div class="stack between" style="margin:3px 1px 12px"><span class="pill">🔒 Somente teu acesso</span><button id="logout" class="btn ghost" type="button">Sair</button></div>
+<div class="tabs" id="tabs">
+<button class="tab active" data-area="familia" type="button">🏠 Família</button>
+<button class="tab" data-area="comercial" type="button">🏪 Comercial</button>
+<button class="tab" data-area="agricultura" type="button">🚜 Agricultura</button>
+</div>
+<section class="card">
+<div class="stack between"><div><h2 id="titleArea">Família</h2><div class="muted small">Resumo do mês</div></div>
+<div class="month"><button class="btn" id="prevMonth" aria-label="Mês anterior" type="button">‹</button><strong id="monthLabel" style="font-size:13px;min-width:100px;text-align:center">—</strong><button class="btn" id="nextMonth" aria-label="Próximo mês" type="button">›</button></div></div>
+<div class="summary" style="margin-top:16px">
+<div class="metric in"><span>Receitas</span><strong id="sumIn">R$ 0</strong></div>
+<div class="metric out"><span>Despesas</span><strong id="sumOut">R$ 0</strong></div>
+<div class="metric net"><span>Saldo no mês</span><strong id="sumNet">R$ 0</strong></div>
+</div><div class="hero-note">Saldo = receitas menos despesas registradas. Não é o saldo bancário.</div>
+</section>
+<div class="two">
+<div>
+<section class="card">
+<h2>💬 Registre falando ou escrevendo</h2>
+<p class="muted small">Ex.: “Gastei R$ 200 de gasolina” ou “Recebi R$ 1.500 pela venda de fumo”. Confere os dados antes de salvar.</p>
+<div class="inputrow"><textarea id="message" rows="2" placeholder="Descreva um gasto ou recebimento..."></textarea><button class="btn" id="mic" type="button" title="Ditado por voz" aria-label="Ditar por voz">🎙️</button></div>
+<div class="actions" style="justify-content:stretch;margin-top:9px">
+<button class="btn primary grow" id="interpret" type="button">Interpretar lançamento</button>
+<button class="btn" id="newEntry" type="button">+ Manual</button></div>
+<div class="boxhint">O chat identifica valor e categoria por regras simples. Ainda não é inteligência artificial; fotos de notas fiscais e envio pelo WhatsApp serão acrescentados depois.</div>
+</section>
+<section class="card"><div class="stack between"><h2>📊 Onde foi o dinheiro?</h2><span id="categoriesHelp" class="small muted">Despesas por categoria</span></div><div id="categories"></div></section>
+</div>
+<div>
+<section class="card"><div class="stack between"><h2>📒 Lançamentos</h2><button class="btn ghost" id="export" type="button">Baixar CSV</button></div>
+<div class="stack" style="margin:12px 0"><select id="typeFilter" aria-label="Filtrar tipo" style="flex:1;min-width:115px"><option value="todos">Todos os tipos</option><option value="despesa">Despesas</option><option value="receita">Receitas</option></select><input id="search" type="search" aria-label="Pesquisar lançamentos" style="flex:2;min-width:130px" placeholder="Pesquisar descrição..."></div>
+<div id="entries"><div class="empty">Carregando lançamentos…</div></div>
+</section>
+<section class="card"><h2>📈 Fechamento do mês</h2><div class="small muted" id="reportText">Sem lançamentos neste mês.</div><div class="divider"></div><button class="btn grow" type="button" id="refresh">↻ Atualizar dados</button>
+<p class="note">Cada área tem seus próprios registros. O CSV exporta somente a área e o mês selecionados.</p></section>
+</div></div>
+<div class="footer">Controle financeiro privado · Dados guardados em tabelas protegidas · Primeiro módulo</div>
+</section>
+</main>
+<dialog id="editDialog"><div class="inner"><div class="stack between"><h2 id="dialogTitle">Novo lançamento</h2><button id="closeDialog" class="btn ghost" aria-label="Fechar" type="button">✕</button></div>
+<form id="entryForm"><input id="entryId" type="hidden">
+<div class="grid"><div><label for="fArea">Área</label><select id="fArea"><option value="familia">Família</option><option value="comercial">Comercial Tomaszewski</option><option value="agricultura">Agricultura</option></select></div>
+<div><label for="fTipo">Movimento</label><select id="fTipo"><option value="despesa">Despesa</option><option value="receita">Receita</option></select></div></div>
+<label for="fDesc">Descrição *</label><input id="fDesc" maxlength="240" required placeholder="Ex.: Gasolina do carro">
+<div class="grid"><div><label for="fValor">Valor (R$) *</label><input id="fValor" type="text" inputmode="decimal" required placeholder="Ex.: 200,00"></div>
+<div><label for="fData">Data *</label><input id="fData" type="date" required></div></div>
+<div class="grid"><div><label for="fCat">Categoria</label><select id="fCat"></select></div><div><label for="fForma">Pagamento</label><select id="fForma"><option>Pix</option><option>Dinheiro</option><option>Débito</option><option>Crédito</option><option>Boleto</option><option>Transferência</option><option>Outro</option></select></div></div>
+<label for="fConta">Conta ou origem do dinheiro (opcional)</label><input id="fConta" maxlength="100" placeholder="Ex.: Banco do Brasil, Cresol, Caixa">
+<p class="note">Nenhuma despesa será salva sem tua confirmação.</p>
+<div class="actions"><button class="btn" type="button" id="cancelDialog">Cancelar</button><button class="btn primary grow" type="submit" id="save">Salvar lançamento</button></div>
+</form></div></dialog>
+<div id="notice" class="hidden" role="status"></div>
+<script>
+"use strict";
+const BASE="https://pmmsdjozyyxkbuqlkfpb.supabase.co", KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_", ADMIN="ca5c30ec-828e-4c95-a0b9-a415bb9b3643";
+const STORAGE="wt_controle_financeiro_login_v1";
+const CATS={familia:["Supermercado","Fraldas","Combustível","Farmácia","Saúde","Casa","Energia","Água","Internet","Educação","Lazer","Salário","Outras receitas","Outras despesas"],
+comercial:["Estoque","Vendas","Fornecedores","Transporte","Energia","Salários","Impostos","Taxas","Manutenção","Aluguel","Outras receitas","Outras despesas"],
+agricultura:["Tabaco","Milho","Suínos","Insumos","Diesel","Mão de obra","Máquinas","Energia","Financiamentos","Transporte","Venda da safra","Outras receitas","Outras despesas"]};
+const LABELS={familia:"Família",comercial:"Comercial Tomaszewski",agricultura:"Agricultura"};
+const $=id=>document.getElementById(id), state={area:"familia",month:new Date(new Date().getFullYear(),new Date().getMonth(),1),data:[],session:null,busy:false};
+const cash=v=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(v)||0);
+const dateText=s=>{if(!s)return"";const p=s.split("-");return p[2]+"/"+p[1]+"/"+p[0]};
+const localDay=()=>{const d=new Date(),p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())};
+function toast(msg){$("notice").textContent=msg;$("notice").classList.remove("hidden");clearTimeout(toast.timer);toast.timer=setTimeout(()=>$("notice").classList.add("hidden"),4400)}
+function showLogin(msg){$("app").classList.add("hidden");$("login").classList.remove("hidden");if(msg){$("loginError").textContent=msg;$("loginError").classList.remove("hidden")}else $("loginError").classList.add("hidden")}
+function showApp(){$("login").classList.add("hidden");$("app").classList.remove("hidden")}
+function monthRange(){const d=state.month,y=d.getFullYear(),m=d.getMonth(),fmt=x=>x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-01";return {from:fmt(new Date(y,m,1)),to:fmt(new Date(y,m+1,1))}}
+function parseMoney(s){const n=String(s||"").trim().replace(/[^\d,.-]/g,"");if(!n)return NaN;let t=n;if(t.includes(",")&&t.includes("."))t=t.replace(/\./g,"").replace(",",".");else if(t.includes(","))t=t.replace(",",".");else if(/^\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,"");const x=Number(t);return Number.isFinite(x)?Math.round(x*100)/100:NaN}
+function escapeHTML(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+async function authUser(token){const r=await fetch(BASE+"/auth/v1/user",{headers:{"apikey":KEY,"Authorization":"Bearer "+token}});if(!r.ok)return false;const u=await r.json();return u.id===ADMIN}
+async function refreshSession(){if(!state.session?.refresh_token)throw Error("Sessão expirada. Entre novamente.");const r=await fetch(BASE+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:state.session.refresh_token})});const j=await r.json();if(!r.ok||!j.access_token)throw Error("Faça login novamente.");if(!await authUser(j.access_token))throw Error("Acesso não autorizado.");state.session={access_token:j.access_token,refresh_token:j.refresh_token,expires_at:Date.now()+j.expires_in*1000};localStorage.setItem(STORAGE,JSON.stringify(state.session))}
+async function api(path,opt={},retry=true){if(!state.session)throw Error("Entre com teu login.");if(Date.now()>=state.session.expires_at-60000)await refreshSession();
+const r=await fetch(BASE+path,{...opt,headers:{apikey:KEY,Authorization:"Bearer "+state.session.access_token,"Content-Type":"application/json",...opt.headers}});
+if(r.status===401&&retry){await refreshSession();return api(path,opt,false)}
+const body=await r.json().catch(()=>null);if(!r.ok)throw Error((body?.message||body?.error||"Falha ao acessar dados")+" ("+r.status+")");return body}
+async function init(){let s;try{s=JSON.parse(localStorage.getItem(STORAGE)||"null")}catch{};if(!s?.access_token){showLogin();return}state.session=s;
+try{if(Date.now()>=s.expires_at-60000)await refreshSession();if(!await authUser(state.session.access_token))throw Error("Acesso não autorizado.");showApp();await load()}catch(e){localStorage.removeItem(STORAGE);state.session=null;showLogin("Entra novamente para consultar os dados protegidos.")}}
+$("loginForm").onsubmit=async e=>{e.preventDefault();const btn=$("loginBtn");btn.disabled=true;$("loginError").classList.add("hidden");
+try{const r=await fetch(BASE+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:KEY,"Content-Type":"application/json"},body:JSON.stringify({email:$("email").value.trim(),password:$("password").value})});
+const j=await r.json();if(!r.ok||!j.access_token)throw Error("E-mail ou senha não conferem.");if(!await authUser(j.access_token))throw Error("Esta conta não está autorizada a acessar as finanças.");
+state.session={access_token:j.access_token,refresh_token:j.refresh_token,expires_at:Date.now()+(j.expires_in||3600)*1000};localStorage.setItem(STORAGE,JSON.stringify(state.session));$("password").value="";showApp();await load()}
+catch(err){$("loginError").textContent=err.message;$("loginError").classList.remove("hidden")}finally{btn.disabled=false}};
+$("logout").onclick=()=>{localStorage.removeItem(STORAGE);state.session=null;state.data=[];showLogin();$("password").value=""};
+async function load(){const b=monthRange();$("entries").innerHTML='<div class="empty">Buscando informações…</div>';
+try{const q="/rest/v1/controle_financeiro_lancamentos?select=id,area,tipo,descricao,categoria,valor,data_mov,conta,forma,origem&data_mov=gte."+b.from+"&data_mov=lt."+b.to+"&order=data_mov.desc,id.desc&limit=1500";
+const d=await api(q);if(!Array.isArray(d))throw Error("Dados inesperados.");state.data=d;render()}catch(e){$("entries").textContent="Não foi possível carregar: "+e.message;toast("Problema ao buscar lançamentos.")}}
+function inArea(){return state.data.filter(x=>x.area===state.area)}
+function totals(list){return list.reduce((a,x)=>{a[x.tipo]+=Number(x.valor)||0;return a},{despesa:0,receita:0})}
+function render(){
+$("tabs").querySelectorAll("button").forEach(b=>b.classList.toggle("active",b.dataset.area===state.area));
+$("titleArea").textContent=LABELS[state.area];
+$("monthLabel").textContent=state.month.toLocaleDateString("pt-BR",{month:"short",year:"numeric"}).replace(".","").toUpperCase();
+const data=inArea(), t=totals(data);
+$("sumIn").textContent=cash(t.receita);$("sumOut").textContent=cash(t.despesa);$("sumNet").textContent=cash(t.receita-t.despesa);
+$("reportText").textContent=data.length?data.length+" lançamento(s) neste mês. Receitas "+cash(t.receita)+"; despesas "+cash(t.despesa)+"; resultado "+cash(t.receita-t.despesa)+".":"Ainda não há lançamentos desta área neste mês.";
+const groups={};data.filter(x=>x.tipo==="despesa").forEach(x=>groups[x.categoria]=(groups[x.categoria]||0)+Number(x.valor));
+const sorted=Object.entries(groups).sort((a,b)=>b[1]-a[1]),max=sorted.length?sorted[0][1]:1;
+$("categories").innerHTML=sorted.length?sorted.map(([name,value])=>'<div class="catr"><div class="barline"><strong>'+escapeHTML(name)+'</strong><span>'+cash(value)+'</span></div><div class="barback"><div class="barfill" style="width:'+Math.max(2,Math.round(value/max*100))+'%"></div></div></div>').join(""):'<div class="empty">Sem despesas nesta área e mês.</div>';
+renderList();
+}
+function renderList(){const f=$("typeFilter").value,q=$("search").value.toLocaleLowerCase("pt-BR").trim();let list=inArea().filter(x=>(f==="todos"||x.tipo===f)&&(!q||(x.descricao+" "+x.categoria+" "+x.conta).toLocaleLowerCase("pt-BR").includes(q)));
+$("entries").innerHTML=list.length?list.map(x=>'<div class="item"><div class="symbol">'+(x.tipo==="receita"?"↗":"↘")+'</div><div class="itemmid"><strong>'+escapeHTML(x.descricao)+'</strong><span>'+escapeHTML(x.categoria)+' · '+dateText(x.data_mov)+' · '+escapeHTML(x.forma||"")+'</span></div><div class="itemright"><strong class="'+(x.tipo==="receita"?"income":"expense")+'">'+(x.tipo==="receita"?"+":"−")+cash(x.valor)+'</strong><div><button data-edit="'+x.id+'" type="button">Editar</button></div></div></div>').join(""):'<div class="empty"><strong>Nenhum lançamento encontrado</strong>Registre o primeiro gasto ou recebimento para montar o relatório.</div>';
+$("entries").querySelectorAll("button[data-edit]").forEach(b=>b.onclick=()=>openForm(inArea().find(x=>String(x.id)===b.dataset.edit)))}
+$("typeFilter").onchange=renderList;$("search").oninput=renderList;
+$("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{state.area=b.dataset.area;render()});
+$("prevMonth").onclick=()=>{state.month=new Date(state.month.getFullYear(),state.month.getMonth()-1,1);load()};
+$("nextMonth").onclick=()=>{state.month=new Date(state.month.getFullYear(),state.month.getMonth()+1,1);load()};
+$("refresh").onclick=load;
+function categoryFrom(desc,area,tipo){let t=desc.toLocaleLowerCase("pt-BR");const m=[
+[/fralda|lenço umedec|leite infantil/,"Fraldas"],[/gasolina|diesel|etanol|combustível|abastec/,(area==="agricultura"?"Diesel":"Combustível")],
+[/fumo|tabaco|safra/,(tipo==="receita"?"Venda da safra":"Tabaco")],[/suíno|porco|ração/,"Suínos"],[/milho|semente de milho/,"Milho"],[/adubo|calcário|fertil|defensivo|substrato|insumo/,"Insumos"],[/trator|peça|máquina|reparo/,"Máquinas"],
+[/mercado|supermercado|aliment|feira|fruta|verdura/,"Supermercado"],[/remédio|farmácia/,"Farmácia"],[/consulta|médic|hospital/,"Saúde"],
+[/estoque|mercadoria|fornecedor|brinquedo/,"Estoque"],[/venda|faturamento|cliente/,"Vendas"],[/salário|pagamento funcion|folha/,"Salários"],
+[/energia|luz elétrica/,"Energia"],[/internet|wi-fi|telefone/,"Internet"],[/imposto|tributo/,"Impostos"],[/frete|transporte/,"Transporte"],[/peão|diária|mão de obra/,"Mão de obra"],[/financiamento|parcela trator|custeio/,"Financiamentos"]];
+for(const [re,cat] of m){if(re.test(t)&&CATS[area].includes(cat))return cat}
+return tipo==="receita"?"Outras receitas":"Outras despesas"}
+function fillCategories(area,sel){$("fCat").innerHTML="";CATS[area].forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;$("fCat").append(o)});$("fCat").value=CATS[area].includes(sel)?sel:"Outras despesas"}
+$("fArea").onchange=()=>fillCategories($("fArea").value);
+function openForm(x){$("entryForm").reset();$("entryId").value=x?.id||"";$("dialogTitle").textContent=x?"Editar lançamento":"Novo lançamento";
+$("fArea").value=x?.area||state.area;$("fTipo").value=x?.tipo||"despesa";$("fDesc").value=x?.descricao||"";$("fValor").value=x?.valor?Number(x.valor).toFixed(2).replace(".",","):"";
+$("fData").value=x?.data_mov||localDay();$("fForma").value=x?.forma||"Pix";$("fConta").value=x?.conta==="Não informada"?"":x?.conta||"";
+fillCategories($("fArea").value,x?.categoria||"Outras despesas");$("editDialog").showModal()}
+function closeForm(){$("editDialog").close()}
+$("newEntry").onclick=()=>openForm();$("closeDialog").onclick=closeForm;$("cancelDialog").onclick=closeForm;
+$("entryForm").onsubmit=async e=>{e.preventDefault();const amount=parseMoney($("fValor").value),desc=$("fDesc").value.trim(),id=$("entryId").value;
+if(!Number.isFinite(amount)||amount<=0){toast("Informe um valor válido maior que zero.");return}
+if(desc.length<2){toast("Informe uma descrição.");return}
+const payload={area:$("fArea").value,tipo:$("fTipo").value,descricao:desc,categoria:$("fCat").value,valor:amount,data_mov:$("fData").value,forma:$("fForma").value,conta:$("fConta").value.trim()||"Não informada",origem:openForm.origin||"manual",atualizado_em:new Date().toISOString()};
+const btn=$("save");btn.disabled=true;
+try{const url="/rest/v1/controle_financeiro_lancamentos"+(id?"?id=eq."+encodeURIComponent(id):"");
+await api(url,{method:id?"PATCH":"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(payload)});
+state.area=payload.area;state.month=new Date(Number(payload.data_mov.slice(0,4)),Number(payload.data_mov.slice(5,7))-1,1);
+closeForm();$("message").value="";openForm.origin="manual";await load();toast("Lançamento salvo com sucesso!")}
+catch(err){toast("Não foi possível salvar: "+err.message)}finally{btn.disabled=false}};
+$("interpret").onclick=()=>{
+const raw=$("message").value.trim();if(!raw){toast("Escreve ou dita uma despesa primeiro.");return}
+let money;
+let moneyRaw=(raw.match(/R\$\s*([\d.,]+)/i)||[])[1];
+if(!moneyRaw){const cleaned=raw.replace(/\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/g,"");const candidates=cleaned.match(/\d[\d.,]*/g)||[];moneyRaw=candidates.length?candidates[candidates.length-1]:null}
+money=parseMoney(moneyRaw);if(!Number.isFinite(money)||money<=0){toast("Não entendi o valor. Usa, por exemplo: Gastei R$ 200 de gasolina.");return}
+let tipo=/\b(recebi|recebemos|vendi|venda|faturamento|ganhei|entrou|entrada de|receita de)\b/i.test(raw)?"receita":"despesa";
+openForm();$("fTipo").value=tipo;$("fDesc").value=raw.slice(0,240);$("fValor").value=money.toFixed(2).replace(".",",");$("fCat").value=categoryFrom(raw,state.area,tipo);openForm.origin="texto";};
+$("mic").onclick=()=>{
+const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!Speech){toast("O ditado não está disponível neste navegador. Usa o microfone do teclado do celular.");return}
+const r=new Speech();r.lang="pt-BR";r.interimResults=false;r.maxAlternatives=1;
+$("mic").disabled=true;$("mic").textContent="…";
+r.onresult=e=>{$("message").value=e.results[0][0].transcript;toast("Áudio transcrito. Confere e toca em Interpretar lançamento.")};
+r.onerror=e=>toast("Não foi possível usar o microfone: "+e.error);
+r.onend=()=>{$("mic").disabled=false;$("mic").textContent="🎙️"};
+try{r.start()}catch(err){r.onend();toast("Ativa a permissão do microfone ou usa o ditado do teclado.")}};
+function csvCell(x){let s=String(x??"");if(/^[\s]*[=+@-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'}
+$("export").onclick=()=>{
+const data=inArea();if(!data.length){toast("Não há lançamentos para exportar neste mês.");return}
+const lines=[["Data","Área","Tipo","Descrição","Categoria","Valor (R$)","Pagamento","Conta"],...data.map(x=>[x.data_mov,LABELS[x.area],x.tipo,x.descricao,x.categoria,Number(x.valor).toFixed(2).replace(".",","),x.forma,x.conta])];
+const csv="\ufeff"+lines.map(row=>row.map(csvCell).join(";")).join("\r\n");
+const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+a.href=url;a.download="financeiro_"+state.area+"_"+monthRange().from.slice(0,7)+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);toast("Relatório CSV gerado.")};
+init();
+</script></body></html>
