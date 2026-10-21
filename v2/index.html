@@ -654,7 +654,7 @@ async function mostrarVotoExistente(){
  const auth=$poll('pollAuth'),botao=$poll('pollVotar');
  if(auth)auth.innerHTML='';
  if(botao){botao.disabled=true;botao.textContent='Você já participou';}
- pollAlerta('Este e-mail já participou desta enquete. Obrigado!');
+ pollAlerta('Você já participou desta enquete! Obrigado pela sua contribuição. Seu voto anterior permanece registrado.');
  if(enqueteAtual?.resultados_apos_voto)await mostrarResultadosEnquete(enqueteAtual.id);
  else if($poll('pollResultado'))$poll('pollResultado').innerHTML='<p class="poll-small">Os resultados serão exibidos após o encerramento da enquete.</p>';
 }

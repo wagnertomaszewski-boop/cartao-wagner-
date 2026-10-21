@@ -106,7 +106,7 @@ async function verifyOtp(){
 async function votoJaRegistrado(){
  $('auth').innerHTML='';
  if($('vote')){$('vote').disabled=true;$('vote').textContent='Você já participou';}
- message('Este e-mail já participou desta enquete. Obrigado!');
+ message('Você já participou desta enquete! Obrigado pela sua contribuição. Seu voto anterior permanece registrado.');
  if(current?.resultados_apos_voto)await results(current.id);
  else $('out').innerHTML='<p class="small">Os resultados serão exibidos após o encerramento da enquete.</p>';
 }
