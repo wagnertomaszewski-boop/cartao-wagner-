@@ -27,9 +27,9 @@ button.primary{background:#0969b1;color:white}button:disabled{opacity:.6;cursor:
 <label for="opcoes">Alternativas (uma por linha, no mínimo duas)</label><textarea id="opcoes" required rows="8"></textarea>
 <p class="muted">Por segurança, não é permitido alterar as alternativas de uma enquete publicada ou que já recebeu votos.</p>
 <label><input type="checkbox" id="resultados" checked> Mostrar resultados parciais depois de votar</label>
-<div class="note warning"><strong>Importante sobre SMS:</strong> é necessário ativar o login por telefone e configurar um provedor de SMS no Supabase antes da publicação. Esse serviço pode ter custo por mensagem. Nunca publique antes de testar o envio e a confirmação do código no seu celular.</div>
+<div class="note warning"><strong>Confirmação por e-mail:</strong> o participante receberá um código temporário no e-mail informado. Antes de publicar, teste o recebimento, a confirmação e o bloqueio de votos repetidos. O SMTP do Supabase deve estar ativo.</div>
 <label><input type="checkbox" id="publicada"> Publicar enquete para os moradores</label>
-<label><input type="checkbox" id="smsPronto"> Confirmo que configurei e testei o envio de SMS (obrigatório ao publicar)</label>
+<label><input type="checkbox" id="emailPronto"> Confirmo que testei a confirmação por e-mail e o bloqueio de voto duplicado (obrigatório ao publicar)</label>
 <div><button class="primary" type="submit" id="save">Salvar enquete</button><button type="button" id="logout">Sair</button></div>
 <p class="muted">Uma enquete publicada precisa ter início, encerramento e no mínimo duas alternativas. Você pode encerrá-la antecipadamente ajustando a data final, desde que permaneça após o início.</p>
 </form></section></main>
@@ -93,7 +93,7 @@ async function showPoll(p){
  $('titulo').value=p.titulo||'';$('descricao').value=p.descricao||'';
  $('inicio').value=isoInput(p.inicio_em);$('fim').value=isoInput(p.fim_em);
  $('opcoes').value=options.map(o=>o.texto).join('\n');$('opcoes').disabled=!!p.publicada;
- $('resultados').checked=!!p.resultados_apos_voto;$('publicada').checked=!!p.publicada;$('smsPronto').checked=false;
+ $('resultados').checked=!!p.resultados_apos_voto;$('publicada').checked=!!p.publicada;$('emailPronto').checked=false;
  await atualizarContagem(p.id);
 }
 async function atualizarContagem(id){
@@ -107,7 +107,7 @@ function blank(){
  selected=null;options=[];$('pollStats').textContent='Salve a nova enquete para consultar a contagem.';$('editorTitle').textContent='Nova enquete';
  $('titulo').value='';$('descricao').value='';$('inicio').value=isoInput(new Date().toISOString());
  const end=new Date(Date.now()+7*86400000);$('fim').value=isoInput(end.toISOString());$('opcoes').value='';
- $('opcoes').disabled=false;$('resultados').checked=true;$('publicada').checked=false;$('smsPronto').checked=false;
+ $('opcoes').disabled=false;$('resultados').checked=true;$('publicada').checked=false;$('emailPronto').checked=false;
 }
 $('pollSelect').onchange=async()=>{try{await showPoll(polls.find(x=>x.id===Number($('pollSelect').value)))}catch(e){notice(e.message,true)}};
 $('createNew').onclick=blank;
@@ -122,7 +122,7 @@ $('pollForm').onsubmit=async ev=>{
   if(choice.length<2||new Set(choice.map(x=>x.toLowerCase())).size!==choice.length)throw new Error('Cadastre ao menos duas alternativas diferentes.');
   if(choice.some(x=>x.length>180))throw new Error('Alternativa com mais de 180 caracteres.');
   const publish=$('publicada').checked;
-  if(publish && !selected?.publicada && !$('smsPronto').checked)throw new Error('Antes de publicar, confirme que o envio de SMS já foi configurado e testado.');
+  if(publish && !selected?.publicada && !$('emailPronto').checked)throw new Error('Antes de publicar, confirme que o código por e-mail e o bloqueio de votos duplicados foram testados.');
   const base={titulo,descricao,inicio_em:inicio,fim_em:fim,resultados_apos_voto:$('resultados').checked};
   let id;
   if(!selected){
@@ -146,7 +146,7 @@ $('pollForm').onsubmit=async ev=>{
    await api('/rest/v1/enquetes_mandato?id=eq.'+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({publicada:true})});
   }
   await loadPolls();selected=polls.find(p=>p.id===id)||selected;
-  notice(publish?'Enquete publicada! Confirme que o código SMS chega aos participantes.':'Enquete salva como rascunho.');
+  notice(publish?'Enquete publicada! Confirme que o código por e-mail continua chegando aos participantes.':'Enquete salva como rascunho.');
  }catch(e){notice('Não foi possível salvar: '+e.message,true)}
  finally{b.disabled=false}
 };
