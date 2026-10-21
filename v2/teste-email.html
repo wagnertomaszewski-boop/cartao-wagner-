@@ -133,10 +133,27 @@ el("votar").onclick=async()=>{
   await api("/rest/v1/rpc/votar_enquete_teste",{p_convite:convite,p_opcao_id:opcao},true);
   el("etapaVoto").hidden=true;el("etapaResultado").hidden=false;
   inform("Voto registrado com sucesso. Esse teste não aparece na enquete pública.","ok");
-  const res=await api("/rest/v1/rpc/resultados_enquete_teste",{p_convite:convite},true);
-  mostrarResultado(res);
- }catch(e){inform("Não foi possível registrar o voto. "+e.message,"error");}
- finally{busy("votar",false);}
+  try{
+   const res=await api("/rest/v1/rpc/resultados_enquete_teste",{p_convite:convite},true);
+   mostrarResultado(res);
+  }catch(resultadoErro){
+   el("resultado").textContent="O voto foi registrado, mas os resultados não puderam ser consultados agora.";
+  }
+ }catch(e){
+  if(/já votou|ja votou|segundo voto foi bloqueado/i.test(String(e.message||""))){
+   inform("Você já participou desta enquete! Obrigado pela sua contribuição. Seu voto anterior permanece registrado.","ok");
+   el("votar").dataset.duplicate="true";
+  }else{
+   inform("Não foi possível registrar o voto. "+e.message,"error");
+  }
+ }
+ finally{
+  busy("votar",false);
+  if(el("votar").dataset.duplicate==="true"){
+   el("votar").disabled=true;
+   el("votar").textContent="Você já participou";
+  }
+ }
 };
 function mostrarResultado(data){
  const node=el("resultado");node.replaceChildren();
