@@ -90,6 +90,8 @@ label{display:block;font-weight:700;margin:13px 0 6px;font-size:14px}input,texta
 .detail-caption{font-size:10px;color:#718399;margin:3px 0 12px;line-height:1.4}
 .project-card{cursor:pointer}
 .project-card:focus-visible{outline:3px solid #69b4ff;outline-offset:2px}
+.project-tap{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding:10px 12px;border-radius:12px;background:#eaf4ff;color:#0868bd;font-size:12px;font-weight:800}
+.project-tap:after{content:"›";font-size:20px;line-height:1}
 .top button.back{background:transparent;border:0;color:white;padding:0;font-weight:700;cursor:pointer}
 
 /* Cartões são botões reais para receber toque em título, texto e foto. */
@@ -305,7 +307,7 @@ body{background:#e9eff6}
 
 
 <section id="projetos" class="page">
-<header class="top"><div class="brand"><button class="back" type="button" onclick="go('home')">‹ Voltar</button><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Projetos e ações</h1><p>Acompanhe o trabalho do mandato do início ao resultado.</p></header>
+<header class="top"><div class="brand"><button class="back" type="button" onclick="go('home')">‹ Voltar</button><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Projetos e ações</h1><p>Acompanhe o trabalho do mandato do início ao resultado.</p><div style="margin-top:7px;font-size:11px;color:#d9ebf8">Detalhes corrigidos · 22/10 · 18:52</div></header>
 <main class="wrap">
   <div class="card">
     <div class="project-head">
@@ -448,6 +450,7 @@ async function carregarProjetosPublicos(){
    const a=document.createElement('button');a.type='button';a.className='project-card';
    a.dataset.projectId=String(Number(x.id));
    a.setAttribute('aria-label','Abrir detalhes de '+x.titulo);
+   a.onclick=()=>abrirDetalhesProjeto(Number(x.id));
    const result=/entreg|conclu|resultado|executad|adquirid|aquisiç[aã]o por/i.test(x.situacao||'')?' resultado':'';
    a.dataset.type=String(x.tipo||'').trim().toLowerCase()+result;
    a.dataset.ordemOriginal=String(el.childElementCount);
@@ -469,26 +472,61 @@ async function carregarProjetosPublicos(){
  }catch(e){el.innerHTML='<div class="project-empty"><b>Não foi possível carregar</b><p>Verifique sua conexão com a internet.</p><button type="button" class="primary" id="retryProjects">Tentar novamente</button></div>';document.getElementById('retryProjects').onclick=carregarProjetosPublicos}
 }
 async function abrirDetalhesProjeto(id){
- go('detalhesProjeto');const alvo=document.getElementById('projetoDetalheConteudo');alvo.innerHTML='<div class="detail-body"><p class="muted">Carregando detalhes...</p></div>';
+ const nid=Number(id);
+ if(!Number.isSafeInteger(nid)||nid<=0)return;
+
+ const lista=Array.isArray(listaProjetosPublicos)?listaProjetosPublicos:[];
+ const previo=lista.find(p=>Number(p.id)===nid)||null;
+
+ go('detalhesProjeto');
+ const alvo=document.getElementById('projetoDetalheConteudo');
+
+ if(previo){
+   const imgPrev=imagemSegura(previo.foto_url);
+   alvo.innerHTML=(imgPrev?'<img class="detail-cover" src="'+seguroTxt(imgPrev)+'" alt="Imagem do projeto">':'')+
+     '<div class="detail-body">'+
+     '<span class="tag">'+seguroTxt(previo.tipo==='projeto'?'PROJETO / LEI':previo.tipo==='sugestivo'?'PROJETO SUGESTIVO':String(previo.tipo||'AÇÃO').toUpperCase())+'</span>'+
+     '<h2 class="detail-title">'+seguroTxt(previo.titulo||'Projeto')+'</h2>'+
+     '<div class="detail-meta"><span>📄 '+seguroTxt(previo.referencia||'')+'</span><span>🏛 '+seguroTxt(previo.area||'')+'</span></div>'+
+     '<div class="detail-status">🔵 '+seguroTxt(previo.situacao||'Em acompanhamento')+'</div>'+
+     '<section class="detail-sec"><h3>📄 Sobre o projeto</h3><p>'+seguroTxt(previo.resumo||'')+'</p></section>'+
+     '<p class="muted" style="margin-top:12px">Carregando informações completas...</p></div>';
+ } else {
+   alvo.innerHTML='<div class="detail-body"><p class="muted">Carregando detalhes...</p></div>';
+ }
+
  try{
-  const x=await projetoRpc('consulta_publica_detalhe_projeto',{p_id:Number(id)});
-  if(!x||!x.id)throw new Error('Este projeto não está publicado.');
+  let raw=await projetoRpc('consulta_publica_detalhe_projeto',{p_id:nid});
+  let x=raw;
+
+  // Aceita resposta direta, array de uma linha ou objeto embrulhado pelo nome da função.
+  if(Array.isArray(x)) x=x[0]||null;
+  if(x && !x.id && x.consulta_publica_detalhe_projeto) x=x.consulta_publica_detalhe_projeto;
+  if(typeof x==='string'){try{x=JSON.parse(x)}catch{}}
+
+  if(!x||!x.id) throw new Error('Este projeto não está publicado.');
+
   const capa=Number(x.id)===1?CAPA_ALUNO_NOTA_DEZ:Number(x.id)===2?CAPA_MES_DO_ESPORTE_LAZER:Number(x.id)===9?CAPA_COMBATE_AO_ALCOOLISMO:Number(x.id)===10?CAPA_INTERNET_SEGURA:Number(x.id)===12?CAPA_PROMIE:imagemSegura(x.foto_url);
   let html=(capa?'<img class="detail-cover'+([4,6,8].includes(Number(x.id))?' trator-completo':'')+'" src="'+seguroTxt(capa)+'" alt="'+([4,6,8].includes(Number(x.id))?'Fotografia completa do equipamento':'Imagem do projeto')+'">':'')+'<div class="detail-body">';
+
   if(capa&&Number(x.id)===2)html+='<div class="detail-caption">Imagem ilustrativa de futebol, ciclismo e vôlei.</div>';
   if(capa&&Number(x.id)===9)html+='<div class="detail-caption">Arte ilustrativa de prevenção e acolhimento, sem representar evento efetivamente realizado.</div>';
   if(capa&&Number(x.id)===10)html+='<div class="detail-caption">Imagem ilustrativa de educação e segurança na internet. Não retrata uma atividade realizada em Cristal.</div>';
   if(capa&&Number(x.id)===13)html+='<div class="detail-caption">Arte ilustrativa da UBS. Não é fotografia da unidade real de Alto Alegre.</div>';
   if(capa&&x.tipo==='sugestivo'&&Number(x.id)!==13)html+='<div class="detail-caption">Imagem ilustrativa do tema. Não representa um programa efetivamente implantado no município.</div>';
   if(Number(x.id)===12&&/não acatado/i.test(x.situacao||''))html+='<div class="project-empty" style="text-align:left;background:#e8f4fd;border:1px solid #b5d7ee;margin:12px 0"><strong>Resultado informado pelo autor:</strong> o Poder Executivo não acatou o Projeto de Sugestão nº 4/2021. Ainda não consta documento oficial da manifestação.</div>';
-   if(capa&&Number(x.id)===1)html+='<div class="detail-caption">Imagem ilustrativa. Não representa necessariamente alunos do Município de Cristal.</div>';
+  if(capa&&Number(x.id)===1)html+='<div class="detail-caption">Imagem ilustrativa. Não representa necessariamente alunos do Município de Cristal.</div>';
+
   html+='<span class="tag">'+seguroTxt(x.tipo==='projeto'?'PROJETO / LEI':x.tipo==='sugestivo'?'PROJETO SUGESTIVO':String(x.tipo||'AÇÃO').toUpperCase())+'</span>';
   html+='<h2 class="detail-title">'+seguroTxt(x.titulo)+'</h2><div class="detail-meta"><span>📄 '+seguroTxt(x.referencia||'')+'</span><span>🏛 '+seguroTxt(x.area||'')+'</span></div>';
   html+='<div class="detail-status">🔵 '+seguroTxt(x.situacao||'Em acompanhamento')+'</div>';
+
   if(x.tipo==='sugestivo'&&/transformad|convertid/i.test(x.situacao||''))html+='<div class="project-empty" style="text-align:left;background:#e8f4fd;border:1px solid #beddf4;margin:12px 0"><strong>Resultado confirmado: a sugestão tornou-se lei municipal.</strong> Consulte a publicação oficial no fim desta página.</div>';
   else if(x.tipo==='sugestivo')html+='<div class="project-empty" style="text-align:left;background:#e8f4fd;border:1px solid #beddf4;margin:12px 0"><strong>Esta é uma sugestão ao Poder Executivo.</strong> Não significa que o programa já tenha sido criado ou que os benefícios estejam disponíveis.</div>';
+
   function sec(t,v){return v?'<section class="detail-sec"><h3>'+t+'</h3><p>'+seguroTxt(v)+'</p></section>':''}
   html+=sec('📄 Sobre o projeto',x.resumo)+sec('🎯 Objetivo',x.objetivo)+sec('📊 Situação atual',x.situacao)+sec('✅ O que já foi feito',x.feito)+sec('🕒 O que falta fazer',x.falta);
+
   const fotoAntes=documentoSeguro(x.foto_antes_url),fotoDepois=documentoSeguro(x.foto_depois_url);
   if(fotoAntes&&fotoDepois){
    html+='<section class="detail-sec"><h3>📸 Antes e depois</h3><div class="comparativo-fotos">'+
@@ -496,26 +534,38 @@ async function abrirDetalhesProjeto(id){
      '<figure><img src="'+seguroTxt(fotoDepois)+'" alt="Situação depois da providência" loading="lazy"><figcaption>DEPOIS</figcaption></figure>'+
      '</div><p class="comparativo-nota">Imagens selecionadas e autorizadas para publicação pela equipe do mandato.</p></section>';
   }
-  let etapas=Array.isArray(x.etapas)?x.etapas:[];html+='<section class="detail-sec"><h3>🗓 Linha do tempo</h3>';
-  if(etapas.length){html+='<div class="detail-line">';etapas.forEach(y=>{html+='<div class="detail-step"><strong>'+seguroTxt(y.titulo)+'</strong>'+(y.data?'<small>📅 '+seguroTxt(dataProjeto(y.data))+'</small>':'')+'<span>'+seguroTxt(y.descricao||'')+'</span></div>'});html+='</div>'}
-  else html+='<p>O histórico será publicado conforme os registros forem confirmados.</p>';
-  html+='</section><section class="detail-sec"><h3>📎 Documentos</h3>';
-  let ds=Array.isArray(x.documentos)?x.documentos:[],validos=ds.filter(y=>documentoSeguro(y.url));
-  if(validos.length)validos.forEach(y=>html+='<a class="detail-doc" href="'+seguroTxt(documentoSeguro(y.url))+'" target="_blank" rel="noopener noreferrer">📄 '+seguroTxt(y.nome||'Abrir documento')+' ↗</a>');
-  else html+='<p>Os documentos públicos ainda serão disponibilizados aqui.</p>';
-  html+='</section><div class="detail-actions"><button type="button" id="compartilharProjeto">↗ Compartilhar</button><button type="button" id="solicitarProjeto">✉ Solicitar informação</button></div></div>';
-  alvo.innerHTML=html;
-  if(Number(x.id)===1){const imagemCapa=alvo.querySelector('.detail-cover');if(imagemCapa)imagemCapa.addEventListener('error',()=>{imagemCapa.src=CAPA_ALUNO_NOTA_DEZ;},{once:true});}
-  const fotoDetalhe=alvo.querySelector('.detail-cover.trator-completo');
-  if(fotoDetalhe)fotoDetalhe.addEventListener('click',()=>abrirFotoAmpliada(fotoDetalhe.currentSrc||fotoDetalhe.src,'Fotografia completa do equipamento'));
-  document.getElementById('solicitarProjeto').onclick=()=>go('solicitar');
-  document.getElementById('compartilharProjeto').onclick=async()=>{
-   const url='https://wagnertomaszewski-boop.github.io/cartao-wagner-/projetos.html?id='+x.id;
-   try{if(navigator.share)await navigator.share({title:x.titulo,text:'Conheça este projeto do mandato',url});else if(navigator.clipboard){await navigator.clipboard.writeText(url);alert('Link do projeto copiado!')}else prompt('Copie o link do projeto:',url)}catch(e){if(e.name!=='AbortError')prompt('Copie o link do projeto:',url)}
-  }
- }catch(e){alvo.innerHTML='<div class="detail-body"><h2>Detalhes indisponíveis</h2><p class="muted">'+seguroTxt(e.message)+'</p><button class="primary" type="button" id="btnVoltarFalhaProjeto">Voltar aos projetos</button></div>';const b=document.getElementById('btnVoltarFalhaProjeto');if(b)b.onclick=()=>go('projetos')}
-}
 
+  let etapas=Array.isArray(x.etapas)?x.etapas:[];
+  html+='<section class="detail-sec"><h3>🗓 Linha do tempo</h3>';
+  if(etapas.length){
+    html+='<div class="detail-line">'+etapas.map(e=>'<div class="detail-step"><strong>'+seguroTxt(e.titulo||'Etapa')+'</strong><small>'+seguroTxt(e.data||'Data não informada')+'</small><span>'+seguroTxt(e.descricao||'')+'</span></div>').join('')+'</div>';
+  }else{
+    html+='<p>Nenhuma etapa adicional cadastrada.</p>';
+  }
+  html+='</section>';
+
+  const docs=Array.isArray(x.documentos)?x.documentos:[];
+  if(docs.length){
+    html+='<section class="detail-sec"><h3>📎 Documentos</h3>'+docs.map((d,i)=>{
+      const url=documentoSeguro(typeof d==='string'?d:(d.url||''));
+      if(!url)return '';
+      const nome=typeof d==='string'?'Documento '+(i+1):(d.nome||'Documento '+(i+1));
+      return '<a class="detail-doc" href="'+seguroTxt(url)+'" target="_blank" rel="noopener">📄 '+seguroTxt(nome)+'</a>';
+    }).join('')+'</section>';
+  }
+
+  html+='<div class="detail-actions"><button type="button" onclick="go(\'projetos\')">Voltar aos projetos</button></div></div>';
+  alvo.innerHTML=html;
+
+ }catch(e){
+  if(previo){
+    const aviso=alvo.querySelector('.muted');
+    if(aviso) aviso.textContent='Os dados principais estão disponíveis. Não foi possível carregar informações adicionais agora.';
+  }else{
+    alvo.innerHTML='<div class="detail-body"><div class="project-empty"><b>Não foi possível abrir os detalhes.</b><p>Tente novamente.</p><button type="button" class="primary" onclick="go(\'projetos\')">Voltar aos projetos</button></div></div>';
+  }
+ }
+}
 let focoAnteriorFoto=null;
 function abrirFotoAmpliada(url,descricao){
  const modal=document.getElementById('ampliadorFotos');
@@ -549,12 +599,7 @@ document.getElementById('projectList').addEventListener('click',function(e){
   e.preventDefault();e.stopPropagation();
   const foto=fotoArea.querySelector('.project-card-photo');
   if(foto)abrirFotoAmpliada(foto.currentSrc||foto.src,'Fotografia completa do equipamento');
-  return;
  }
- const card=e.target.closest('button.project-card[data-project-id]');
- if(!card || !this.contains(card))return;
- const id=Number(card.dataset.projectId);
- if(Number.isSafeInteger(id) && id>0)abrirDetalhesProjeto(id);
 });
 document.getElementById('nav-projetos').addEventListener('click',()=>go('projetos'));
 document.getElementById('voltarAosProjetos').addEventListener('click',()=>go('projetos'));
