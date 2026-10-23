@@ -72,7 +72,7 @@ dialog::backdrop{background:#08223899}dialog .inner{padding:20px;max-height:85vh
 <div class="actions" style="justify-content:stretch;margin-top:9px">
 <button class="btn primary grow" id="interpret" type="button">Interpretar lançamento</button>
 <button class="btn" id="newEntry" type="button">+ Manual</button><a href="./comprovantes.html" class="btn" style="display:inline-flex;align-items:center;text-decoration:none">📷 Comprovante</a></div>
-<div class="boxhint">O chat identifica valor e categoria por regras simples. Ainda não é inteligência artificial; fotos de notas fiscais e envio pelo WhatsApp serão acrescentados depois.</div>
+<div class="boxhint">O chat interpreta frases simples. Para comprovantes, usa o botão 📷 Comprovante: ele sugere dados da foto para tua conferência. Integração ao WhatsApp fica para uma próxima etapa.</div>
 </section>
 <section class="card"><div class="stack between"><h2>📊 Onde foi o dinheiro?</h2><span id="categoriesHelp" class="small muted">Despesas por categoria</span></div><div id="categories"></div></section>
 </div>
@@ -133,7 +133,7 @@ state.session={access_token:j.access_token,refresh_token:j.refresh_token,expires
 catch(err){$("loginError").textContent=err.message;$("loginError").classList.remove("hidden")}finally{btn.disabled=false}};
 $("logout").onclick=()=>{localStorage.removeItem(STORAGE);state.session=null;state.data=[];showLogin();$("password").value=""};
 async function load(){const b=monthRange();$("entries").innerHTML='<div class="empty">Buscando informações…</div>';
-try{const q="/rest/v1/controle_financeiro_lancamentos?select=id,area,tipo,descricao,categoria,valor,data_mov,conta,forma,origem&data_mov=gte."+b.from+"&data_mov=lt."+b.to+"&order=data_mov.desc,id.desc&limit=1500";
+try{const q="/rest/v1/controle_financeiro_lancamentos?select=id,area,tipo,descricao,categoria,valor,data_mov,conta,forma,origem,banco,beneficiario,situacao_pagamento,comprovante_path&data_mov=gte."+b.from+"&data_mov=lt."+b.to+"&order=data_mov.desc,id.desc&limit=1500";
 const d=await api(q);if(!Array.isArray(d))throw Error("Dados inesperados.");state.data=d;render()}catch(e){$("entries").textContent="Não foi possível carregar: "+e.message;toast("Problema ao buscar lançamentos.")}}
 function inArea(){return state.data.filter(x=>x.area===state.area)}
 function totals(list){return list.reduce((a,x)=>{a[x.tipo]+=Number(x.valor)||0;return a},{despesa:0,receita:0})}
@@ -150,7 +150,7 @@ $("categories").innerHTML=sorted.length?sorted.map(([name,value])=>'<div class="
 renderList();
 }
 function renderList(){const f=$("typeFilter").value,q=$("search").value.toLocaleLowerCase("pt-BR").trim();let list=inArea().filter(x=>(f==="todos"||x.tipo===f)&&(!q||(x.descricao+" "+x.categoria+" "+x.conta).toLocaleLowerCase("pt-BR").includes(q)));
-$("entries").innerHTML=list.length?list.map(x=>'<div class="item"><div class="symbol">'+(x.tipo==="receita"?"↗":"↘")+'</div><div class="itemmid"><strong>'+escapeHTML(x.descricao)+'</strong><span>'+escapeHTML(x.categoria)+' · '+dateText(x.data_mov)+' · '+escapeHTML(x.forma||"")+'</span></div><div class="itemright"><strong class="'+(x.tipo==="receita"?"income":"expense")+'">'+(x.tipo==="receita"?"+":"−")+cash(x.valor)+'</strong><div><button data-edit="'+x.id+'" type="button">Editar</button></div></div></div>').join(""):'<div class="empty"><strong>Nenhum lançamento encontrado</strong>Registre o primeiro gasto ou recebimento para montar o relatório.</div>';
+$("entries").innerHTML=list.length?list.map(x=>'<div class="item"><div class="symbol">'+(x.tipo==="receita"?"↗":"↘")+'</div><div class="itemmid"><strong>'+escapeHTML(x.descricao)+'</strong><span>'+escapeHTML(x.categoria)+' · '+dateText(x.data_mov)+' · '+escapeHTML(x.forma||"")+'</span></div><div class="itemright"><strong class="'+(x.tipo==="receita"?"income":"expense")+'">'+(x.tipo==="receita"?"+":"−")+cash(x.valor)+'</strong><div><button data-edit="'+x.id+'" type="button">Editar</button>'+(x.comprovante_path?'<a style="font-size:11px;color:#0b66ad;display:inline-block;padding:4px" href="./comprovantes.html?ver='+encodeURIComponent(x.id)+'">📎 Ver foto</a>':'')+'</div></div></div>').join(""):'<div class="empty"><strong>Nenhum lançamento encontrado</strong>Registre o primeiro gasto ou recebimento para montar o relatório.</div>';
 $("entries").querySelectorAll("button[data-edit]").forEach(b=>b.onclick=()=>openForm(inArea().find(x=>String(x.id)===b.dataset.edit)))}
 $("typeFilter").onchange=renderList;$("search").oninput=renderList;
 $("tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>{state.area=b.dataset.area;render()});
