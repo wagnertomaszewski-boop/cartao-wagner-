@@ -97,7 +97,7 @@ dialog::backdrop{background:#08223899}dialog .inner{padding:20px;max-height:85vh
 <div class="grid"><div><label for="fCat">Categoria</label><select id="fCat"></select></div><div><label for="fForma">Pagamento</label><select id="fForma"><option>Pix</option><option>Dinheiro</option><option>Débito</option><option>Crédito</option><option>Boleto</option><option>Transferência</option><option>Outro</option></select></div></div>
 <label for="fConta">Conta ou origem do dinheiro (opcional)</label><input id="fConta" maxlength="100" placeholder="Ex.: Banco do Brasil, Cresol, Caixa">
 <p class="note">Nenhuma despesa será salva sem tua confirmação.</p>
-<div class="actions"><button class="btn" type="button" id="cancelDialog">Cancelar</button><button class="btn primary grow" type="submit" id="save">Salvar lançamento</button></div>
+<div class="actions"><button class="btn" type="button" id="deleteEntry" style="color:#b94743" hidden>Excluir este lançamento</button><button class="btn" type="button" id="cancelDialog">Cancelar</button><button class="btn primary grow" type="submit" id="save">Salvar lançamento</button></div>
 </form></div></dialog>
 <div id="notice" class="hidden" role="status"></div>
 <script>
@@ -167,12 +167,38 @@ for(const [re,cat] of m){if(re.test(t)&&CATS[area].includes(cat))return cat}
 return tipo==="receita"?"Outras receitas":"Outras despesas"}
 function fillCategories(area,sel){$("fCat").innerHTML="";CATS[area].forEach(c=>{const o=document.createElement("option");o.value=c;o.textContent=c;$("fCat").append(o)});$("fCat").value=CATS[area].includes(sel)?sel:"Outras despesas"}
 $("fArea").onchange=()=>fillCategories($("fArea").value);
-function openForm(x){$("entryForm").reset();$("entryId").value=x?.id||"";$("dialogTitle").textContent=x?"Editar lançamento":"Novo lançamento";
+function openForm(x){$("entryForm").reset();$("entryId").value=x?.id||"";$("dialogTitle").textContent=x?"Editar lançamento":"Novo lançamento";$("deleteEntry").hidden=!x;
 $("fArea").value=x?.area||state.area;$("fTipo").value=x?.tipo||"despesa";$("fDesc").value=x?.descricao||"";$("fValor").value=x?.valor?Number(x.valor).toFixed(2).replace(".",","):"";
 $("fData").value=x?.data_mov||localDay();$("fForma").value=x?.forma||"Pix";$("fConta").value=x?.conta==="Não informada"?"":x?.conta||"";
 fillCategories($("fArea").value,x?.categoria||"Outras despesas");$("editDialog").showModal()}
 function closeForm(){$("editDialog").close()}
 $("newEntry").onclick=()=>openForm();$("closeDialog").onclick=closeForm;$("cancelDialog").onclick=closeForm;
+
+$("deleteEntry").onclick=async()=>{
+ const id=$("entryId").value;
+ const registro=state.data.find(x=>String(x.id)===id);
+ if(!id||!registro){toast("Lançamento não encontrado. Atualiza a lista.");return}
+ const valor=cash(registro.valor);
+ if(!confirm("Excluir definitivamente esta despesa ou receita?\n"+registro.descricao+" — "+valor+"\nEsta ação não pode ser desfeita."))return;
+ const btn=$("deleteEntry");btn.disabled=true;
+ try{
+  const deleted=await api("/rest/v1/controle_financeiro_lancamentos?id=eq."+encodeURIComponent(id),{method:"DELETE",headers:{Prefer:"return=representation"}});
+  if(!Array.isArray(deleted)||deleted.length!==1)throw Error("A exclusão não foi confirmada.");
+  let photoOk=true;
+  if(registro.comprovante_path){
+   try{
+    const address=BASE+"/storage/v1/object/comprovantes-financeiros/"+registro.comprovante_path.split("/").map(encodeURIComponent).join("/");
+    const jwt=state.session.access_token;
+    const response=await fetch(address,{method:"DELETE",headers:{apikey:KEY,Authorization:"Bearer "+jwt}});
+    photoOk=response.ok;
+   }catch(e){photoOk=false}
+  }
+  closeForm();await load();
+  toast(photoOk?"Lançamento excluído.":"Lançamento excluído, mas não foi possível remover a foto. Avise para verificarmos.");
+ }catch(err){toast("Erro ao excluir: "+err.message)}
+ finally{btn.disabled=false}
+};
+
 $("entryForm").onsubmit=async e=>{e.preventDefault();const amount=parseMoney($("fValor").value),desc=$("fDesc").value.trim(),id=$("entryId").value;
 if(!Number.isFinite(amount)||amount<=0){toast("Informe um valor válido maior que zero.");return}
 if(desc.length<2){toast("Informe uma descrição.");return}
