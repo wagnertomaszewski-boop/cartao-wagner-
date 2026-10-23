@@ -62,7 +62,7 @@ try{const candidates=await duplicate(value,date);
 if(fotoHash&&candidates.some(d=>d.comprovante_sha256===fotoHash))throw Error("Este comprovante já foi cadastrado. Registro não duplicado.");
 if(candidates.length&&!confirm("Já existe um pagamento nesta data com o mesmo valor. Confirma que é outra despesa?"))return;
 path=await upload();
-const payload={area:"agricultura",tipo:"despesa",origem:"foto",valor:value,data_mov:date,descricao:$("descricao").value.trim(),categoria:$("categoria").value,forma:$("forma").value,conta:$("conta").value.trim()||"Não informada",banco:$("banco").value.trim()||null,beneficiario:$("beneficiario").value.trim()||null,situacao_pagamento:$("situacao").value,identificador_transacao:$("idTransacao").value.trim()||null,comprovante_path:path,comprovante_sha256:fotoHash};
+const payload={area:"agricultura",tipo:"despesa",origem:"foto",valor:value,data_mov:date,descricao:$("descricao").value.trim(),categoria:$("categoria").value,forma:$("forma").value,conta:$("conta").value.trim()||"Não informada",banco:$("banco").value.trim()||null,banco_destino:$("bancoDestino").value.trim()||null,beneficiario:$("beneficiario").value.trim()||null,situacao_pagamento:$("situacao").value,identificador_transacao:$("idTransacao").value.trim()||null,comprovante_path:path,comprovante_sha256:fotoHash};
 const result=await api("/rest/v1/controle_financeiro_lancamentos",{method:"POST",headers:{"Content-Type":"application/json",Prefer:"return=representation"},body:JSON.stringify(payload)});
 if(!result?.length)throw Error("Registro não confirmado pelo banco.");
 path=null;foto=null;fotoHash=null;if(fotoUrl)URL.revokeObjectURL(fotoUrl);
