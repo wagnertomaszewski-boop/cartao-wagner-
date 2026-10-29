@@ -241,6 +241,8 @@ body{background:#e9eff6}
     <button type="button" class="tile white" onclick="go('projetos')">
       <div class="ico" aria-hidden="true">▤</div><strong>Projetos e ações</strong><span>Leis, emendas e ações do mandato.</span>
     </button>
+    <button type="button" class="tile blue" onclick="go('pedidosProvidencias')"><div class="ico" aria-hidden="true">☑</div><strong>Pedidos de Providências</strong><span>Veja solicitações de melhorias e seus resultados.</span></button>
+    <button type="button" class="tile white" onclick="go('pedidosInformacao')"><div class="ico" aria-hidden="true">▤</div><strong>Pedidos de Informação</strong><span>Fiscalização e esclarecimentos solicitados.</span></button>
     <button type="button" class="tile gold" onclick="go('enquetes')">
       <div class="ico" aria-hidden="true">▥</div><strong>Enquetes</strong><span>Dê sua opinião e participe das decisões.</span>
     </button>
@@ -306,6 +308,14 @@ body{background:#e9eff6}
 </div></div></main></section>
 
 
+<section id="pedidosProvidencias" class="page">
+<header class="top"><div class="brand"><button class="back" type="button" onclick="go('home')">‹ Voltar</button><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Pedidos de Providências</h1><p>Solicitações oficiais de melhorias nas comunidades de Cristal.</p></header>
+<main class="wrap"><div class="card"><h2>Acompanhamento público</h2><p>Os andamentos abaixo foram informados pelo vereador. A execução pode ser atualizada após novas verificações.</p><div id="listaPedidosProvidencias"></div><p><a href="https://www.cmcristal.rs.gov.br/proposicoes/Pedidos-de-Providencia/0/1/9" target="_blank" rel="noopener noreferrer" style="color:#0868bd;text-decoration:underline">Consultar documentos na Câmara Municipal</a></p></div></main>
+</section>
+<section id="pedidosInformacao" class="page">
+<header class="top"><div class="brand"><button class="back" type="button" onclick="go('home')">‹ Voltar</button><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Pedidos de Informação</h1><p>Fiscalização e transparência do mandato.</p></header>
+<main class="wrap"><div class="card"><h2>Pedidos apresentados</h2><p>Os números oficiais e as respostas serão adicionados após conferência.</p><div id="listaPedidosInformacao"></div><p><a href="https://www.cmcristal.rs.gov.br/proposicoes/Pedidos-de-Informacoes/0/1/9" target="_blank" rel="noopener noreferrer" style="color:#0868bd;text-decoration:underline">Consultar documentos na Câmara Municipal</a></p></div></main>
+</section>
 <section id="projetos" class="page">
 <header class="top"><div class="brand"><button class="back" type="button" onclick="go('home')">‹ Voltar</button><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Projetos e ações</h1><p>Acompanhe o trabalho do mandato do início ao resultado.</p><div style="margin-top:7px;font-size:11px;color:#d9ebf8">Detalhes corrigidos · 22/10 · 18:52</div></header>
 <main class="wrap">
@@ -729,6 +739,29 @@ async function mostrarResultadosEnquete(id){
  }catch(err){pollAlerta(err.message,'erro')}
 }
 
+
+// Registros conferidos a partir dos documentos oficiais exibidos no portal da Câmara e dos andamentos informados pelo vereador.
+const pedidosProvidenciasV2=[
+ {numero:'39/2026',titulo:'Iluminação pública — Formosa',descricao:'Substituição de lâmpadas queimadas nos postes 730335 e 6604 4768.',situacao:'Pendente'},
+ {numero:'38/2026',titulo:'Iluminação pública — Alto Alegre',descricao:'Substituição de lâmpada queimada no poste 37782, em frente à residência de Roger Tomaszewski.',situacao:'Pendente'},
+ {numero:'32/2026',titulo:'Iluminação pública — Rua Bento Gonçalves',descricao:'Reparo de fio rompido junto ao poste 171, em frente à clínica Sorriso Saúde.',situacao:'Pendente'},
+ {numero:'27/2026',titulo:'Cascalhamento — Paraíso',descricao:'Colocação de cascalho próximo à residência de José Valter Ferreira Lindemann.',situacao:'Pendente'},
+ {numero:'26/2026',titulo:'Sinalização — Estrada da Barca',descricao:'Instalação de placas e dispositivos de segurança viária nas proximidades do Comercial Tadeu Tomaszewski.',situacao:'Pendente'},
+ {numero:'23/2026',titulo:'Manutenção de estrada — Bom Será',descricao:'Melhorias no acesso à propriedade de José Gilmar Lima da Silva.',situacao:'Executado'},
+ {numero:'A confirmar',titulo:'Nivelamento e pedra — Estrada da Barca',descricao:'Recuperação do trecho próximo ao Comercial Tomaszewski. O nivelamento foi realizado, mas a pedra saliente ainda não foi retirada ou rebaixada.',situacao:'Parcialmente executado'}
+];
+const pedidosInformacaoV2=[
+ {titulo:'Lei Aluno Nota Dez',descricao:'Esclarecimentos sobre a vigência e a execução da Lei Municipal 1.553/2021.',situacao:'Resposta a confirmar'},
+ {titulo:'Atendimento na Unidade de Saúde do Butiá',descricao:'Informações sobre os critérios de atendimento na ESF Butiá/Alto Alegre e na Policlínica Municipal.',situacao:'Resposta a confirmar'}
+];
+function renderPedidosMandatoV2(){
+ const escape=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','&#39;':'&#39;'}[c]));
+ const make=(p,info)=>'<article style="border:1px solid #dce6ef;border-radius:14px;padding:15px;margin:12px 0;background:white"><div style="font-size:12px;color:#53718b;font-weight:bold">'+(info?'PEDIDO DE INFORMAÇÃO':'PEDIDO DE PROVIDÊNCIAS Nº '+escape(p.numero))+'</div><h3 style="margin:9px 0">'+escape(p.titulo)+'</h3><p style="line-height:1.5">'+escape(p.descricao)+'</p><div style="display:inline-block;background:#eaf3fc;color:#07528b;padding:7px 11px;border-radius:12px;font-weight:bold;font-size:13px">'+escape(p.situacao)+'</div></article>';
+ const a=document.getElementById('listaPedidosProvidencias'),b=document.getElementById('listaPedidosInformacao');
+ if(a)a.innerHTML=pedidosProvidenciasV2.map(p=>make(p,false)).join('');
+ if(b)b.innerHTML=pedidosInformacaoV2.map(p=>make(p,true)).join('');
+}
+document.addEventListener('DOMContentLoaded',renderPedidosMandatoV2);
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="./solicitacao-localizacao.js" defer></script>
