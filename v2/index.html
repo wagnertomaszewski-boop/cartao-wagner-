@@ -202,6 +202,48 @@ body{background:#e9eff6}
 #mandatoV2Splash .splash-linha{height:3px;width:70px;border-radius:99px;background:linear-gradient(90deg,#22a763 50%,#f3b736 50%);margin-top:6px}
 @media(prefers-reduced-motion:reduce){#mandatoV2Splash{transition:none}}
 
+
+/* V2: cartões equilibrados, ícones vetoriais e cores da prévia aprovada.
+   Restrito à página inicial: foto, hero e funcionalidades preservados. */
+.home-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.home-grid .tile{isolation:isolate;overflow:hidden;position:relative;padding:17px 16px;min-height:164px;border:1px solid transparent;border-radius:20px;box-shadow:0 9px 22px rgba(11,52,98,.12);color:#fff}
+.home-grid .tile:before{content:"";position:absolute;z-index:-1;pointer-events:none;right:-34%;top:-70%;width:130%;height:155%;border-radius:50%;background:linear-gradient(145deg,rgba(255,255,255,.10),rgba(255,255,255,0) 58%);transform:rotate(-22deg)}
+.home-grid .tile.tile--blue{background:linear-gradient(145deg,#087eff 0%,#0861cf 55%,#06489e 100%)}
+.home-grid .tile.tile--green{background:linear-gradient(145deg,#0bca6a 0%,#06a358 53%,#078544 100%)}
+.home-grid .tile.tile--teal{background:linear-gradient(145deg,#0bb4d0 0%,#078fba 50%,#07618e 100%)}
+.home-grid .tile.tile--orange{background:linear-gradient(145deg,#ffae20 0%,#ff8510 52%,#f35c00 100%)}
+.home-grid .tile.tile--white{background:linear-gradient(140deg,#fff 0%,#f7faff 100%);color:#123154;border-color:#e5edf6;box-shadow:0 8px 20px rgba(18,58,100,.09)}
+.home-grid .tile.tile--white:before{background:linear-gradient(145deg,rgba(84,161,255,.13),transparent 62%)}
+.home-grid .tile.tile--info:before{background:linear-gradient(145deg,rgba(255,173,55,.15),transparent 62%)}
+.home-grid .tile .ico{width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center}
+.home-grid .tile .ico svg{width:31px;height:31px;display:block;stroke:currentColor;flex:none}
+.home-grid .tile.tile--white .ico{background:#e3efff;color:#086bdd}
+.home-grid .tile.tile--info .ico{background:#fff0dc;color:#f27900}
+.home-grid .tile .tile-copy{position:relative;z-index:1;min-width:0}
+.home-grid .tile .tile-copy strong{font-size:clamp(15px,2.4vw,20px);line-height:1.16;font-weight:800;margin:12px 0 7px;overflow-wrap:break-word}
+.home-grid .tile .tile-copy span{color:rgba(255,255,255,.94);font-size:clamp(11.5px,1.8vw,14px);line-height:1.35;padding-right:15px}
+.home-grid .tile.tile--white .tile-copy strong{color:#102b51}
+.home-grid .tile.tile--white .tile-copy span{color:#61728d}
+.home-grid .tile:after{color:inherit;opacity:.95;right:13px;bottom:8px;font-size:29px}
+.agenda-feature{background:linear-gradient(125deg,#087af2,#0751b7);box-shadow:0 9px 22px rgba(6,74,163,.19)}
+.agenda-feature-icon{color:#fff;background:rgba(255,255,255,.15)}
+.agenda-feature-icon svg{width:30px;height:30px;display:block}
+.bottom button b{display:grid;place-items:center;height:26px;margin:0 0 4px}
+.bottom button b svg{display:block;width:22px;height:22px;stroke:currentColor}
+@media(min-width:580px){
+  .home-grid .tile.tile--compact{display:flex;align-items:center;gap:16px;min-height:152px}
+  .home-grid .tile.tile--compact .ico{flex:0 0 60px;width:60px;height:60px}
+  .home-grid .tile.tile--compact .tile-copy strong{margin:0 0 7px}
+  .home-grid .tile.tile--feature{min-height:185px}
+}
+@media(max-width:385px){
+  .home-grid{gap:9px}
+  .home-grid .tile{padding:12px;min-height:157px}
+  .home-grid .tile .ico{width:43px;height:43px;border-radius:13px}
+  .home-grid .tile .ico svg{width:26px;height:26px}
+  .home-grid .tile .tile-copy strong{font-size:15px;margin:9px 0 6px}
+  .home-grid .tile .tile-copy span{font-size:11.5px;line-height:1.33;padding-right:9px}
+}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
@@ -232,23 +274,33 @@ body{background:#e9eff6}
 <main class="content v2-main">
   <p class="intro">Bem-vindo ao canal digital do mandato.</p>
   <div class="grid home-grid">
-    <button type="button" class="tile blue" onclick="go('solicitar')">
-      <div class="ico" aria-hidden="true">✎</div><strong>Solicitações</strong><span>Envie sua solicitação para nossa equipe.</span>
+    <button type="button" class="tile tile--blue tile--feature" onclick="go('solicitar')">
+      <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9"/><path d="M8 3h8a2 2 0 0 1 2 2v5"/><path d="M7 8h7M7 12h5"/><path d="m14 17 5.8-5.8a1.6 1.6 0 0 1 2.2 2.2L16.2 19l-3.2 1z"/></svg></div>
+      <div class="tile-copy"><strong>Solicitações</strong><span>Envie sua solicitação para nossa equipe.</span></div>
     </button>
-    <button type="button" class="tile green" onclick="go('acompanhar')">
-      <div class="ico" aria-hidden="true">⌕</div><strong>Acompanhar protocolo</strong><span>Consulte o andamento da sua solicitação.</span>
+    <button type="button" class="tile tile--green tile--feature" onclick="go('acompanhar')">
+      <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="7.3"/><path d="m16.4 16.4 5 5"/></svg></div>
+      <div class="tile-copy"><strong>Acompanhar protocolo</strong><span>Consulte o andamento da sua solicitação.</span></div>
     </button>
-    <button type="button" class="tile white" onclick="go('projetos')">
-      <div class="ico" aria-hidden="true">▤</div><strong>Projetos e ações</strong><span>Leis, emendas e ações do mandato.</span>
+    <button type="button" class="tile tile--white tile--projects tile--compact" onclick="go('projetos')">
+      <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="13" height="16" rx="2"/><path d="M9 7h7M9 11h7M9 15h5"/><path d="M6 7H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h10"/></svg></div>
+      <div class="tile-copy"><strong>Projetos e ações</strong><span>Leis, emendas e ações do mandato.</span></div>
     </button>
-    <button type="button" class="tile blue" onclick="go('pedidosProvidencias')"><div class="ico" aria-hidden="true">☑</div><strong>Pedidos de Providências</strong><span>Veja solicitações de melhorias e seus resultados.</span></button>
-    <button type="button" class="tile white" onclick="go('pedidosInformacao')"><div class="ico" aria-hidden="true">▤</div><strong>Pedidos de Informação</strong><span>Fiscalização e esclarecimentos solicitados.</span></button>
-    <button type="button" class="tile gold" onclick="go('enquetes')">
-      <div class="ico" aria-hidden="true">▥</div><strong>Enquetes</strong><span>Dê sua opinião e participe das decisões.</span>
+    <button type="button" class="tile tile--teal tile--compact" onclick="go('pedidosProvidencias')">
+      <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="15" height="18" rx="2"/><path d="M9 3h7v3H9z"/><path d="m9 14 3 3 5-6"/></svg></div>
+      <div class="tile-copy"><strong>Pedidos de Providências</strong><span>Veja solicitações de melhorias e seus resultados.</span></div>
+    </button>
+    <button type="button" class="tile tile--orange tile--compact" onclick="go('enquetes')">
+      <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="14" width="3" height="7" rx=".6"/><rect x="10.5" y="9" width="3" height="12" rx=".6"/><rect x="17" y="4" width="3" height="17" rx=".6"/></svg></div>
+      <div class="tile-copy"><strong>Enquetes</strong><span>Dê sua opinião e participe das decisões.</span></div>
+    </button>
+    <button type="button" class="tile tile--white tile--info tile--compact" onclick="go('pedidosInformacao')">
+      <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6h.01"/></svg></div>
+      <div class="tile-copy"><strong>Pedidos de Informação</strong><span>Fiscalização e esclarecimentos solicitados.</span></div>
     </button>
   </div>
   <button type="button" class="agenda-feature" onclick="go('agendaPublica')">
-    <span class="agenda-feature-icon" aria-hidden="true">▦</span>
+    <span class="agenda-feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M7 14h2M12 14h2M17 14h.01M7 18h2M12 18h2"/></svg></span>
     <span class="agenda-feature-body"><strong>Agenda Pública do Mandato</strong><small>Sessões, reuniões e eventos para a comunidade.</small></span>
     <span class="agenda-feature-arrow" aria-hidden="true">›</span>
   </button>
@@ -350,11 +402,11 @@ body{background:#e9eff6}
 <main class="wrap"><div class="card"><h2>Notícias em preparação</h2><p class="muted">Estamos organizando esta seção para publicar notícias do mandato com data, fotos e detalhes. Nenhuma notícia foi publicada nesta V2 ainda.</p></div></main>
 </section>
 <nav class="bottom" aria-label="Menu principal do aplicativo">
-<button id="nav-home" class="active" type="button" onclick="go('home')"><b aria-hidden="true">⌂</b>Início</button>
-<button id="nav-solicitar" type="button" onclick="go('solicitar')"><b aria-hidden="true">✎</b>Solicitações</button>
-<button id="nav-projetos" type="button" onclick="go('projetos')"><b aria-hidden="true">▤</b>Projetos</button>
-<button id="nav-enquetes" type="button" onclick="go('enquetes')"><b aria-hidden="true">▥</b>Enquetes</button>
-<button id="nav-noticias" type="button" onclick="go('noticias')"><b aria-hidden="true">▤</b>Notícias</button>
+<button id="nav-home" class="active" type="button" onclick="go('home')"><b aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-8h6v8"/></svg></b>Início</button>
+<button id="nav-solicitar" type="button" onclick="go('solicitar')"><b aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9"/><path d="M8 3h8a2 2 0 0 1 2 2v5"/><path d="M7 8h7M7 12h5"/><path d="m14 17 5.8-5.8a1.6 1.6 0 0 1 2.2 2.2L16.2 19l-3.2 1z"/></svg></b>Solicitações</button>
+<button id="nav-projetos" type="button" onclick="go('projetos')"><b aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="13" height="16" rx="2"/><path d="M9 7h7M9 11h7M9 15h5"/><path d="M6 7H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h10"/></svg></b>Projetos</button>
+<button id="nav-enquetes" type="button" onclick="go('enquetes')"><b aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="14" width="3" height="7" rx=".6"/><rect x="10.5" y="9" width="3" height="12" rx=".6"/><rect x="17" y="4" width="3" height="17" rx=".6"/></svg></b>Enquetes</button>
+<button id="nav-noticias" type="button" onclick="go('noticias')"><b aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h4M14 12h3M7 16h10"/></svg></b>Notícias</button>
 </nav>
 <div class="foto-lightbox" id="ampliadorFotos" role="dialog" aria-modal="true" aria-label="Fotografia ampliada do equipamento" hidden>
   <button type="button" id="fecharFotoAmpliada" class="foto-lightbox-close">✕ Fechar</button>
