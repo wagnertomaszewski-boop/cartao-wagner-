@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Comprovante de solicitacao</title></head>
+<body>
+<h1>Mandato em Acao</h1><h2>Comprovante de solicitacao</h2>
+<p id="numero"></p><p><a id="acesso">Acompanhar solicitacao</a></p>
+<p>Guarde este comprovante em local seguro. Quem tiver o link podera acompanhar sua solicitacao.</p>
+<button id="salvar" type="button">Salvar como PDF ou imprimir</button>
+<script>
+const dados=new URLSearchParams(location.hash.substring(1));
+const numero=dados.get("protocolo")||"";
+const chave=dados.get("chave")||"";
+history.replaceState(null,"",location.pathname);
+if(!/^[a-f0-9]{64}$/.test(chave)){
+ document.body.textContent="Comprovante indisponivel. Volte a confirmacao do envio.";
+}else{
+ document.getElementById("numero").textContent="Protocolo: "+numero;
+ const destino=new URL("acompanhar-privado.html",location.href);
+ destino.hash="chave="+chave;
+ document.getElementById("acesso").href=destino.href;
+ document.getElementById("acesso").textContent=destino.href;
+ document.getElementById("salvar").onclick=()=>window.print();
+}
+</script>
+</body></html>
