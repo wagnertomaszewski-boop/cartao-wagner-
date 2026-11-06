@@ -12,7 +12,8 @@ revoke all on mandato_privado.chaves from public, anon, authenticated;
 
 create or replace function public.criar_solicitacao_privada(
  p_nome text, p_whatsapp text, p_localidade text, p_assunto text,
- p_descricao text, p_anexos text[] default '{}'::text[]
+ p_descricao text, p_anexos text[] default '{}'::text[],
+ p_latitude numeric default null, p_longitude numeric default null
 ) returns table(protocolo text, chave text)
 language plpgsql security definer set search_path=''
 as $body$
@@ -24,10 +25,12 @@ begin
  or length(coalesce(p_whatsapp,'')) > 30
  or length(coalesce(p_localidade,'')) > 250
  or coalesce(array_length(p_anexos,1),0) > 5
+ or (p_latitude is not null and (p_latitude < -90 or p_latitude > 90))
+ or (p_longitude is not null and (p_longitude < -180 or p_longitude > 180))
  then raise exception 'Dados da solicitacao invalidos';
  end if;
- insert into public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,anexos)
- values(trim(p_nome),p_whatsapp,p_localidade,trim(p_assunto),trim(p_descricao),p_anexos)
+ insert into public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,anexos,latitude,longitude)
+ values(trim(p_nome),p_whatsapp,p_localidade,trim(p_assunto),trim(p_descricao),p_anexos,p_latitude,p_longitude)
  returning public.solicitacoes.id, public.solicitacoes.protocolo into v_id,v_protocolo;
  v_token:=encode(gen_random_bytes(32),'hex');
  insert into mandato_privado.chaves(solicitacao_id,token_hash)
@@ -75,11 +78,11 @@ as $body$
  order by h.criado_em asc
 $body$;
 
-revoke all on function public.criar_solicitacao_privada(text,text,text,text,text,text[]) from public, anon, authenticated;
+revoke all on function public.criar_solicitacao_privada(text,text,text,text,text,text[],numeric,numeric) from public, anon, authenticated;
 revoke all on function public.consultar_solicitacao_privada(text) from public, anon, authenticated;
 revoke all on function public.consultar_respostas_privadas(text) from public, anon, authenticated;
 revoke all on function public.consultar_historico_privado(text) from public, anon, authenticated;
-grant execute on function public.criar_solicitacao_privada(text,text,text,text,text,text[]) to anon;
+grant execute on function public.criar_solicitacao_privada(text,text,text,text,text,text[],numeric,numeric) to anon;
 grant execute on function public.consultar_solicitacao_privada(text) to anon;
 grant execute on function public.consultar_respostas_privadas(text) to anon;
 grant execute on function public.consultar_historico_privado(text) to anon;
