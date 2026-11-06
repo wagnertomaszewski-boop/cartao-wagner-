@@ -1,10 +1,12 @@
-const CACHE_NAME = "wagner-app-v5-agenda";
+const CACHE_NAME = "wagner-app-v6-privado";
 
 const ARQUIVOS = [
   "./",
   "./index.html",
   "./solicitacao.html",
   "./acompanhar.html",
+  "./acompanhar-privado.html",
+  "./comprovante-privado.html",
   "./agenda.html",
   "./projetos.html",
   "./enquetes.html",
