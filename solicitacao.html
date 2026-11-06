@@ -280,7 +280,7 @@ if (arquivo) {
     caminhoAnexo = nomeArquivo;
 }
       const resposta = await fetch(
-        SUPABASE_URL + "/rest/v1/rpc/criar_solicitacao_com_anexos",
+        SUPABASE_URL + "/rest/v1/rpc/criar_solicitacao_privada",
         {
 
           method: "POST",
@@ -329,16 +329,34 @@ if (arquivo) {
 
       
 
-const protocolo = typeof resultado === "string" ? resultado : resultado.protocolo;
-      mensagem.className = "sucesso";
-
-mensagem.innerHTML =
-  "<strong>Solicitação enviada com sucesso!</strong>" +
-  "<br><br>" +
-  "Seu protocolo é:<br>" +
-  "<strong style='font-size:24px'>" + protocolo + "</strong>" +
-  "<br><br>" +
-  "Guarde este número para acompanhar sua solicitação.";
+const registro = Array.isArray(resultado) ? resultado[0] : resultado;
+const protocolo = registro && registro.protocolo;
+const chave = registro && registro.chave;
+if (!protocolo || !/^[a-f0-9]{64}$/.test(chave || "")) {
+  throw new Error("O servidor não devolveu o comprovante privado. Entre em contato com o mandato antes de reenviar.");
+}
+const link = new URL("acompanhar-privado.html", location.href);
+link.hash = "chave=" + chave;
+mensagem.className = "sucesso";
+mensagem.replaceChildren();
+const titulo = document.createElement("strong");
+titulo.textContent = "Solicitação enviada com sucesso!";
+const numero = document.createElement("p");
+numero.textContent = "Protocolo: " + protocolo;
+const aviso = document.createElement("p");
+aviso.textContent = "Guarde seu link privado. Quem tiver esse link poderá consultar sua solicitação.";
+const acompanhar = document.createElement("a");
+acompanhar.href = link.href;
+acompanhar.textContent = "ACOMPANHAR MINHA SOLICITAÇÃO";
+acompanhar.style.cssText = "display:block;background:#168b49;color:white;padding:16px;text-align:center;border-radius:10px;font-weight:bold;text-decoration:none";
+const copiar = document.createElement("button");
+copiar.type = "button";
+copiar.textContent = "COPIAR LINK PRIVADO";
+copiar.addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(link.href); copiar.textContent = "LINK COPIADO"; }
+  catch (_) { window.prompt("Copie seu link privado:", link.href); }
+});
+mensagem.append(titulo, numero, aviso, acompanhar, copiar);
 
 
       document
