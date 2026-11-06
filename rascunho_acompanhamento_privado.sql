@@ -32,7 +32,7 @@ begin
  insert into public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,anexos,latitude,longitude)
  values(trim(p_nome),p_whatsapp,p_localidade,trim(p_assunto),trim(p_descricao),p_anexos,p_latitude,p_longitude)
  returning public.solicitacoes.id, public.solicitacoes.protocolo into v_id,v_protocolo;
- v_token:=encode(gen_random_bytes(32),'hex');
+ v_token:=encode(extensions.gen_random_bytes(32),'hex');
  insert into mandato_privado.chaves(solicitacao_id,token_hash)
  values(v_id,encode(sha256(decode(v_token,'hex')),'hex'));
  return query select v_protocolo,v_token;
