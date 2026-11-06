@@ -47,8 +47,8 @@ as $body$
  from mandato_privado.chaves c
  join public.solicitacoes s on s.id=c.solicitacao_id
  where c.revogado_em is null
- and p_chave ~ '^[0-9a-f]{64}$'
- and c.token_hash=encode(sha256(decode(p_chave,'hex')),'hex')
+ and c.token_hash = case
+   when p_chave ~ '^[0-9a-f]{64}
  limit 1
 $body$;
 
@@ -75,6 +75,96 @@ as $body$
  where c.revogado_em is null
  and p_chave ~ '^[0-9a-f]{64}$'
  and c.token_hash=encode(sha256(decode(p_chave,'hex')),'hex')
+ order by h.criado_em asc
+$body$;
+
+revoke all on function public.criar_solicitacao_privada(text,text,text,text,text,text[],numeric,numeric) from public, anon, authenticated;
+revoke all on function public.consultar_solicitacao_privada(text) from public, anon, authenticated;
+revoke all on function public.consultar_respostas_privadas(text) from public, anon, authenticated;
+revoke all on function public.consultar_historico_privado(text) from public, anon, authenticated;
+grant execute on function public.criar_solicitacao_privada(text,text,text,text,text,text[],numeric,numeric) to anon;
+grant execute on function public.consultar_solicitacao_privada(text) to anon;
+grant execute on function public.consultar_respostas_privadas(text) to anon;
+grant execute on function public.consultar_historico_privado(text) to anon;
+
+-- PENDENTE: testar em banco isolado; acesso a anexos; rate limiting;
+-- corte das quatro consultas antigas por protocolo; testes de revogacao.
+ then encode(sha256(decode(p_chave,'hex')),'hex')
+   else null
+ end
+ limit 1
+$body$;
+
+create or replace function public.consultar_respostas_privadas(p_chave text)
+returns table(mensagem text, criado_em timestamptz)
+language sql security definer set search_path=''
+as $body$
+ select r.mensagem,r.criado_em
+ from mandato_privado.chaves c
+ join public.respostas_solicitacoes r on r.solicitacao_id=c.solicitacao_id
+ where c.revogado_em is null
+ and c.token_hash = case
+   when p_chave ~ '^[0-9a-f]{64}
+ order by r.criado_em desc
+$body$;
+
+create or replace function public.consultar_historico_privado(p_chave text)
+returns table(status text, criado_em timestamptz)
+language sql security definer set search_path=''
+as $body$
+ select h.status,h.criado_em
+ from mandato_privado.chaves c
+ join public.solicitacoes_status_historico h on h.solicitacao_id=c.solicitacao_id
+ where c.revogado_em is null
+ and p_chave ~ '^[0-9a-f]{64}$'
+ and c.token_hash=encode(sha256(decode(p_chave,'hex')),'hex')
+ order by h.criado_em asc
+$body$;
+
+revoke all on function public.criar_solicitacao_privada(text,text,text,text,text,text[],numeric,numeric) from public, anon, authenticated;
+revoke all on function public.consultar_solicitacao_privada(text) from public, anon, authenticated;
+revoke all on function public.consultar_respostas_privadas(text) from public, anon, authenticated;
+revoke all on function public.consultar_historico_privado(text) from public, anon, authenticated;
+grant execute on function public.criar_solicitacao_privada(text,text,text,text,text,text[],numeric,numeric) to anon;
+grant execute on function public.consultar_solicitacao_privada(text) to anon;
+grant execute on function public.consultar_respostas_privadas(text) to anon;
+grant execute on function public.consultar_historico_privado(text) to anon;
+
+-- PENDENTE: testar em banco isolado; acesso a anexos; rate limiting;
+-- corte das quatro consultas antigas por protocolo; testes de revogacao.
+ then encode(sha256(decode(p_chave,'hex')),'hex')
+   else null
+ end
+ order by r.criado_em desc
+$body$;
+
+create or replace function public.consultar_historico_privado(p_chave text)
+returns table(status text, criado_em timestamptz)
+language sql security definer set search_path=''
+as $body$
+ select h.status,h.criado_em
+ from mandato_privado.chaves c
+ join public.solicitacoes_status_historico h on h.solicitacao_id=c.solicitacao_id
+ where c.revogado_em is null
+ and c.token_hash = case
+   when p_chave ~ '^[0-9a-f]{64}
+ order by h.criado_em asc
+$body$;
+
+revoke all on function public.criar_solicitacao_privada(text,text,text,text,text,text[],numeric,numeric) from public, anon, authenticated;
+revoke all on function public.consultar_solicitacao_privada(text) from public, anon, authenticated;
+revoke all on function public.consultar_respostas_privadas(text) from public, anon, authenticated;
+revoke all on function public.consultar_historico_privado(text) from public, anon, authenticated;
+grant execute on function public.criar_solicitacao_privada(text,text,text,text,text,text[],numeric,numeric) to anon;
+grant execute on function public.consultar_solicitacao_privada(text) to anon;
+grant execute on function public.consultar_respostas_privadas(text) to anon;
+grant execute on function public.consultar_historico_privado(text) to anon;
+
+-- PENDENTE: testar em banco isolado; acesso a anexos; rate limiting;
+-- corte das quatro consultas antigas por protocolo; testes de revogacao.
+ then encode(sha256(decode(p_chave,'hex')),'hex')
+   else null
+ end
  order by h.criado_em asc
 $body$;
 
