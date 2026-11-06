@@ -25,5 +25,6 @@ as $body$
  limit 1
 $body$;
 revoke all on function public.localizar_documento_privado(text,bigint,integer) from public,anon,authenticated;
+grant execute on function public.localizar_documento_privado(text,bigint,integer) to service_role;
 -- Esta RPC sera usada SOMENTE pelo servidor com service_role.
 -- Nunca conceder EXECUTE a anon.
