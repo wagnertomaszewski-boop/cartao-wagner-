@@ -10,7 +10,7 @@
 const dados=new URLSearchParams(location.hash.substring(1));
 const numero=dados.get("protocolo")||"";
 const chave=dados.get("chave")||"";
-history.replaceState(null,"",location.pathname);
+// O fragmento permanece na URL para permitir atualizar e reabrir o comprovante.\n// O fragmento nao e enviado ao servidor nas requisicoes HTTP.
 if(!/^[a-f0-9]{64}$/.test(chave)){
  document.body.textContent="Comprovante indisponivel. Volte a confirmacao do envio.";
 }else{
