@@ -356,7 +356,13 @@ copiar.addEventListener("click", async () => {
   try { await navigator.clipboard.writeText(link.href); copiar.textContent = "LINK COPIADO"; }
   catch (_) { window.prompt("Copie seu link privado:", link.href); }
 });
-mensagem.append(titulo, numero, aviso, acompanhar, copiar);
+const comprovante = document.createElement("a");
+const urlComprovante = new URL("comprovante-privado.html", location.href);
+urlComprovante.hash = "protocolo=" + encodeURIComponent(protocolo) + "&chave=" + chave;
+comprovante.href = urlComprovante.href;
+comprovante.textContent = "SALVAR COMPROVANTE EM PDF";
+comprovante.style.cssText = "display:block;margin-top:14px;background:#0b477a;color:white;padding:16px;text-align:center;border-radius:10px;font-weight:bold;text-decoration:none";
+mensagem.append(titulo, numero, aviso, acompanhar, copiar, comprovante);
 
 
       document
