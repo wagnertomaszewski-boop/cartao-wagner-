@@ -53,10 +53,11 @@ as $body$
 $body$;
 
 create or replace function public.consultar_respostas_privadas(p_chave text)
-returns table(mensagem text, criado_em timestamptz)
+returns table(id bigint, mensagem text, criado_em timestamptz, total_anexos integer)
 language sql security definer set search_path=''
 as $body$
- select r.mensagem,r.criado_em
+ select r.id,r.mensagem,r.criado_em,
+ case when jsonb_typeof(r.anexos)='array' then jsonb_array_length(r.anexos) else 0 end
  from mandato_privado.chaves c
  join public.respostas_solicitacoes r on r.solicitacao_id=c.solicitacao_id
  where c.revogado_em is null
