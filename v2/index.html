@@ -350,15 +350,9 @@ body{background:#e9eff6}
 </form></main></section>
 
 <section id="acompanhar" class="page">
-<header class="top"><div class="brand"><span class="back" onclick="go('home')">‹ Voltar</span><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Acompanhar solicitação</h1><p>Consulte o andamento pelo número do protocolo.</p></header>
-<main class="wrap"><div class="card"><div class="search"><input id="protocolo" placeholder="Digite seu número de protocolo"><button id="consultar">⌕</button></div>
-<div class="tabs"><button class="tab active" data-tab="det">Detalhes</button><button class="tab" data-tab="and">Andamento</button><button class="tab" data-tab="msg">Mensagens</button></div>
-<div id="erro" class="notice"></div><div id="resultado" class="req">
-<section id="det" class="pane"><div class="title-row"><div><div class="meta">Protocolo <strong id="rProtocolo"></strong></div><h2 id="rAssunto" style="font-size:19px;margin:6px 0 0"></h2></div><span class="pill" id="rStatus"></span></div><div class="issue"><div class="muted">Solicitante</div><strong id="rSolicitante"></strong></div><div class="issue"><div class="muted">Localidade</div><strong id="rLocalidade"></strong></div></section>
-<section id="and" class="pane" style="display:none"><div style="font-size:16px;font-weight:800;margin:0 0 14px">Linha do tempo do protocolo</div><div class="timeline" id="timeline"></div></section>
-<section id="msg" class="pane" style="display:none"><div id="rRespostas"></div></section>
-</div></div></main></section>
-
+<header class="top"><div class="brand"><span class="back" onclick="go('home')">‹ Voltar</span><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Acompanhar solicitação</h1></header>
+<main class="wrap"><div class="card"><h2>Seu acompanhamento é privado</h2><p>Abra o link recebido após o envio da solicitação ou o link salvo no comprovante. O protocolo sozinho não dá acesso aos dados.</p><p>Para solicitações antigas sem link privado, entre em contato com a equipe do mandato.</p><a href="./acompanhar-privado.html">Abrir acompanhamento privado</a></div></main>
+</section>
 
 <section id="pedidosProvidencias" class="page">
 <header class="top"><div class="brand"><button class="back" type="button" onclick="go('home')">‹ Voltar</button><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Pedidos de Providências</h1><p>Solicitações oficiais de melhorias nas comunidades de Cristal.</p></header>
@@ -445,8 +439,7 @@ function dt(v){if(!v)return"";let d=new Date(v);if(isNaN(d))return"";return new 
 // Consultas antigas por protocolo removidas da V2.
 // O acompanhamento privado fica em acompanhar-privado.html.
 function consultar(){location.href="./acompanhar-privado.html"}
-const botaoConsulta=document.getElementById("consultar");if(botaoConsulta)botaoConsulta.onclick=consultar;
-const campoProtocolo=document.getElementById("protocolo");if(campoProtocolo)campoProtocolo.addEventListener("keydown",e=>{if(e.key==="Enter")consultar()});
+
 // A aba Resultados reune entregas de varias categorias; Emendas mostra todas as emendas.
 function aplicarFiltroProjetos(filtro){
  const lista=document.getElementById('projectList');
