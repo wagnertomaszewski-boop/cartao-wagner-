@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer"><title>Acompanhamento privado | Mandato em Ação</title>
+<style>body{font:17px Arial,sans-serif;background:#08213b;color:white;margin:0;padding:24px}.card{max-width:620px;margin:35px auto;background:white;color:#172a3d;border-radius:18px;padding:26px;line-height:1.55}h1{font-size:26px}button,a.botao{display:block;box-sizing:border-box;width:100%;border:0;border-radius:12px;background:#168b49;color:white;padding:16px;text-align:center;font-size:17px;font-weight:bold;text-decoration:none;margin-top:14px}#erro{color:#9b2525}#detalhes{display:none}p{overflow-wrap:anywhere}</style></head>
+<body><main class="card"><h1>Acompanhar minha solicitação</h1><p id="aviso">Verificando seu link privado...</p><p id="erro" role="alert"></p>
+<section id="detalhes"><p><strong>Protocolo:</strong> <span id="protocolo"></span></p><p><strong>Status:</strong> <span id="status"></span></p><p><strong>Assunto:</strong> <span id="assunto"></span></p><p><strong>Localidade:</strong> <span id="localidade"></span></p><h2>Respostas do mandato</h2><div id="respostas"></div><button id="atualizar" type="button">Atualizar andamento</button></section>
+<a class="botao" href="solicitacao.html">Fazer nova solicitação</a><p><small>Este link é pessoal. Quem tiver acesso a ele poderá consultar sua solicitação. Não compartilhe publicamente.</small></p></main>
+<script>
+"use strict";
+const URL_API="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
+const CHAVE_PUBLICA="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+const chave=new URLSearchParams(location.hash.slice(1)).get("chave")||"";
+history.replaceState(null,"",location.pathname);
+const el=id=>document.getElementById(id);
+async function rpc(nome){
+ const resposta=await fetch(URL_API+"/rest/v1/rpc/"+nome,{method:"POST",cache:"no-store",referrerPolicy:"no-referrer",headers:{"apikey":CHAVE_PUBLICA,"Content-Type":"application/json"},body:JSON.stringify({p_chave:chave})});
+ if(!resposta.ok)throw new Error("Não foi possível consultar o andamento.");
+ return resposta.json();
+}
+async function carregar(){
+ el("erro").textContent="";el("detalhes").style.display="none";
+ if(!/^[a-f0-9]{64}$/.test(chave)){el("aviso").textContent="Abra o link privado que recebeu ao enviar sua solicitação. O número do protocolo, sozinho, não permite consultar dados pessoais.";return;}
+ try{
+ const dados=await rpc("consultar_solicitacao_privada");
+ const s=Array.isArray(dados)?dados[0]:dados;
+ if(!s){el("aviso").textContent="";el("erro").textContent="Link inválido ou acesso revogado.";return;}
+ for(const campo of ["protocolo","status","assunto","localidade"])el(campo).textContent=s[campo]||"Não informado";
+ el("aviso").textContent="";el("detalhes").style.display="block";
+ const respostas=el("respostas");respostas.replaceChildren();
+ const itens=await rpc("consultar_respostas_privadas");
+ if(!Array.isArray(itens)||!itens.length){respostas.textContent="Ainda não há respostas registradas.";return;}
+ for(const r of itens){const p=document.createElement("p");p.textContent=(r.criado_em?new Date(r.criado_em).toLocaleDateString("pt-BR")+" — ":"")+(r.mensagem||"");respostas.append(p);}
+ }catch(e){el("aviso").textContent="";el("erro").textContent="Consulta temporariamente indisponível. Tente novamente mais tarde.";}
+}
+el("atualizar").addEventListener("click",carregar);carregar();
+</script></body></html>
