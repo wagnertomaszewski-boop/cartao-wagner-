@@ -1,35 +1,45 @@
--- PROPOSTA DE MIGRACAO PARA HOMOLOGACAO; NAO EXECUTAR EM PRODUCAO
+-- RASCUNHO PARA TESTES ISOLADOS. NAO EXECUTAR EM PRODUCAO.
+-- Pressupoe tabelas public.solicitacoes, respostas_solicitacoes e solicitacoes_status_historico.
 create schema if not exists mandato_privado;
 revoke all on schema mandato_privado from public, anon, authenticated;
 
-create table mandato_privado.chaves (
+create table if not exists mandato_privado.chaves (
   solicitacao_id bigint primary key references public.solicitacoes(id) on delete cascade,
   token_hash text not null unique,
   revogado_em timestamptz
 );
 revoke all on mandato_privado.chaves from public, anon, authenticated;
 
-create function public.criar_solicitacao_privada(
+create or replace function public.criar_solicitacao_privada(
  p_nome text, p_whatsapp text, p_localidade text, p_assunto text,
- p_descricao text, p_anexos text[] default '{}'
-) returns table (protocolo text, chave text)
+ p_descricao text, p_anexos text[] default '{}'::text[]
+) returns table(protocolo text, chave text)
 language plpgsql security definer set search_path=''
-as $$
+as $body$
 declare v_id bigint; v_protocolo text; v_token text;
 begin
+ if length(trim(coalesce(p_nome,''))) not between 2 and 150
+ or length(trim(coalesce(p_assunto,''))) not between 3 and 200
+ or length(trim(coalesce(p_descricao,''))) not between 5 and 10000
+ or length(coalesce(p_whatsapp,'')) > 30
+ or length(coalesce(p_localidade,'')) > 250
+ or coalesce(array_length(p_anexos,1),0) > 5
+ then raise exception 'Dados da solicitacao invalidos';
+ end if;
  insert into public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,anexos)
- values(p_nome,p_whatsapp,p_localidade,p_assunto,p_descricao,p_anexos)
- returning id, solicitacoes.protocolo into v_id,v_protocolo;
+ values(trim(p_nome),p_whatsapp,p_localidade,trim(p_assunto),trim(p_descricao),p_anexos)
+ returning public.solicitacoes.id, public.solicitacoes.protocolo into v_id,v_protocolo;
  v_token:=encode(gen_random_bytes(32),'hex');
  insert into mandato_privado.chaves(solicitacao_id,token_hash)
  values(v_id,encode(sha256(decode(v_token,'hex')),'hex'));
  return query select v_protocolo,v_token;
-end $$;
+end
+$body$;
 
-create function public.consultar_solicitacao_privada(p_chave text)
+create or replace function public.consultar_solicitacao_privada(p_chave text)
 returns table(protocolo text, assunto text, descricao text, localidade text, status text)
 language sql security definer set search_path=''
-as $$
+as $body$
  select s.protocolo,s.assunto,s.descricao,s.localidade,s.status
  from mandato_privado.chaves c
  join public.solicitacoes s on s.id=c.solicitacao_id
@@ -37,12 +47,12 @@ as $$
  and p_chave ~ '^[0-9a-f]{64}$'
  and c.token_hash=encode(sha256(decode(p_chave,'hex')),'hex')
  limit 1
-$$;
+$body$;
 
-create function public.consultar_respostas_privadas(p_chave text)
+create or replace function public.consultar_respostas_privadas(p_chave text)
 returns table(mensagem text, criado_em timestamptz)
 language sql security definer set search_path=''
-as $$
+as $body$
  select r.mensagem,r.criado_em
  from mandato_privado.chaves c
  join public.respostas_solicitacoes r on r.solicitacao_id=c.solicitacao_id
@@ -50,39 +60,29 @@ as $$
  and p_chave ~ '^[0-9a-f]{64}$'
  and c.token_hash=encode(sha256(decode(p_chave,'hex')),'hex')
  order by r.criado_em desc
-$$;
+$body$;
 
-create function public.consultar_historico_privado(p_chave text)
+create or replace function public.consultar_historico_privado(p_chave text)
 returns table(status text, criado_em timestamptz)
 language sql security definer set search_path=''
-as $
+as $body$
  select h.status,h.criado_em
  from mandato_privado.chaves c
  join public.solicitacoes_status_historico h on h.solicitacao_id=c.solicitacao_id
  where c.revogado_em is null
- and p_chave ~ '^[0-9a-f]{64}(text,text,text,text,text,text[]) from public;
-revoke all on function public.consultar_solicitacao_privada(text) from public;
-revoke all on function public.consultar_respostas_privadas(text) from public;
-grant execute on function public.criar_solicitacao_privada(text,text,text,text,text,text[]) to anon;
-grant execute on function public.consultar_solicitacao_privada(text) to anon;
-grant execute on function public.consultar_respostas_privadas(text) to anon;
-
--- TODO antes de liberar: validacao de entrada, rate limiting,
--- anexos privados, auditoria, revogacao de funcoes antigas e testes.
-
+ and p_chave ~ '^[0-9a-f]{64}$'
  and c.token_hash=encode(sha256(decode(p_chave,'hex')),'hex')
  order by h.criado_em asc
-$;
+$body$;
 
-revoke all on function public.consultar_historico_privado(text) from public;
-grant execute on function public.consultar_historico_privado(text) to anon;
-
-revoke all on function public.criar_solicitacao_privada(text,text,text,text,text,text[]) from public;
-revoke all on function public.consultar_solicitacao_privada(text) from public;
-revoke all on function public.consultar_respostas_privadas(text) from public;
+revoke all on function public.criar_solicitacao_privada(text,text,text,text,text,text[]) from public, anon, authenticated;
+revoke all on function public.consultar_solicitacao_privada(text) from public, anon, authenticated;
+revoke all on function public.consultar_respostas_privadas(text) from public, anon, authenticated;
+revoke all on function public.consultar_historico_privado(text) from public, anon, authenticated;
 grant execute on function public.criar_solicitacao_privada(text,text,text,text,text,text[]) to anon;
 grant execute on function public.consultar_solicitacao_privada(text) to anon;
 grant execute on function public.consultar_respostas_privadas(text) to anon;
+grant execute on function public.consultar_historico_privado(text) to anon;
 
--- TODO antes de liberar: validacao de entrada, rate limiting,
--- anexos privados, auditoria, revogacao de funcoes antigas e testes.
+-- PENDENTE: testar em banco isolado; acesso a anexos; rate limiting;
+-- corte das quatro consultas antigas por protocolo; testes de revogacao.
