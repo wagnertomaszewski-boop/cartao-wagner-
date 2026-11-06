@@ -52,6 +52,31 @@ as $$
  order by r.criado_em desc
 $$;
 
+create function public.consultar_historico_privado(p_chave text)
+returns table(status text, criado_em timestamptz)
+language sql security definer set search_path=''
+as $
+ select h.status,h.criado_em
+ from mandato_privado.chaves c
+ join public.solicitacoes_status_historico h on h.solicitacao_id=c.solicitacao_id
+ where c.revogado_em is null
+ and p_chave ~ '^[0-9a-f]{64}(text,text,text,text,text,text[]) from public;
+revoke all on function public.consultar_solicitacao_privada(text) from public;
+revoke all on function public.consultar_respostas_privadas(text) from public;
+grant execute on function public.criar_solicitacao_privada(text,text,text,text,text,text[]) to anon;
+grant execute on function public.consultar_solicitacao_privada(text) to anon;
+grant execute on function public.consultar_respostas_privadas(text) to anon;
+
+-- TODO antes de liberar: validacao de entrada, rate limiting,
+-- anexos privados, auditoria, revogacao de funcoes antigas e testes.
+
+ and c.token_hash=encode(sha256(decode(p_chave,'hex')),'hex')
+ order by h.criado_em asc
+$;
+
+revoke all on function public.consultar_historico_privado(text) from public;
+grant execute on function public.consultar_historico_privado(text) to anon;
+
 revoke all on function public.criar_solicitacao_privada(text,text,text,text,text,text[]) from public;
 revoke all on function public.consultar_solicitacao_privada(text) from public;
 revoke all on function public.consultar_respostas_privadas(text) from public;
