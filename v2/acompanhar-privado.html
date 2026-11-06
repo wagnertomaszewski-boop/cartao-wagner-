@@ -10,7 +10,7 @@
 const URL_API="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
 const CHAVE_PUBLICA="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 const chave=new URLSearchParams(location.hash.slice(1)).get("chave")||"";
-history.replaceState(null,"",location.pathname);
+// O fragmento permanece na URL para permitir atualizar e reabrir o comprovante.\n// O fragmento nao e enviado ao servidor nas requisicoes HTTP.
 const el=id=>document.getElementById(id);
 async function rpc(nome){
  const resposta=await fetch(URL_API+"/rest/v1/rpc/"+nome,{method:"POST",cache:"no-store",referrerPolicy:"no-referrer",headers:{"apikey":CHAVE_PUBLICA,"Content-Type":"application/json"},body:JSON.stringify({p_chave:chave})});
