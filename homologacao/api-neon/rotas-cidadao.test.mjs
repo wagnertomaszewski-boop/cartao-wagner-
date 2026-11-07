@@ -32,6 +32,10 @@ test('flag habilita somente consultas e recuperação no banco fictício, nunca 
   assert.equal(resposta.status,200);
   assert.equal((await resposta.json()).resultado[0].status,'Recebido');
   assert.ok(app.eventos.some(([sql])=>sql==='SELECT * FROM mandato_testes.consulta_segura($1,$2)'));
+  const recuperar=await fetch(app.url+'/api/recuperacao/solicitar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({protocolo:'TESTE-000001',whatsapp:'51999990001'})});
+  assert.equal(recuperar.status,200);
+  assert.match((await recuperar.json()).mensagem,/analisado/);
+  assert.ok(app.eventos.some(([sql])=>sql==='SELECT mandato_testes.pedir_recuperacao($1,$2)'));
   const decisao=await fetch(app.url+'/api/admin/recuperacoes/12/decisao',{method:'POST',headers:{Authorization:'Bearer TOKEN-FAKE','Content-Type':'application/json'},body:JSON.stringify({aprovar:true})});
   assert.equal(decisao.status,403);
   assert.equal(app.eventos.some(([sql])=>sql.includes('decidir_recuperacao')),false);
