@@ -119,3 +119,10 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Aplicado no **Neon isolado** `REVOKE USAGE, SELECT ON ALL SEQUENCES IN SCHEMA mandato_testes FROM mandato_cidadao_a, mandato_cidadao_b`.
 - Auditoria posterior das cinco sequências do esquema confirmou `USAGE=false` e `SELECT=false` para ambos os papéis.
 - Regressão SQL com os dois papéis: `consulta_segura` com chave correta retornou assunto/status e `consulta_nomes_anexos_segura` retornou apenas nome fictício do anexo. Nenhum dado real foi alterado.
+
+## Endurecimento de políticas RLS antigas — 2026-11-07
+- Auditoria de `pg_policies` identificou políticas `FOR ALL` nos registros `solicitacoes` e `anexos` para os dois papéis cidadãos. A política de anexos incluía tautologia `s.cidadao_id = s.cidadao_id`, que não valida a identidade da solicitação.
+- Como o modelo de homologação deve usar **somente funções com protocolo + segredo**, as quatro políticas foram alteradas com `ALTER POLICY ... USING (false) WITH CHECK (false)`, somente no Neon isolado.
+- Consulta posterior a `pg_policies` confirmou `qual=false` e `with_check=false` para as quatro políticas.
+- Regressão SQL real após a mudança: ambos os papéis cidadãos ainda obtêm assunto/status, nome de anexo fictício e histórico público fictício por funções seguras com chave correta. Isso **não** prova isolamento entre os papéis: a chave válida é a autorização.
+- Nenhum dado real ou ambiente de produção foi alterado.
