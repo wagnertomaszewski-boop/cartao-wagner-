@@ -1,22 +1,30 @@
-# Histórico protegido — especificação de homologação (não aplicado)
+# Histórico protegido — implementação e testes de homologação
 
-## Estado atual
-O banco de testes `mandato_testes` não contém tabela de histórico de status. A V2 publicada utiliza o histórico da produção por protocolo sem chave. Não ligar a flag segura enquanto isso não estiver protegido.
+## Estado atual em 2026-11-07
+No projeto **Neon isolado**, a tabela `mandato_testes.historico_status` e a função `consulta_historico_segura(p_protocolo,p_chave)` foram implementadas. A tabela tem RLS habilitada e forçada. Papéis cidadãos não possuem acesso direto à tabela. A função valida protocolo e chave e retorna apenas registros marcados explicitamente para visualização pública.
 
-## Proposta para implementação no banco de testes
-1. Criar `mandato_testes.historico_status` com identificador interno, `solicitacao_id` como chave estrangeira para `mandato_testes.solicitacoes(id)`, `status`, `observacao` e `criado_em`. Conferir tipos e regras com o esquema existente antes de executar SQL.
-2. Habilitar e forçar RLS, sem permissões de leitura direta para papéis cidadãos.
-3. Criar função `consulta_historico_segura(p_protocolo text,p_chave text)` que primeiro valide o mesmo segredo usado em `consulta_segura`, sem revelar se protocolo existe. Restringir `EXECUTE` aos papéis previstos e definir `search_path` seguro.
-4. Permitir no executor PostgreSQL apenas `SELECT * FROM mandato_testes.consulta_historico_segura($1,$2)`, com parâmetros vinculados.
-5. A API deve retornar apenas `status`, `observacao` pública e `criado_em`, nunca IDs internos, nomes de responsáveis ou notas administrativas.
-6. Exibir o histórico somente após validação de chave e não usar o RPC legado como fallback.
+A V2 publicada **continua usando os RPCs legados da produção** e não deve ser considerada protegida. A flag `SEGURANCA_V2_ATIVA` permanece `false` na ramificação de desenvolvimento até migração completa.
 
-## Testes de aceitação
-- Chave correta: eventos pertencentes apenas à solicitação correspondente, ordenados por data.
-- Chave incorreta ou protocolo inexistente: zero eventos, sem indicar qual dado está errado.
-- Protocolo de outro cidadão: zero eventos.
-- Papel cidadão: sem `SELECT` direto na tabela e sem execução de funções administrativas.
-- Nenhuma informação privada no corpo da resposta ou em logs.
-- Falha do histórico: mensagem genérica, sem reativar consulta pública antiga.
+## Estrutura de histórico
+Campos: `id`, `solicitacao_id`, `status`, `observacao`, `criado_em` e `visivel_cidadao boolean NOT NULL DEFAULT false`. A função segura filtra `visivel_cidadao IS TRUE` e exige a chave correta. Observações administrativas não podem ser automaticamente classificadas como públicas.
 
-**Bloqueio:** implementar e validar o esquema no banco de testes antes de alterar `operacoes-neon.mjs` e `v2/index.html`. Não executar migração na produção neste estágio.
+## Integração na ramificação
+- Executor PostgreSQL autoriza somente SQL parametrizado para a função segura.
+- API expõe somente `status`, `observacao` e `criado_em`.
+- V2 renderiza histórico com `textContent`, sem HTML de origem externa e sem fallback legado no modo seguro.
+- A suíte Node completa da ramificação ainda não foi executada; não presumir aprovação.
+
+## Verificações reais no Neon de testes
+- Protocolo e chave corretos: apenas evento público fictício.
+- Chave incorreta ou protocolo inexistente: nenhum evento.
+- `SELECT` direto da tabela como cidadão: permissão negada.
+- Evento fictício privado inserido com `visivel_cidadao=false`: **não aparece**, mesmo com chave correta, nos dois papéis de cidadão.
+
+## Antes de ativar produção
+1. Revisar quais atualizações legadas podem ser mostradas ao cidadão, sem liberar notas internas.
+2. Proteger criação de novas solicitações, respostas e anexos, e validar autenticação administrativa.
+3. Executar a suíte completa, testes de navegador e revisão de permissões.
+4. Preparar entrega e recuperação de chaves de acesso para protocolos antigos.
+5. Desativar RPCs públicos legados somente depois de migração coordenada e verificação de compatibilidade.
+
+Detalhes e evidências em `docs/evidencias-testes-historico-v2.md`.
