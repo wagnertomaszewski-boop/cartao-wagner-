@@ -816,10 +816,10 @@ function atualizarResumoPainel(itens){
   set("resumoLembretes",lembretes);
   set("resumoConcluidas",concluidas);
   // Indicadores internos: não alteram status, prazos legais ou dados públicos.
-  const hojeMs=new Date(); hojeMs.setHours(0,0,0,0);
+  const hojeMs=new Date(); hojeMs.setHours(12,0,0,0);
   const faixas=[30,60,90,180];
   const pendentes=todos.filter(x=>normalizar(x.status)!=="concluido" && x.encaminhado_prefeitura_em);
-  const dias=(x)=>{const d=new Date(x.encaminhado_prefeitura_em+"T12:00:00");if(Number.isNaN(d.getTime()))return -1;d.setHours(0,0,0,0);return Math.floor((hojeMs-d)/86400000);};
+  const dias=(x)=>{const d=new Date(x.encaminhado_prefeitura_em+"T12:00:00");if(Number.isNaN(d.getTime()))return -1;d.setHours(12,0,0,0);return Math.floor((hojeMs-d)/86400000);};
   const contagens=faixas.map((n,i)=>pendentes.filter(x=>dias(x)>=n && (i===faixas.length-1 || dias(x)<faixas[i+1])).length);
   const resumo=document.getElementById("alertasPrazoResumo");
   if(resumo) resumo.innerHTML=faixas.map((n,i)=>`<button type="button" onclick="filtrarPrazoMandato(${n})" style="margin:3px;padding:7px;border:1px solid #cbd5e1;border-radius:8px;background:#eff6ff;color:#174a7e;font-weight:700">${n===180?"180+ dias":n+"–"+(faixas[i+1]-1)+" dias"}: ${contagens[i]}</button>`).join("")+`<button type="button" onclick="filtrarPrazoMandato(0)" style="margin:3px;padding:7px;border:1px solid #cbd5e1;border-radius:8px;background:white">Limpar filtro</button>`;
@@ -1717,7 +1717,7 @@ function validarStatusParaAviso(link) {
 }
 
 let filtroPrazoMandato=0;
-function diasDesdeCadastroMandato(item){
+function diasDesdeEncaminhamentoMandato(item){
   const d=new Date(item.encaminhado_prefeitura_em?item.encaminhado_prefeitura_em+"T12:00:00":"");
   if(!Number.isFinite(d.getTime())) return -1;
   const inicio=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
@@ -1728,7 +1728,7 @@ function filtrarPrazoMandato(faixa){
   filtroPrazoMandato=[0,30,60,90,180].includes(faixa)?faixa:0;
   irPainel("solicitacoes",null,true);
   const status=document.getElementById("filtroStatus");
-  if(status)status.value="Todos";
+  if(status){status.value="Todos";status.dispatchEvent(new Event("change",{bubbles:true}));}
   carregarSolicitacoes();
 }
 async function carregarSolicitacoes() {
@@ -1830,8 +1830,8 @@ async function carregarSolicitacoes() {
     atualizarFiltroMovimento();
     if(filtroPrazoMandato){
       const limites={30:60,60:90,90:180,180:Infinity};
-      dados=dados.filter(item=>normalizar(item.status)!=="concluido" && diasDesdeCadastroMandato(item)>=filtroPrazoMandato && diasDesdeCadastroMandato(item)<limites[filtroPrazoMandato]);
-      dados.sort((a,b)=>diasDesdeCadastroMandato(b)-diasDesdeCadastroMandato(a));
+      dados=dados.filter(item=>normalizar(item.status)!=="concluido" && diasDesdeEncaminhamentoMandato(item)>=filtroPrazoMandato && diasDesdeEncaminhamentoMandato(item)<limites[filtroPrazoMandato]);
+      dados.sort((a,b)=>diasDesdeEncaminhamentoMandato(b)-diasDesdeEncaminhamentoMandato(a));
     }
 
     if (termoBusca) {
@@ -2206,7 +2206,7 @@ async function removerLembrete(id){
 async function salvarEncaminhamentoPrefeitura(id,botao){
   const data=document.getElementById("encaminhado-prefeitura-"+id)?.value||null;
   const protocolo=document.getElementById("protocolo-prefeitura-"+id)?.value.trim()||null;
-  if(data && data>new Date().toISOString().slice(0,10)){alert("A data de encaminhamento não pode ser futura.");return;}
+  if(data && data>new Date().toLocaleDateString("en-CA")){alert("A data de encaminhamento não pode ser futura.");return;}
   if(!data && protocolo){alert("Informe também a data do encaminhamento.");return;}
   if(!confirm("Confirmar dados do encaminhamento oficial à Prefeitura?"))return;
   botao.disabled=true;
@@ -2235,7 +2235,7 @@ function registrarCobrancaMandato(id){
   const agora=new Date();
   const data=String(agora.getDate()).padStart(2,"0")+"/"+String(agora.getMonth()+1).padStart(2,"0")+"/"+agora.getFullYear();
   const entrada="[Fiscalização "+data+" — "+(tipo.trim()||"cobrança")+"] "+descricao.trim();
-  campo.value=(campo.value.trim()?campo.value.trim()+"\\n":"")+entrada;
+  campo.value=(campo.value.trim()?campo.value.trim()+"\n":"")+entrada;
   campo.dispatchEvent(new Event("input",{bubbles:true}));
   alert("Registro adicionado à anotação interna. Toque em Salvar para gravar no sistema.");
 }
