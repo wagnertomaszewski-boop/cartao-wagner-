@@ -1,4 +1,5 @@
 import {criarServidor} from './server.mjs';
+import {criarVerificadorAdmin} from './verificar-admin-supabase.mjs';
 import {criarOperacoesNeon} from './operacoes-neon.mjs';
 import {criarExecutoresPostgres} from './executores-postgres.mjs';
 
@@ -7,7 +8,7 @@ import {criarExecutoresPostgres} from './executores-postgres.mjs';
 export async function iniciarHomologacao({env=process.env, carregarPg=()=>import('pg')}={}) {
  if (env.MANDATO_AMBIENTE !== 'homologacao') throw Error('Ambiente de homologação obrigatório');
  if (env.HABILITAR_API_NEON !== 'sim') throw Error('API desabilitada por padrão');
- if (env.AUTENTICACAO_ADMIN_CONFIGURADA === 'sim') throw Error('Flag não substitui verificador administrativo real');
+
  if (!env.DATABASE_URL || !/^postgres(?:ql)?:\/\//.test(env.DATABASE_URL)) throw Error('DATABASE_URL do servidor obrigatória');
  const {default:pg} = await carregarPg();
  const pool = new pg.Pool({connectionString:env.DATABASE_URL,ssl:{rejectUnauthorized:true},max:3,connectionTimeoutMillis:3000,idleTimeoutMillis:10000});
@@ -17,6 +18,9 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  const operacoes={};
  void operacoesNeon;
  // Sem autenticação de administrador integrada, o verificador sempre rejeita.
- const servidor=criarServidor({operacoes,verificarAdmin:async()=>false});
+ const verificarAdmin = env.SUPABASE_ADMIN_UID && env.SUPABASE_PUBLISHABLE_KEY
+  ? criarVerificadorAdmin({supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',chavePublica:env.SUPABASE_PUBLISHABLE_KEY,idsPermitidos:[env.SUPABASE_ADMIN_UID]})
+  : async()=>false;
+ const servidor=criarServidor({operacoes,verificarAdmin});
  return {servidor,fechar:async()=>{await new Promise(resolve=>servidor.close(resolve));await pool.end();}};
 }
