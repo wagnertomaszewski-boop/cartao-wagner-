@@ -7,6 +7,13 @@ export class RecuperacaoApi {
     this.ambiente=ambiente;
     if(ambiente!=='simulacao' && ambiente!=='homologacao') throw new Error('Ambiente não autorizado');
     if(ambiente==='homologacao' && (!baseUrl || !publishableKey)) throw new Error('Configuração de homologação incompleta');
+    if(ambiente==='homologacao') {
+      let destino;
+      try { destino = new URL(baseUrl); } catch { throw new Error('Endereço de homologação inválido'); }
+      if(destino.protocol!=='https:' || destino.username || destino.password || destino.search || destino.hash || destino.pathname!=='/' || destino.port) throw new Error('Endereço de homologação inválido');
+      if(destino.hostname==='pmmsdjozyyxkbuqlkfpb.supabase.co' || destino.hostname==='kmttgzraotabxvqmrren.supabase.co') throw new Error('Endereço de produção não permitido');
+      if(!/^[-a-z0-9]+\.supabase\.co$/.test(destino.hostname)) throw new Error('Utilize um projeto Supabase de homologação');
+    }
     this.baseUrl=baseUrl?.replace(/\/$/,'');
     this.publishableKey=publishableKey;
   }
