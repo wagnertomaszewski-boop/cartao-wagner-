@@ -20,6 +20,15 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  // com o host configurado privadamente no servidor, nunca fornecido pelo navegador.
  const neonIsolado = host.endsWith('.neon.tech') && host !== 'neon.tech' && env.NEON_HOST_HOMOLOGACAO === host && destino.username.length > 0 && destino.password.length > 0;
  if (!neonIsolado && !local) throw Error('Destino de homologação não autorizado');
+ // Nunca conectar a API remota com o proprietário privilegiado das funções.
+ // Exigir conta de serviço própria e previamente auditada. Não cria usuários.
+ if (!local) {
+  const usuario = decodeURIComponent(destino.username);
+  if (['neondb_owner','postgres','root'].includes(usuario.toLowerCase()))
+   throw Error('Conta privilegiada proibida na API');
+  if (!env.NEON_USUARIO_SERVICO_HOMOLOGACAO || usuario !== env.NEON_USUARIO_SERVICO_HOMOLOGACAO)
+   throw Error('Usuário de serviço de homologação não autorizado');
+ }
  const {default:pg} = await carregarPg();
  const pool = new pg.Pool({connectionString:env.DATABASE_URL,ssl:local ? false : {rejectUnauthorized:true},max:3,connectionTimeoutMillis:3000,idleTimeoutMillis:10000});
  const {executarCidadao,executarAdmin}=criarExecutoresPostgres({pool});
