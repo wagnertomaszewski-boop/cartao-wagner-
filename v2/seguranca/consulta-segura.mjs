@@ -20,13 +20,13 @@ export function criarConsultaSegura({apiBase, buscar=fetch}={}) {
       const p=typeof protocolo==='string'?protocolo.trim():'';
       const c=typeof chave==='string'?chave.trim():'';
       if(!p || !c || c.length<32) throw Error('Informe o protocolo e a chave de acesso completa.');
-      return enviar('/consulta',{protocolo:p,chave:c});
+      return enviar('/api/solicitacoes/consultar',{protocolo:p,chave:c});
     },
     async pedirRecuperacao({protocolo,whatsapp}={}) {
       const p=typeof protocolo==='string'?protocolo.trim():'';
       const w=typeof whatsapp==='string'?whatsapp.replace(/\\D/g,''):'';
       if(!p || w.length<10 || w.length>13) throw Error('Informe o protocolo e o WhatsApp com DDD.');
-      return enviar('/recuperacao/solicitar',{protocolo:p,whatsapp:w});
+      return enviar('/api/recuperacao/solicitar',{protocolo:p,whatsapp:w});
     }
   };
 }
