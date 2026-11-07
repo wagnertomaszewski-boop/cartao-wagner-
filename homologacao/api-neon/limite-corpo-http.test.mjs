@@ -23,3 +23,11 @@ test('corpo JSON pequeno continua funcionando',async()=>{
   assert.equal(chamadas,1);
  }finally{await new Promise(resolve=>servidor.close(resolve));}
 });
+
+test('servidor limita tempo de requisição e cabeçalhos',()=>{
+ const servidor=criarServidor();
+ assert.equal(servidor.requestTimeout,10000);
+ assert.equal(servidor.headersTimeout,5000);
+ assert.equal(servidor.maxHeadersCount,64);
+ servidor.close();
+});
