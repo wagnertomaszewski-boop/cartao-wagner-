@@ -32,3 +32,8 @@ test('não confia em host Neon sem correspondência exata configurada',async()=>
  const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',DATABASE_URL:'postgresql://usuario:senha@ep-qualquer.neon.tech:5432/testes',NEON_HOST_HOMOLOGACAO:'ep-outro.neon.tech'};
  await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>{throw Error('NÃO deve conectar');}}),/Destino de homologação não autorizado/);
 });
+
+test('Neon remoto exige usuário e senha além do hostname permitido',async()=>{
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',DATABASE_URL:'postgresql://ep-isolado.neon.tech:5432/testes',NEON_HOST_HOMOLOGACAO:'ep-isolado.neon.tech'};
+ await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>{throw Error('NÃO deve conectar');}}),/Destino de homologação não autorizado/);
+});
