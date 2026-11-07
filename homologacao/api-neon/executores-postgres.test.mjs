@@ -45,3 +45,14 @@ test('cidadão pode consultar respostas apenas pela função segura parametrizad
  assert.ok(eventos.some(x=>Array.isArray(x)&&x[0]==='SELECT * FROM mandato_testes.consulta_respostas_segura($1,$2)'&&x[1][1]===chave));
  await assert.rejects(executarCidadao('SELECT * FROM mandato_testes.respostas WHERE protocolo=$1',['TESTE-000001']));
 });
+
+test('histórico usa somente função protegida com dois parâmetros',async()=>{
+ const {pool,eventos}=simularPool();
+ const {executarCidadao,executarAdmin}=criarExecutoresPostgres({pool});
+ const sql='SELECT * FROM mandato_testes.consulta_historico_segura($1,$2)';
+ const chave='c'.repeat(64);
+ await executarCidadao(sql,['HIST-TESTE-900001',chave]);
+ assert.ok(eventos.some(x=>Array.isArray(x)&&x[0]===sql&&x[1][1]===chave));
+ await assert.rejects(executarCidadao('SELECT * FROM mandato_testes.historico_status'));
+ await assert.rejects(executarAdmin(sql,['HIST-TESTE-900001',chave]));
+});
