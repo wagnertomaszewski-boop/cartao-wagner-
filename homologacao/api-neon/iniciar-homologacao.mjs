@@ -21,6 +21,8 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  const verificarAdmin = env.SUPABASE_ADMIN_UID && env.SUPABASE_PUBLISHABLE_KEY
   ? criarVerificadorAdmin({supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',chavePublica:env.SUPABASE_PUBLISHABLE_KEY,idsPermitidos:[env.SUPABASE_ADMIN_UID]})
   : async()=>false;
- const servidor=criarServidor({operacoes,verificarAdmin});
+ const origensPermitidas = env.ORIGEM_PAINEL_HOMOLOGACAO === 'https://wagnertomaszewski-boop.github.io'
+  ? [env.ORIGEM_PAINEL_HOMOLOGACAO] : [];
+ const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas});
  return {servidor,fechar:async()=>{await new Promise(resolve=>servidor.close(resolve));await pool.end();}};
 }
