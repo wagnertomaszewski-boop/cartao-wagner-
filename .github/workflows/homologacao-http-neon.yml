@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: '22'
       - name: Testes originais HTTP e PostgreSQL simulado
-        run: node --test homologacao/api-neon/integracao-http-postgres.test.mjs homologacao/api-neon/limite-corpo-http.test.mjs
+        run: node --test homologacao/api-neon/integracao-http-postgres.test.mjs homologacao/api-neon/limite-corpo-http.test.mjs homologacao/api-neon/interface-v2.test.mjs
       - name: Verificar segredos de homologacao
         id: secrets
         env:
