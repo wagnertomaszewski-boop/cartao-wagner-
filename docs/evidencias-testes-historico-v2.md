@@ -113,3 +113,9 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Em Neon, com os papéis `mandato_cidadao_a` e `mandato_cidadao_b`, executadas `consulta_respostas_segura`, `consulta_historico_segura` e `consulta_nomes_anexos_segura` para `HIST-TESTE-900001` usando chave fictícia incorreta `repeat('b',64)`. As seis consultas retornaram **zero linhas**.
 - Revisado `iniciar-homologacao.mjs`: rotas cidadãs só são fornecidas ao servidor quando `HABILITAR_ROTAS_CIDADAO_TESTES='sim'` além das demais verificações de ambiente. Adicionado teste HTTP de regressão em `iniciar-homologacao.test.mjs` para exigir 503 nas duas rotas sem habilitação separada e `rotasCidadaoHabilitadas=false` no `/health`.
 - O teste Node foi escrito e versionado, **não executado**; não há servidor de homologação publicado.
+
+## Auditoria de sequências PostgreSQL — 2026-11-07
+- A consulta `has_sequence_privilege` identificou `USAGE=true` e `SELECT=true` para os dois papéis cidadãos em `anexos_id_seq`, `respostas_id_seq` e `solicitacoes_id_seq` (apesar da revogação dos privilégios nas tabelas).
+- Aplicado no **Neon isolado** `REVOKE USAGE, SELECT ON ALL SEQUENCES IN SCHEMA mandato_testes FROM mandato_cidadao_a, mandato_cidadao_b`.
+- Auditoria posterior das cinco sequências do esquema confirmou `USAGE=false` e `SELECT=false` para ambos os papéis.
+- Regressão SQL com os dois papéis: `consulta_segura` com chave correta retornou assunto/status e `consulta_nomes_anexos_segura` retornou apenas nome fictício do anexo. Nenhum dado real foi alterado.
