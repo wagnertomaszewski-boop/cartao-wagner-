@@ -29,5 +29,5 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  const origensPermitidas = env.ORIGEM_PAINEL_HOMOLOGACAO === 'https://wagnertomaszewski-boop.github.io'
   ? [env.ORIGEM_PAINEL_HOMOLOGACAO] : [];
  const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas});
- return {servidor,fechar:async()=>{await new Promise(resolve=>servidor.close(resolve));await pool.end();}};
+ return {servidor,fechar:async()=>{try {if (servidor.listening) await new Promise((resolve,reject)=>servidor.close(erro=>erro?reject(erro):resolve()));} finally {await pool.end();}}};
 }
