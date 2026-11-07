@@ -822,7 +822,7 @@ function atualizarResumoPainel(itens){
   const dias=(x)=>{const d=new Date(x.criado_em);if(Number.isNaN(d.getTime()))return -1;d.setHours(0,0,0,0);return Math.floor((hojeMs-d)/86400000);};
   const contagens=faixas.map((n,i)=>pendentes.filter(x=>dias(x)>=n && (i===faixas.length-1 || dias(x)<faixas[i+1])).length);
   const resumo=document.getElementById("alertasPrazoResumo");
-  if(resumo) resumo.textContent="30–59 dias: "+contagens[0]+" | 60–89 dias: "+contagens[1]+" | 90–179 dias: "+contagens[2]+" | 180+ dias: "+contagens[3];
+  if(resumo) resumo.innerHTML=faixas.map((n,i)=>`<button type="button" onclick="filtrarPrazoMandato(${n})" style="margin:3px;padding:7px;border:1px solid #cbd5e1;border-radius:8px;background:#eff6ff;color:#174a7e;font-weight:700">${n===180?"180+ dias":n+"–"+(faixas[i+1]-1)+" dias"}: ${contagens[i]}</button>`).join("")+`<button type="button" onclick="filtrarPrazoMandato(0)" style="margin:3px;padding:7px;border:1px solid #cbd5e1;border-radius:8px;background:white">Limpar filtro</button>`;
 
 }
 
@@ -1716,6 +1716,21 @@ function validarStatusParaAviso(link) {
   return true;
 }
 
+let filtroPrazoMandato=0;
+function diasDesdeCadastroMandato(item){
+  const d=new Date(item.criado_em||"");
+  if(!Number.isFinite(d.getTime())) return -1;
+  const inicio=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
+  const agora=new Date(), hoje=new Date(agora.getFullYear(),agora.getMonth(),agora.getDate()).getTime();
+  return Math.floor((hoje-inicio)/86400000);
+}
+function filtrarPrazoMandato(faixa){
+  filtroPrazoMandato=[0,30,60,90,180].includes(faixa)?faixa:0;
+  irPainel("solicitacoes",null,true);
+  const status=document.getElementById("filtroStatus");
+  if(status)status.value="Todos";
+  carregarSolicitacoes();
+}
 async function carregarSolicitacoes() {
   const lista = document.getElementById("lista");
   lista.textContent = "Carregando solicitações...";
@@ -1813,6 +1828,11 @@ async function carregarSolicitacoes() {
       dados.sort((a,b)=>diasSemMovimento(b)-diasSemMovimento(a));
     }
     atualizarFiltroMovimento();
+    if(filtroPrazoMandato){
+      const limites={30:60,60:90,90:180,180:Infinity};
+      dados=dados.filter(item=>normalizar(item.status)!=="concluido" && diasDesdeCadastroMandato(item)>=filtroPrazoMandato && diasDesdeCadastroMandato(item)<limites[filtroPrazoMandato]);
+      dados.sort((a,b)=>diasDesdeCadastroMandato(b)-diasDesdeCadastroMandato(a));
+    }
 
     if (termoBusca) {
       dados = dados.filter(item =>
