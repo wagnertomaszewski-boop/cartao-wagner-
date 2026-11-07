@@ -585,6 +585,11 @@
       <button class="total-solicitacoes-banner" type="button" onclick="selecionarStatusRapido('Todos')" aria-label="Mostrar todas as solicitações cadastradas">
         <span><small>TOTAL DE SOLICITAÇÕES</small><strong id="cntTotalSolicitacoes">—</strong></span><span class="total-banner-descricao">Todos os protocolos, independentemente da situação ↗</span>
       </button>
+      <div id="alertasPrazoMandato" style="background:#fff;border:1px solid #d9e3ee;border-radius:14px;padding:14px;margin:0 0 14px" aria-live="polite">
+        <strong style="display:block;margin-bottom:5px;color:#16446f">Acompanhamento de prazos das solicitações</strong>
+        <div id="alertasPrazoResumo" style="font-size:14px;line-height:1.6">Carregando indicadores...</div>
+        <small style="display:block;color:#64748b;margin-top:7px">Contagem desde o cadastro no sistema, não desde o encaminhamento à Prefeitura. Confirme a execução antes de reiterar ou divulgar.</small>
+      </div>
       <div class="status-resumo">
         <button class="sr-card recebida" type="button" onclick="selecionarStatusRapido('Recebida')"><small>Recebidas (aguardando análise)</small><strong id="cntRecebida">—</strong></button>
         <button class="sr-card analise" type="button" onclick="selecionarStatusRapido('Em análise')"><small>Em análise</small><strong id="cntAnalise">—</strong></button>
@@ -810,6 +815,15 @@ function atualizarResumoPainel(itens){
   set("resumoAbertas",abertas);
   set("resumoLembretes",lembretes);
   set("resumoConcluidas",concluidas);
+  // Indicadores internos: não alteram status, prazos legais ou dados públicos.
+  const hojeMs=new Date(); hojeMs.setHours(0,0,0,0);
+  const faixas=[30,60,90,180];
+  const pendentes=todos.filter(x=>normalizar(x.status)!=="concluido" && x.criado_em);
+  const dias=(x)=>{const d=new Date(x.criado_em);if(Number.isNaN(d.getTime()))return -1;d.setHours(0,0,0,0);return Math.floor((hojeMs-d)/86400000);};
+  const contagens=faixas.map((n,i)=>pendentes.filter(x=>dias(x)>=n && (i===faixas.length-1 || dias(x)<faixas[i+1])).length);
+  const resumo=document.getElementById("alertasPrazoResumo");
+  if(resumo) resumo.textContent="30–59 dias: "+contagens[0]+" | 60–89 dias: "+contagens[1]+" | 90–179 dias: "+contagens[2]+" | 180+ dias: "+contagens[3];
+
 }
 
 function salvarSessao(sessao){
