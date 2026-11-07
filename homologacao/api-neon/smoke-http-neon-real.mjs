@@ -19,6 +19,22 @@ try {
   instancia.servidor.listen(0,'127.0.0.1',resolve);
  });
  const base='http://127.0.0.1:'+instancia.servidor.address().port;
+ const health=await fetch(base+'/health',{signal:AbortSignal.timeout(8000)});
+ assert.equal(health.status,200,'Servidor de homologação indisponível');
+ const estado=await health.json();
+ assert.equal(estado.modo,'homologacao');
+ assert.equal(estado.rotasCidadaoHabilitadas,true);
+ const origemInvalida=await fetch(base+'/api/solicitacoes/consultar',{
+  method:'POST',headers:{Origin:'https://origem-nao-permitida.invalid','Content-Type':'application/json'},
+  body:'{}',signal:AbortSignal.timeout(8000)
+ });
+ assert.equal(origemInvalida.status,403,'Origem não autorizada deve ser rejeitada');
+ const corpoExcessivo=await fetch(base+'/api/solicitacoes/consultar',{
+  method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({protocolo:'FICTICIO',chave:'a'.repeat(5000)}),
+  signal:AbortSignal.timeout(8000)
+ });
+ assert.equal(corpoExcessivo.status,413,'Corpo excessivo deve ser rejeitado');
  const resposta=await fetch(base+'/api/solicitacoes/consultar',{
   method:'POST',headers:{'Content-Type':'application/json'},
   body:JSON.stringify({protocolo:'PROTOCOLO-HTTP-TESTE-INEXISTENTE',chave:'a'.repeat(64)}),
@@ -29,5 +45,5 @@ try {
  assert.deepEqual(corpo,{resultado:[],respostas:[],historico:[],anexos:[]});
  const admin=await fetch(base+'/api/admin/recuperacoes',{signal:AbortSignal.timeout(8000)});
  assert.equal(admin.status,401,'Rota administrativa deve exigir autenticação');
- console.log('PASS: HTTP-Neon real, consulta fictícia sem registros e rota admin protegida');
+ console.log('PASS: HTTP-Neon real, health, CORS, limite de corpo, consulta fictícia e admin protegido');
 } finally {await instancia.fechar();}
