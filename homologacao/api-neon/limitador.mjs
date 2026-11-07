@@ -9,9 +9,9 @@ export function criarLimitador({maximo=5,janelaMs=60000,maxChaves=10000,relogio=
    const agora=relogio();
    const atual=tentativas.get(chave);
    if(!atual||agora>=atual.expira){
-    if(!atual && tentativas.size>=maxChaves){
+    if(tentativas.size>=maxChaves){
       for(const [id,registro] of tentativas) if(agora>=registro.expira) tentativas.delete(id);
-      if(tentativas.size>=maxChaves)return false;
+      if(!atual && tentativas.size>=maxChaves)return false;
     }
     tentativas.set(chave,{contagem:1,expira:agora+janelaMs});return true;}
    if(atual.contagem>=maximo)return false;
