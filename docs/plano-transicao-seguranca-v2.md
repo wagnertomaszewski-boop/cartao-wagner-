@@ -37,3 +37,25 @@ Critérios obrigatórios para o corte coordenado:
 6. Só após critérios e aprovação específica: publicar cliente compatível, ativar fluxo seguro gradualmente e revogar execução das quatro RPCs antigas na mesma janela controlada. Verificar por chamadas reais que acesso sem chave deixou de funcionar.
 
 **Regra de segurança:** não confundir testes positivos no Neon com correção da exposição no Supabase de produção. A vulnerabilidade legada permanece até a transição coordenada.
+
+## Decisão funcional aprovada: recuperação dupla para pedidos antigos
+
+O usuário escolheu oferecer **recuperação automática e manual**. Esta decisão autoriza planejamento e desenvolvimento na branch de testes, **não** habilitação em produção nem envio de mensagens.
+
+### Automática
+- Identificar pedido por protocolo, sem revelar sua existência na resposta pública.
+- Somente quando houver contato previamente verificado: emitir desafio temporário de uso único, enviar por provedor autorizado ao número cadastrado e validar a posse do canal no servidor.
+- Exigir expiração curta, limite de tentativas por protocolo e por destino, armazenamento apenas de hash do desafio, consumo atômico e auditoria sem segredos em logs.
+- Não considerar digitação de telefone ou link de WhatsApp como comprovação de identidade; não enviar chave em mensagem antes de confirmar o desafio.
+- Para pedidos legados sem telefone confiável, direcionar à recuperação manual.
+
+### Manual
+- Criar pedido pendente com resposta indistinguível para protocolos válidos e inválidos.
+- No Painel do Mandato, exigir sessão administrativa verificada, confirmação de identidade independente e registro de responsável, motivo, data e resultado; impedir autoaprovação pelo cliente.
+- Entregar nova credencial por canal seguro e auditável, revogando a anterior de forma atômica após confirmação.
+
+### Compatibilidade e aceitação
+- Preservar IDs/protocolos, fotos, respostas e históricos, com observações internas sempre privadas.
+- Testar cenários: número antigo, número não verificado, código errado/expirado/reutilizado, excesso de tentativas, duas recuperações simultâneas, aprovação indevida, indisponibilidade do provedor e falha na entrega.
+- Fluxo automático requer provedor WhatsApp, credenciais e análise de custos antes de ativação; não contratar ou consumir serviços pagos sem autorização.
+- Manter flags desligadas até suíte original, HTTP–Neon real, autenticação, rollback e compatibilidade com versões instaladas serem validados.
