@@ -18,3 +18,9 @@ Verificações realizadas em 2026-11-07 no projeto Neon isolado `proud-firefly-6
 
 ## Próxima etapa
 Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` em cópia integral da ramificação, corrigir eventuais falhas, implementar anexos com URLs temporárias e preparar plano de entrega de chaves antigas antes da ativação.
+
+## Verificações adicionais — 2026-11-07
+- Papel `mandato_cidadao_b` com protocolo fictício A e chave A: retornou apenas `Evento fictício A`.
+- Mesmo papel com protocolo A e chave B: zero registros.
+- Papel `mandato_cidadao_a` com protocolo inexistente e chave A: zero registros.
+- Teste automatizado de operações atualizado para diferenciar consultas de detalhes, respostas e histórico. **Execução Node pendente**: o ambiente de execução não conseguiu acessar o repositório GitHub por DNS; não considerar esses testes aprovados até execução efetiva.
