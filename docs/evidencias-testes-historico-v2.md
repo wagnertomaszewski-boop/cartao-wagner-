@@ -145,3 +145,9 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Resultado observado: **6 testes aprovados, 0 falhas**, duração aproximada 338 ms.
 - Cobertura: rotas sem handlers respondem 503; origem externa 403; token administrativo ausente/inválido 401/403; decisão sem verificação de identidade 403; token do verificador vem do cabeçalho autenticado e não do corpo; JSON malformado 400 e corpo acima de 4096 bytes 413.
 - **Limitação essencial:** bateria local reproduzida, não a suíte original integral do repositório, nem teste integrado com banco Neon real. Não houve deploy nem conexão ao Supabase de produção. Ainda faltam execução integral, validação de identidade real e migração coordenada.
+
+## Segunda bateria HTTP local executada — 2026-11-07
+- No ambiente local `/mnt/data/mandato-testes`, foram adicionados cinco cenários independentes em `extra.test.mjs` à bateria anterior de seis cenários, cobrindo CORS, limitação por IP, ausência de handler administrativo, confirmação de identidade ausente e token autenticado do cabeçalho.
+- Comando realmente executado: `node --test /mnt/data/mandato-testes/*.test.mjs` (Node v22.16.0).
+- Saída observada: **11 testes aprovados, 0 falhas**, duração ~303 ms.
+- **Escopo e limitação:** os arquivos locais são reproduções dos componentes da API e testes independentes derivados dos casos versionados. Ainda **não** foi executada a suíte original integral do GitHub, nem teste HTTP com Neon real. A produção segue intacta.
