@@ -1,0 +1,8 @@
+{
+  "name": "mandato-http-neon-homologacao",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22 <23"},
+  "scripts": {"start": "node servico-https.mjs", "test": "node --test *.test.mjs"},
+  "dependencies": {"pg": "8.16.3"}
+}
