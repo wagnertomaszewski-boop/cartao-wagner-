@@ -79,3 +79,25 @@ test('criação de solicitação não pode aceitar identidade arbitrária pelo e
  await assert.rejects(executarAdmin(sql,['11111111-1111-4111-8111-111111111111','Assunto','Descrição']));
  assert.deepEqual(eventos,[]);
 });
+
+
+test('falha ao assumir papel não executa consulta e sempre libera conexão',async()=>{
+ const eventos=[];
+ const pool={async connect(){eventos.push('connect');return {
+  async query(sql){eventos.push(sql);if(sql.startsWith('SET LOCAL ROLE'))throw Error('papel indisponível');return {rows:[]};},
+  release(){eventos.push('release');}
+ };}};
+ const {executarCidadao}=criarExecutoresPostgres({pool});
+ await assert.rejects(executarCidadao('SELECT * FROM mandato_testes.consulta_segura($1,$2)',['FICTICIO','a'.repeat(64)]),/papel indisponível/);
+ assert.ok(eventos.includes('ROLLBACK'));
+ assert.equal(eventos.at(-1),'release');
+ assert.equal(eventos.some(sql=>sql.startsWith('SELECT * FROM mandato_testes.')),false);
+});
+
+test('falha de conexão não permite execução de SQL nem fallback para outro papel',async()=>{
+ let tentativas=0;
+ const pool={async connect(){tentativas++;throw Error('conexão indisponível');}};
+ const {executarCidadao}=criarExecutoresPostgres({pool});
+ await assert.rejects(executarCidadao('SELECT * FROM mandato_testes.consulta_segura($1,$2)',['FICTICIO','a'.repeat(64)]),/conexão indisponível/);
+ assert.equal(tentativas,1);
+});
