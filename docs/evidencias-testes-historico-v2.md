@@ -52,3 +52,10 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Consulta de privilégios confirmou `false` para ambos na função antiga e `true` na função nova `consulta_nomes_anexos_segura`.
 - Criado teste de regressão do executor para recusar consulta à tabela `anexos` e chamada à função antiga que retornava caminhos.
 - A suíte Node integral ainda está pendente; a alteração não foi aplicada ao Supabase de produção.
+
+## Auditoria de privilégios diretos — 2026-11-07
+- Confirmado RLS `ENABLE` e `FORCE` nas sete tabelas do esquema isolado.
+- Detectadas permissões `SELECT` diretas nas tabelas `anexos` e `solicitacoes` para ambos os papéis de cidadão; revogadas no **Neon de homologação**.
+- Nova consulta a `has_table_privilege` confirmou que ambos os papéis cidadãos agora têm `SELECT=false` em **todas as sete tabelas**.
+- Regressão após revogação: os dois papéis continuaram consultando corretamente os nomes de anexos e o histórico público mediante protocolo e chave, via funções `SECURITY DEFINER`.
+- Observação: papéis de homologação representam acesso ao endpoint protegido, não a identidade real de cada cidadão; o segredo do protocolo continua sendo o fator de autorização. Antes de produção, autenticação, emissão e recuperação de segredos precisam de validação de ponta a ponta.
