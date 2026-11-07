@@ -4,7 +4,7 @@ import {criarLimitador} from './limitador.mjs';
 // Handlers são injetados apenas pelo servidor, nunca definidos pelo navegador.
 // Sem handlers, as operações permanecem indisponíveis.
 export function criarServidor({verificarAdmin = async () => false, operacoes = {}, limitador = criarLimitador(), verificarIdentidade = async () => false, origensPermitidas = []} = {}) {
-  return http.createServer(async (req, res) => {
+  const servidor = http.createServer(async (req, res) => {
     const origem = req.headers.origin;
     const origemAutorizada = typeof origem === 'string' && origensPermitidas.includes(origem);
     const cabecalhosCors = origemAutorizada ? {'Access-Control-Allow-Origin':origem,'Vary':'Origin'} : {};
@@ -66,6 +66,11 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
       return send(200, resultado);
     } catch { return send(503, {erro:'Operação indisponível'}); }
   });
+  // Limita conexões lentas e cabeçalhos incompletos em homologação.
+  servidor.requestTimeout = 10000;
+  servidor.headersTimeout = 5000;
+  servidor.maxHeadersCount = 64;
+  return servidor;
 }
 if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).href) {
   criarServidor().listen(Number(process.env.PORT || 8787), '127.0.0.1');
