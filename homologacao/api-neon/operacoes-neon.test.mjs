@@ -46,6 +46,7 @@ test('consulta protegida retorna respostas somente quando protocolo e chave são
  assert.deepEqual(r.respostas,[{texto:'Resposta de teste',criado_em:'2026-11-07'}]);
  assert.equal(chamadas.length,3);
  assert.equal(chamadas[1].sql,'SELECT * FROM mandato_testes.consulta_respostas_segura($1,$2)');
+ assert.equal(chamadas[2].sql,'SELECT * FROM mandato_testes.consulta_historico_segura($1,$2)');
 });
 test('chave inválida não dispara consulta às respostas',async()=>{
  const chamadas=[];
