@@ -28,3 +28,21 @@ test('sem verificador configurado, nenhum token autoriza administrador',async()=
     assert.equal((await fetch(base+'/health',{headers:{Origin:'https://site-externo.com'}})).status,403);
   });
 });
+
+test('handler de homologação recebe JSON somente após validação e autenticação', async () => {
+  let chamadas = 0;
+  await comServidor({
+    verificarAdmin: async token => token === 'autorizado',
+    operacoes: { decidir: async ({dados,pedidoId}) => {chamadas++; return {pedidoId, aprovado: dados.aprovar};} }
+  }, async base => {
+    const url=base+'/api/admin/recuperacoes/15/decisao';
+    const json={method:'POST',headers:{Authorization:'Bearer autorizado','Content-Type':'application/json'},body:JSON.stringify({aprovar:false})};
+    assert.equal((await fetch(url,{...json,headers:{...json.headers,Authorization:'Bearer errado'}})).status,403);
+    assert.equal((await fetch(url,{...json,body:'{'})).status,400);
+    assert.equal((await fetch(url,{...json,body:JSON.stringify({texto:'x'.repeat(5000)})})).status,413);
+    const ok=await fetch(url,json);
+    assert.equal(ok.status,200);
+    assert.deepEqual(await ok.json(),{pedidoId:'15',aprovado:false});
+    assert.equal(chamadas,1);
+  });
+});
