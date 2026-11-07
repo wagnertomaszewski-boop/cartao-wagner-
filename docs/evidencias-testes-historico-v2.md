@@ -157,3 +157,10 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Fluxo validado: solicitação de recuperação, consulta protegida com chave fictícia, projeção de campos autorizados (sem hash, caminho privado ou nota privada), negação de token administrativo incorreto e decisão fictícia autorizada por verificador simulado. Segundo cenário: consulta com chave desconhecida retorna estruturas vazias e não executa funções auxiliares.
 - Comando: `node --test /mnt/data/mandato-testes/*.test.mjs`. Resultado repetido: **13 testes aprovados, 0 falhas**, duração ~305 ms na segunda execução.
 - **Limitação:** não são todos os arquivos de testes originais do GitHub; execução com executores simulados não demonstra integração real ao Neon nem validação de identidade real. A decisão administrativa permanece desabilitada na inicialização de homologação e na produção.
+
+## Verificação integrada das quatro funções SQL com Neon real — 2026-11-07
+- Reexecutado `node --test /mnt/data/mandato-testes/*.test.mjs` local: **13 testes passaram, zero falhas** (381 ms). Testes locais reproduzidos, não suíte original do GitHub.
+- No Neon de testes `proud-firefly-64745516`, com `SET LOCAL ROLE mandato_cidadao_a`, executadas em transação as quatro funções usadas na consulta: `consulta_segura`, `consulta_respostas_segura`, `consulta_nomes_anexos_segura`, `consulta_historico_segura` para protocolo fictício `HIST-TESTE-900001`.
+- Chave correta `repeat('a',64)`: assunto/status fictícios retornados; respostas vazias; somente nome de anexo fictício retornado; somente histórico público fictício retornado.
+- Chave incorreta `repeat('b',64)`: as quatro funções retornaram **zero linhas**, sem nomes de anexos, assunto ou histórico.
+- **Limitação:** estes são testes SQL diretos no banco Neon, não tráfego HTTP por API conectada ao Neon. Não há confirmação de suíte original integral nem autorização para ativação na produção.
