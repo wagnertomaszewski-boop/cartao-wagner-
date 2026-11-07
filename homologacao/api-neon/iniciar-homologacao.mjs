@@ -18,7 +18,7 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  const local = ['localhost','127.0.0.1','::1'].includes(host);
  // O hostname Neon não contém necessariamente o ID do projeto. Exige correspondência exata
  // com o host configurado privadamente no servidor, nunca fornecido pelo navegador.
- const neonIsolado = host.endsWith('.neon.tech') && env.NEON_HOST_HOMOLOGACAO === host;
+ const neonIsolado = host.endsWith('.neon.tech') && host !== 'neon.tech' && env.NEON_HOST_HOMOLOGACAO === host && destino.username.length > 0 && destino.password.length > 0;
  if (!neonIsolado && !local) throw Error('Destino de homologação não autorizado');
  const {default:pg} = await carregarPg();
  const pool = new pg.Pool({connectionString:env.DATABASE_URL,ssl:{rejectUnauthorized:true},max:3,connectionTimeoutMillis:3000,idleTimeoutMillis:10000});
