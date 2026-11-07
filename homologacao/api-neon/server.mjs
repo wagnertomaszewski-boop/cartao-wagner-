@@ -49,7 +49,7 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
     if (adminDecisao && req.method === 'POST') {
       // A confirmação enviada pelo navegador nunca é prova de identidade.
       let confirmada = false;
-      try { confirmada = await verificarIdentidade({pedidoId:adminDecisao[1],dados}); } catch { confirmada = false; }
+      try { confirmada = await verificarIdentidade({pedidoId:adminDecisao[1]}); } catch { confirmada = false; }
       if (confirmada !== true) return send(403,{erro:'Identidade não confirmada pelo servidor'});
     }
     try {
