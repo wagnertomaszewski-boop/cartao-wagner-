@@ -1,0 +1,17 @@
+// Limitador em memória, destinado APENAS a testes locais de uma instância.
+// Produção exige limite compartilhado entre instâncias, por IP e protocolo.
+export function criarLimitador({maximo=5,janelaMs=60000,relogio=()=>Date.now()}={}) {
+ if(!Number.isInteger(maximo)||maximo<1||!Number.isSafeInteger(janelaMs)||janelaMs<1)throw Error('Configuração inválida');
+ const tentativas=new Map();
+ return {
+  verificar(chave) {
+   if(typeof chave!=='string'||!chave||chave.length>200) return false;
+   const agora=relogio();
+   const atual=tentativas.get(chave);
+   if(!atual||agora>=atual.expira){tentativas.set(chave,{contagem:1,expira:agora+janelaMs});return true;}
+   if(atual.contagem>=maximo)return false;
+   atual.contagem++;return true;
+  },
+  limpar(){tentativas.clear();}
+ };
+}
