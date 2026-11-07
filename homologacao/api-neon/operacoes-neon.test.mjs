@@ -11,9 +11,10 @@ test('recuperação chama função parametrizada e não revela existência de pr
 });
 test('consulta usa chave como parâmetro, nunca interpolada em SQL',async()=>{
  let sql,params;
- const ops=criarOperacoesNeon({executarCidadao:async(s,p)=>{sql=s;params=p;return [{status:'Recebido'}];},executarAdmin:async()=>[]});
+ const ops=criarOperacoesNeon({executarCidadao:async(s,p)=>{if(s.includes('consulta_respostas_segura'))return [];sql=s;params=p;return [{status:'Recebido'}];},executarAdmin:async()=>[]});
  const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'segredo-teste'}});
  assert.deepEqual(r.resultado,[{status:'Recebido'}]);
+ assert.deepEqual(r.respostas,[]);
  assert.equal(sql,'SELECT * FROM mandato_testes.consulta_segura($1,$2)');
  assert.deepEqual(params,['TESTE-000001','segredo-teste']);
 });
