@@ -90,3 +90,10 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Teste SQL real com `SET LOCAL ROLE mandato_cidadao_a` e `mandato_cidadao_b`: chamada de `criar_solicitacao_segura` foi rejeitada com `SQLSTATE 42501 permission denied` em ambos os casos; nenhuma solicitação de teste foi criada por essas chamadas.
 - Teste de compatibilidade: `consulta_segura` com protocolo/chave fictícios corretos retornou `Histórico teste A / recebido`; com chave incorreta retornou vazio.
 - Acrescentado em `executores-postgres.test.mjs` um teste de regressão que exige a rejeição da função de criação tanto pelo executor cidadão quanto pelo administrador; o teste Node ainda aguarda execução.
+
+## Auditoria de privilégios INSERT — 2026-11-07
+- Verificados `INSERT`, `UPDATE` e `DELETE` para os dois papéis cidadãos nas sete tabelas do Neon isolado. Identificado `INSERT=true` nas tabelas `solicitacoes` e `anexos`.
+- Revogado `INSERT` nessas duas tabelas para ambos os papéis de cidadão; reconsulta confirmou `INSERT=false` e `SELECT=false` em todas as sete tabelas para os dois papéis.
+- Testes de regressão reais com os papéis A e B: `consulta_segura` com chave fictícia correta continuou retornando assunto/status, e `consulta_nomes_anexos_segura` continuou retornando somente o nome fictício do arquivo.
+- O modelo de autorização atual é **por posse de protocolo + segredo**, não por isolamento rígido entre os papéis A e B: ambos conseguem acessar o registro A quando fornecem sua chave correta. Não representar isso como isolamento por identidade; a proteção depende da confidencialidade da chave e da validação do servidor.
+- Produção Supabase não modificada.
