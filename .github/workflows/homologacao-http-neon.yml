@@ -29,15 +29,13 @@ jobs:
           if [ -n "$URL_TESTE" ] && [ -n "$HOST_TESTE" ]; then
             echo "habilitado=sim" >> "$GITHUB_OUTPUT"
           else
-            echo "habilitado=nao" >> "$GITHUB_OUTPUT"
-            echo "::warning::HTTP-Neon real NAO EXECUTADO: configure os dois segredos de homologacao."
+            echo "::error::HTTP-Neon real NAO EXECUTADO: configure os dois segredos de homologacao."
+            exit 1
           fi
       - name: Instalar driver PostgreSQL isolado
-        if: steps.secrets.outputs.habilitado == 'sim'
         working-directory: homologacao/api-neon
         run: npm install --no-save --no-package-lock --ignore-scripts pg@8
       - name: Executar HTTP-Neon real
-        if: steps.secrets.outputs.habilitado == 'sim'
         working-directory: homologacao/api-neon
         env:
           MANDATO_AMBIENTE: homologacao
