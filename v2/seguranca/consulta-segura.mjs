@@ -24,7 +24,7 @@ export function criarConsultaSegura({apiBase, buscar=fetch}={}) {
     },
     async pedirRecuperacao({protocolo,whatsapp}={}) {
       const p=typeof protocolo==='string'?protocolo.trim():'';
-      const w=typeof whatsapp==='string'?whatsapp.replace(/\\D/g,''):'';
+      const w=typeof whatsapp==='string'?whatsapp.replace(/\D/g,''):'';
       if(!p || w.length<10 || w.length>13) throw Error('Informe o protocolo e o WhatsApp com DDD.');
       return enviar('/api/recuperacao/solicitar',{protocolo:p,whatsapp:w});
     }
