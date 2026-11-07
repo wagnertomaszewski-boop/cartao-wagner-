@@ -2321,7 +2321,18 @@ async function salvarAnotacaoInterna(id) {
       );
     }
 
-    alert("Anotação e lembrete salvos!");
+    const notaEsperada=campo.value.trim()||null;
+    const confirmacao=await requisicao(
+      SUPABASE_URL + "/rest/v1/solicitacoes?id=eq." + encodeURIComponent(id) + "&select=id,anotacao_interna,lembrete_em",
+      {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Cache-Control":"no-cache"}}
+    );
+    const registros=await confirmacao.json().catch(()=>[]);
+    if(!confirmacao.ok || !Array.isArray(registros) || registros.length!==1 ||
+       (registros[0].anotacao_interna||null)!==notaEsperada ||
+       (registros[0].lembrete_em||null)!==lembreteIso){
+      throw new Error("A gravação foi enviada, mas a leitura de confirmação não correspondeu. Recarregue o painel antes de tentar salvar novamente.");
+    }
+    alert("Anotação e lembrete salvos e confirmados no banco!");
     await carregarSolicitacoes();
 
   } catch (e) {
