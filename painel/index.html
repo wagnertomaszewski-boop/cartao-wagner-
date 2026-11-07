@@ -2234,6 +2234,18 @@ async function salvarEncaminhamentoPrefeitura(id,botao){
     const retorno=await resp.json().catch(()=>[]);
     if(!resp.ok || !Array.isArray(retorno) || retorno.length!==1)throw new Error(retorno.message||"Não foi possível confirmar a gravação.");
     if(retorno[0].encaminhado_prefeitura_em!==data || (retorno[0].protocolo_prefeitura||null)!==protocolo)throw new Error("O servidor não confirmou os valores informados.");
+    // Leitura independente após o PATCH: não considerar a operação concluída
+    // apenas porque a resposta de escrita repetiu os valores enviados.
+    const verificacao=await requisicao(
+      SUPABASE_URL+"/rest/v1/solicitacoes?id=eq."+encodeURIComponent(id)+"&select=id,encaminhado_prefeitura_em,protocolo_prefeitura",
+      {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Cache-Control":"no-cache"}}
+    );
+    const persistidos=await verificacao.json().catch(()=>[]);
+    if(!verificacao.ok || !Array.isArray(persistidos) || persistidos.length!==1 ||
+       persistidos[0].encaminhado_prefeitura_em!==data ||
+       (persistidos[0].protocolo_prefeitura||null)!==protocolo){
+      throw new Error("A gravação foi enviada, mas a leitura de confirmação falhou. Recarregue o painel antes de tentar novamente para evitar duplicidade.");
+    }
     await carregarSolicitacoes();
     alert("Dados do encaminhamento salvos com sucesso.");
     await atualizarContadoresStatus();
