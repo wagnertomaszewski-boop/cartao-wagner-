@@ -1739,6 +1739,9 @@ function filtrarPrazoMandato(faixa){
   if(filtroPrazoMandato!==0){
     const seletor=document.getElementById("filtroStatus");
     if(seletor)seletor.value="Todos";
+    // A busca textual também pode ocultar resultados contados no resumo.
+    const busca=document.getElementById("filtroBusca");
+    if(busca)busca.value="";
   }
   irPainel("solicitacoes",null,true);
 }
