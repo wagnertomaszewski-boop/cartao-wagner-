@@ -49,7 +49,7 @@ test('método incorreto em decisão administrativa não invoca handler',async()=
 
 test('PostgreSQL local não exige SSL e Neon remoto mantém TLS estrito',async()=>{
  let opcoes;
- class Pool {constructor(config){opcoes=config;}async end(){}}
+ class Pool {constructor(config){opcoes=config;}async connect(){throw Error('Conexão não esperada neste teste');}async end(){}}
  const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',DATABASE_URL:'postgresql://usuario:senha@localhost:5432/testes'};
  const instancia=await iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})});
  try{assert.equal(opcoes.ssl,false);}finally{await instancia.fechar();}
