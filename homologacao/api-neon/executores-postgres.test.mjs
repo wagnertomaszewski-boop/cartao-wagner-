@@ -35,3 +35,13 @@ test('não aceita SQL fora da lista de funções autorizadas',async()=>{
  await assert.rejects(executarCidadao('SELECT mandato_testes.pedir_recuperacao($1,$2)', ['a','b','c']));
  assert.deepEqual(eventos,[]);
 });
+
+test('cidadão pode consultar respostas apenas pela função segura parametrizada',async()=>{
+ const {pool,eventos}=simularPool();
+ const {executarCidadao}=criarExecutoresPostgres({pool});
+ const chave='a'.repeat(64);
+ await executarCidadao('SELECT * FROM mandato_testes.consulta_respostas_segura($1,$2)',['TESTE-000001',chave]);
+ assert.ok(eventos.some(x=>Array.isArray(x)&&x[0]==='SET LOCAL ROLE mandato_cidadao_a'));
+ assert.ok(eventos.some(x=>Array.isArray(x)&&x[0]==='SELECT * FROM mandato_testes.consulta_respostas_segura($1,$2)'&&x[1][1]===chave));
+ await assert.rejects(executarCidadao('SELECT * FROM mandato_testes.respostas WHERE protocolo=$1',['TESTE-000001']));
+});
