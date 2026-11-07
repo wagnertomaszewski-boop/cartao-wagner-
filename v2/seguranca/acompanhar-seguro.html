@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>Mandato em Ação · Consulta segura (homologação)</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#173454;background:#f1f5fa}*{box-sizing:border-box}
+main{max-width:600px;margin:35px auto;padding:24px;background:white;border-radius:16px;box-shadow:0 4px 20px #10254218}
+h1{font-size:24px}h2{font-size:18px}label{display:block;margin-top:15px;font-weight:700}
+input{display:block;width:100%;padding:12px;border:1px solid #a8b8c9;border-radius:8px;margin-top:6px;font:inherit}
+button{background:#0868bd;color:white;border:0;border-radius:8px;padding:12px 16px;margin-top:15px;font-weight:700;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}section{border-top:1px solid #dce5ee;margin-top:22px;padding-top:14px}
+small,.aviso{color:#53687b}.aviso{background:#f7f9fb;padding:12px;border-radius:8px}
+#mensagem{white-space:pre-wrap}#mensagem[role=alert]{color:#a21b1b}
+</style>
+</head>
+<body>
+<main>
+<h1>Mandato em Ação</h1>
+<p><strong>Consulta segura — somente homologação</strong></p>
+<p class="aviso">Esta página não substitui a consulta do aplicativo publicado. Use apenas protocolos e chaves fictícios do banco de testes. Nenhuma senha ou chave é salva no navegador.</p>
+<form id="formConsulta" autocomplete="off">
+<label for="protocolo">Número do protocolo</label>
+<input id="protocolo" name="protocolo" required maxlength="80" autocomplete="off">
+<label for="chave">Chave secreta de acesso</label>
+<input id="chave" name="chave" type="password" required minlength="32" maxlength="256" autocomplete="off" spellcheck="false">
+<button type="submit">Consultar com segurança</button>
+</form>
+<section><h2>Recuperar acesso</h2>
+<p><small>Solicite a recuperação pelo WhatsApp cadastrado. A identidade deverá ser verificada antes da emissão de uma nova chave.</small></p>
+<form id="formRecuperacao" autocomplete="off">
+<label for="protocoloRec">Número do protocolo</label>
+<input id="protocoloRec" required maxlength="80" autocomplete="off">
+<label for="whatsapp">WhatsApp com DDD</label>
+<input id="whatsapp" type="tel" required inputmode="tel" maxlength="25" autocomplete="off">
+<button type="submit">Solicitar recuperação</button>
+</form></section>
+<section><div id="mensagem" aria-live="polite"></div></section>
+</main>
+<script type="module">
+import {criarConsultaSegura} from './consulta-segura.mjs';
+// A origem deve ser configurada SOMENTE em ambiente de homologação, sem credenciais.
+// Não permitir que parâmetros de URL definam o destino da API.
+const API_HOMOLOGACAO = '';
+const mensagem=document.getElementById('mensagem');
+const formularios=[document.getElementById('formConsulta'),document.getElementById('formRecuperacao')];
+function exibir(texto,erro=false){mensagem.textContent=texto;mensagem.setAttribute('role',erro?'alert':'status');}
+let api=null;
+try {api=criarConsultaSegura({apiBase:API_HOMOLOGACAO});}
+catch {exibir('A consulta segura ainda não está disponível: falta configurar o servidor de homologação.',true);}
+for(const form of formularios){
+ const botao=form.querySelector('button');
+ if(!api){botao.disabled=true;continue;}
+ form.addEventListener('submit',async event=>{
+  event.preventDefault();
+  botao.disabled=true;exibir('Aguarde...');
+  try{
+   if(form.id==='formConsulta'){
+    const resultado=await api.consultar({protocolo:document.getElementById('protocolo').value,chave:document.getElementById('chave').value});
+    const dados=Array.isArray(resultado?.resultado)?resultado.resultado:[];
+    exibir(dados.length?'Consulta concluída. Status: '+String(dados[0]?.status||'Não informado'):'Nenhum registro encontrado para o protocolo e a chave informados.');
+   }else{
+    await api.pedirRecuperacao({protocolo:document.getElementById('protocoloRec').value,whatsapp:document.getElementById('whatsapp').value});
+    exibir('Se os dados corresponderem ao cadastro, o pedido será analisado. Não compartilhamos a existência de protocolos.');
+   }
+  }catch(e){exibir(e.message||'Operação indisponível.',true);}
+  finally{document.getElementById('chave').value='';botao.disabled=false;}
+ });
+}
+</script>
+</body>
+</html>
