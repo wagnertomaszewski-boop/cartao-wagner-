@@ -3,13 +3,20 @@ import {criarLimitador} from './limitador.mjs';
 
 // Handlers são injetados apenas pelo servidor, nunca definidos pelo navegador.
 // Sem handlers, as operações permanecem indisponíveis.
-export function criarServidor({verificarAdmin = async () => false, operacoes = {}, limitador = criarLimitador(), verificarIdentidade = async () => false} = {}) {
+export function criarServidor({verificarAdmin = async () => false, operacoes = {}, limitador = criarLimitador(), verificarIdentidade = async () => false, origensPermitidas = []} = {}) {
   return http.createServer(async (req, res) => {
+    const origem = req.headers.origin;
+    const origemAutorizada = typeof origem === 'string' && origensPermitidas.includes(origem);
+    const cabecalhosCors = origemAutorizada ? {'Access-Control-Allow-Origin':origem,'Vary':'Origin'} : {};
     const send = (status, data) => {
-      res.writeHead(status, {'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff'});
+      res.writeHead(status, {'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff',...cabecalhosCors});
       res.end(JSON.stringify(data));
     };
-    if (req.headers.origin) return send(403, {erro:'Origem não autorizada'});
+    if (origem && !origemAutorizada) return send(403, {erro:'Origem não autorizada'});
+    if (req.method === 'OPTIONS' && origemAutorizada) {
+      res.writeHead(204,{...cabecalhosCors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Max-Age':'600','Cache-Control':'no-store'});
+      return res.end();
+    }
     if (req.url === '/health' && req.method === 'GET') return send(200, {status:'ok', modo:'homologacao-sem-banco'});
     const adminLista = req.url === '/api/admin/recuperacoes' && req.method === 'GET';
     const adminDecisao = /^\/api\/admin\/recuperacoes\/([0-9]+)\/decisao$/.exec(req.url || '');
