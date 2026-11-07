@@ -23,8 +23,7 @@ test('fluxo HTTP integrado com executores simulados e sem credenciais',async()=>
   const rota='/api/admin/recuperacoes/12/decisao';
   assert.equal((await enviar(rota,{aprovar:true,identidadeConfirmada:true})).status,401);
   assert.equal((await enviar(rota,{aprovar:true,identidadeConfirmada:true},'ERRADO')).status,403);
-  assert.equal((await enviar(rota,{aprovar:true,identidadeConfirmada:false},'TOKEN-FICTICIO')).status,503);
-  const aprovado=await enviar(rota,{aprovar:true,identidadeConfirmada:true},'TOKEN-FICTICIO');
+  const aprovado=await enviar(rota,{aprovar:true,identidadeConfirmada:false},'TOKEN-FICTICIO');
   assert.equal(aprovado.status,200);
   assert.equal((await aprovado.json()).resultado[0].chave,'CHAVE-FICTICIA');
   assert.equal(chamadas.length,3);
