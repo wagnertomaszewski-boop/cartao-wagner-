@@ -170,3 +170,10 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Executados via `node --test /mnt/data/mandato-original/*.test.mjs`: **9 aprovados, 0 falhas**, duração ~352 ms.
 - Os módulos `server.mjs` e `limitador.mjs` locais são reproduções funcionalmente equivalentes, mas **não cópias literais verificadas** dos arquivos GitHub; por isso o resultado é evidência parcial, não execução integral da suíte diretamente sobre checkout do repositório.
 - Bloqueio de obtenção de checkout: `git ls-remote` falhou por DNS (`Could not resolve host: github.com`). Nenhum serviço de produção foi alterado.
+
+## Testes de concorrência e ocultação de erro — 2026-11-07
+- Criado `homologacao/api-neon/carga.test.mjs` na branch de testes, sem alterar `main`.
+- Executado localmente `node --test /mnt/data/mandato-original/*.test.mjs`: **11 testes passaram, zero falhas**; execução final ~1189 ms. Os nove testes anteriores mais dois novos testes de carga/erro.
+- Com 25 requisições HTTP simultâneas no mesmo IP, limitador local aceitou 5 (HTTP 200) e bloqueou 20 (HTTP 429); handler invocado exatamente 5 vezes.
+- Simulação de falha do banco retornou HTTP 503 e não expôs mensagem interna fictícia.
+- **Não é teste de capacidade em produção**: o limitador é em memória, por instância; os módulos locais são reproduções, e o backend real não está implantado. O limite de 5 consultas por minuto por IP pode afetar famílias/rede compartilhada e requer revisão antes da produção.
