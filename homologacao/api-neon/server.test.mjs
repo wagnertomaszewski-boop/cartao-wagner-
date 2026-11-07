@@ -59,3 +59,28 @@ test('health indica apenas habilitação das rotas, sem alegar conexão com banc
   assert.equal(resposta.modo,'homologacao');
  });
 });
+
+test('aprovação administrativa falha fechada sem verificação de identidade no servidor',async()=>{
+ let decisoes=0;
+ await comServidor({
+  verificarAdmin:async token=>token==='admin-ficticio',
+  operacoes:{decidir:async()=>{decisoes++;return {aprovado:true};}}
+ },async base=>{
+  const url=base+'/api/admin/recuperacoes/42/decisao';
+  const enviar=body=>fetch(url,{method:'POST',headers:{Authorization:'Bearer admin-ficticio','Content-Type':'application/json'},body:JSON.stringify(body)});
+  assert.equal((await enviar({aprovar:true,identidadeConfirmada:true})).status,403);
+  assert.equal((await enviar({aprovar:false,identidadeConfirmada:true})).status,403);
+  assert.equal(decisoes,0);
+ });
+});
+
+test('verificador de identidade falso ou com erro impede decisão',async()=>{
+ for(const verificarIdentidade of [async()=>false,async()=>{throw Error('Falha fictícia');}]){
+  let decisoes=0;
+  await comServidor({verificarAdmin:async()=>true,verificarIdentidade,operacoes:{decidir:async()=>{decisoes++;return {};}}},async base=>{
+   const resposta=await fetch(base+'/api/admin/recuperacoes/42/decisao',{method:'POST',headers:{Authorization:'Bearer teste','Content-Type':'application/json'},body:JSON.stringify({aprovar:true})});
+   assert.equal(resposta.status,403);
+   assert.equal(decisoes,0);
+  });
+ }
+});
