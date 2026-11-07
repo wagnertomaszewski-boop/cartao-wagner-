@@ -588,7 +588,7 @@
       <div id="alertasPrazoMandato" style="background:#fff;border:1px solid #d9e3ee;border-radius:14px;padding:14px;margin:0 0 14px" aria-live="polite">
         <strong style="display:block;margin-bottom:5px;color:#16446f">Acompanhamento de prazos das solicitações</strong>
         <div id="alertasPrazoResumo" style="font-size:14px;line-height:1.6">Carregando indicadores...</div>
-        <small style="display:block;color:#64748b;margin-top:7px">Contagem desde o cadastro no sistema, não desde o encaminhamento à Prefeitura. Confirme a execução antes de reiterar ou divulgar.</small>
+        <small style="display:block;color:#64748b;margin-top:7px">Contagem desde a data oficial de encaminhamento cadastrada no painel. Solicitações sem essa data não entram nos indicadores.</small>
       </div>
       <div class="status-resumo">
         <button class="sr-card recebida" type="button" onclick="selecionarStatusRapido('Recebida')"><small>Recebidas (aguardando análise)</small><strong id="cntRecebida">—</strong></button>
@@ -818,8 +818,8 @@ function atualizarResumoPainel(itens){
   // Indicadores internos: não alteram status, prazos legais ou dados públicos.
   const hojeMs=new Date(); hojeMs.setHours(0,0,0,0);
   const faixas=[30,60,90,180];
-  const pendentes=todos.filter(x=>normalizar(x.status)!=="concluido" && x.criado_em);
-  const dias=(x)=>{const d=new Date(x.criado_em);if(Number.isNaN(d.getTime()))return -1;d.setHours(0,0,0,0);return Math.floor((hojeMs-d)/86400000);};
+  const pendentes=todos.filter(x=>normalizar(x.status)!=="concluido" && x.encaminhado_prefeitura_em);
+  const dias=(x)=>{const d=new Date(x.encaminhado_prefeitura_em+"T12:00:00");if(Number.isNaN(d.getTime()))return -1;d.setHours(0,0,0,0);return Math.floor((hojeMs-d)/86400000);};
   const contagens=faixas.map((n,i)=>pendentes.filter(x=>dias(x)>=n && (i===faixas.length-1 || dias(x)<faixas[i+1])).length);
   const resumo=document.getElementById("alertasPrazoResumo");
   if(resumo) resumo.innerHTML=faixas.map((n,i)=>`<button type="button" onclick="filtrarPrazoMandato(${n})" style="margin:3px;padding:7px;border:1px solid #cbd5e1;border-radius:8px;background:#eff6ff;color:#174a7e;font-weight:700">${n===180?"180+ dias":n+"–"+(faixas[i+1]-1)+" dias"}: ${contagens[i]}</button>`).join("")+`<button type="button" onclick="filtrarPrazoMandato(0)" style="margin:3px;padding:7px;border:1px solid #cbd5e1;border-radius:8px;background:white">Limpar filtro</button>`;
@@ -986,7 +986,7 @@ async function atualizarContadoresStatus(){
     const sessao=await obterSessaoValida();
     if(!sessao) return;
     const resp=await requisicao(
-      SUPABASE_URL + "/rest/v1/solicitacoes?select=status,lembrete_em,criado_em,atualizado_em",
+      SUPABASE_URL + "/rest/v1/solicitacoes?select=status,lembrete_em,criado_em,atualizado_em,encaminhado_prefeitura_em",
       {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token}}
     );
     if(!resp.ok) return;
@@ -1718,7 +1718,7 @@ function validarStatusParaAviso(link) {
 
 let filtroPrazoMandato=0;
 function diasDesdeCadastroMandato(item){
-  const d=new Date(item.criado_em||"");
+  const d=new Date(item.encaminhado_prefeitura_em?item.encaminhado_prefeitura_em+"T12:00:00":"");
   if(!Number.isFinite(d.getTime())) return -1;
   const inicio=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
   const agora=new Date(), hoje=new Date(agora.getFullYear(),agora.getMonth(),agora.getDate()).getTime();
@@ -1986,6 +1986,14 @@ async function carregarSolicitacoes() {
                   <div class="nota-info">Opcional</div>
                 </div>
               </div>
+              <div style="margin:10px 0;padding:10px;background:#edf7f1;border-radius:9px">
+                <strong style="font-size:13px">Encaminhamento oficial à Prefeitura</strong>
+                <div class="nota-grid">
+                  <div class="campo-mini"><label for="encaminhado-prefeitura-${id}">Data do encaminhamento</label><input id="encaminhado-prefeitura-${id}" type="date" value="${escCampo(item.encaminhado_prefeitura_em||"")}"></div>
+                  <div class="campo-mini"><label for="protocolo-prefeitura-${id}">Número do pedido / protocolo</label><input id="protocolo-prefeitura-${id}" type="text" maxlength="120" value="${escCampo(item.protocolo_prefeitura||"")}" placeholder="Ex.: Pedido 23/2026"></div>
+                </div>
+                <button type="button" onclick="salvarEncaminhamentoPrefeitura(${id},this)">Salvar encaminhamento</button>
+              </div>
               <div style="margin:10px 0;padding:10px;background:#f1f7ff;border-radius:9px">
                 <strong style="font-size:13px">Fiscalização — cobranças à Prefeitura</strong>
                 <p style="font-size:12px;margin:5px 0">Registre data do encaminhamento e cobranças na anotação interna. O histórico fica reservado ao painel.</p>
@@ -2195,6 +2203,28 @@ async function removerLembrete(id){
   await salvarAnotacaoInterna(id);
 }
 
+async function salvarEncaminhamentoPrefeitura(id,botao){
+  const data=document.getElementById("encaminhado-prefeitura-"+id)?.value||null;
+  const protocolo=document.getElementById("protocolo-prefeitura-"+id)?.value.trim()||null;
+  if(data && data>new Date().toISOString().slice(0,10)){alert("A data de encaminhamento não pode ser futura.");return;}
+  if(!data && protocolo){alert("Informe também a data do encaminhamento.");return;}
+  if(!confirm("Confirmar dados do encaminhamento oficial à Prefeitura?"))return;
+  botao.disabled=true;
+  try{
+    const sessao=await obterSessaoValida();
+    if(!sessao)throw new Error("Sessão expirada.");
+    const resp=await requisicao(SUPABASE_URL+"/rest/v1/solicitacoes?id=eq."+encodeURIComponent(id),{
+      method:"PATCH",
+      headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Content-Type":"application/json","Prefer":"return=representation"},
+      body:JSON.stringify({encaminhado_prefeitura_em:data,protocolo_prefeitura:protocolo})
+    });
+    const retorno=await resp.json().catch(()=>[]);
+    if(!resp.ok || !Array.isArray(retorno) || !retorno.length)throw new Error(retorno.message||"Não foi possível salvar.");
+    alert("Encaminhamento registrado.");
+    await carregarSolicitacoes();
+  }catch(e){alert(mensagemDeErro(e));}
+  finally{botao.disabled=false;}
+}
 function registrarCobrancaMandato(id){
   const campo=document.getElementById("anotacao-"+id);
   if(!campo) return;
