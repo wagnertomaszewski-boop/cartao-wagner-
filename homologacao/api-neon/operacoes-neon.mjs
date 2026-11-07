@@ -19,7 +19,7 @@ export function criarOperacoesNeon({executarCidadao, executarAdmin} = {}) {
       return {resultado:linhas};
     },
     async decidir({dados,pedidoId}) {
-      if (!/^[1-9][0-9]{0,17}$/.test(pedidoId || '') || typeof dados.aprovar !== 'boolean' || dados.identidadeConfirmada !== true)
+      if (!/^[1-9][0-9]{0,17}$/.test(pedidoId || '') || typeof dados.aprovar !== 'boolean')
         throw new Error('Decisão não autorizada');
       const linhas = await executarAdmin('SELECT * FROM mandato_testes.decidir_recuperacao($1,$2)', [pedidoId, dados.aprovar]);
       return {resultado:linhas};
