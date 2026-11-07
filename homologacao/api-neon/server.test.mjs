@@ -33,6 +33,7 @@ test('handler de homologação recebe JSON somente após validação e autentica
   let chamadas = 0;
   await comServidor({
     verificarAdmin: async token => token === 'autorizado',
+    verificarIdentidade: async () => true,
     operacoes: { decidir: async ({dados,pedidoId}) => {chamadas++; return {pedidoId, aprovado: dados.aprovar};} }
   }, async base => {
     const url=base+'/api/admin/recuperacoes/15/decisao';
