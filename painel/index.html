@@ -816,11 +816,10 @@ function atualizarResumoPainel(itens){
   set("resumoLembretes",lembretes);
   set("resumoConcluidas",concluidas);
   // Indicadores internos: não alteram status, prazos legais ou dados públicos.
-  const hojeMs=new Date(); hojeMs.setHours(12,0,0,0);
   const faixas=[30,60,90,180];
   const abertasSemEncaminhamento=todos.filter(x=>normalizar(x.status)!=="concluido" && !x.encaminhado_prefeitura_em).length;
   const pendentes=todos.filter(x=>normalizar(x.status)!=="concluido" && x.encaminhado_prefeitura_em);
-  const dias=(x)=>{const d=new Date(x.encaminhado_prefeitura_em+"T12:00:00");if(Number.isNaN(d.getTime()))return -1;d.setHours(12,0,0,0);return Math.floor((hojeMs-d)/86400000);};
+  const dias=(x)=>diasEntreDatasCivisMandato(x.encaminhado_prefeitura_em,hoje);
   const contagens=faixas.map((n,i)=>pendentes.filter(x=>dias(x)>=n && (i===faixas.length-1 || dias(x)<faixas[i+1])).length);
   const resumo=document.getElementById("alertasPrazoResumo");
   if(resumo) resumo.innerHTML=faixas.map((n,i)=>`<button type="button" onclick="filtrarPrazoMandato(${n})" style="margin:3px;padding:7px;border:1px solid #cbd5e1;border-radius:8px;background:#eff6ff;color:#174a7e;font-weight:700">${n===180?"180+ dias":n+"–"+(faixas[i+1]-1)+" dias"}: ${contagens[i]}</button>`).join("")+`<button type="button" onclick="filtrarPrazoMandato(-1)" style="margin:3px;padding:7px;border:1px solid #e8c27c;border-radius:8px;background:#fff5df;color:#754b13;font-weight:700">Sem data oficial: ${abertasSemEncaminhamento}</button><button type="button" onclick="filtrarPrazoMandato(0)" style="margin:3px;padding:7px;border:1px solid #cbd5e1;border-radius:8px;background:white">Limpar filtro</button>`;
@@ -1719,12 +1718,19 @@ function validarStatusParaAviso(link) {
 }
 
 let filtroPrazoMandato=0;
+function diasEntreDatasCivisMandato(dataISO, hojeISO=dataHojeISO()){
+  const validar=(valor)=>{
+    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(valor||"")))return null;
+    const [ano,mes,dia]=valor.split("-").map(Number);
+    const utc=Date.UTC(ano,mes-1,dia);
+    const d=new Date(utc);
+    return d.getUTCFullYear()===ano && d.getUTCMonth()===mes-1 && d.getUTCDate()===dia ? utc : null;
+  };
+  const inicio=validar(dataISO), hoje=validar(hojeISO);
+  return inicio===null||hoje===null?-1:Math.floor((hoje-inicio)/86400000);
+}
 function diasDesdeEncaminhamentoMandato(item){
-  const d=new Date(item.encaminhado_prefeitura_em?item.encaminhado_prefeitura_em+"T12:00:00":"");
-  if(!Number.isFinite(d.getTime())) return -1;
-  const inicio=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
-  const agora=new Date(), hoje=new Date(agora.getFullYear(),agora.getMonth(),agora.getDate()).getTime();
-  return Math.floor((hoje-inicio)/86400000);
+  return diasEntreDatasCivisMandato(item.encaminhado_prefeitura_em);
 }
 function filtrarPrazoMandato(faixa){
   filtroPrazoMandato=[-1,0,30,60,90,180].includes(faixa)?faixa:0;
