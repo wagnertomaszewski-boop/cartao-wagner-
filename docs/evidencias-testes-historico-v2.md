@@ -164,3 +164,9 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Chave correta `repeat('a',64)`: assunto/status fictícios retornados; respostas vazias; somente nome de anexo fictício retornado; somente histórico público fictício retornado.
 - Chave incorreta `repeat('b',64)`: as quatro funções retornaram **zero linhas**, sem nomes de anexos, assunto ou histórico.
 - **Limitação:** estes são testes SQL diretos no banco Neon, não tráfego HTTP por API conectada ao Neon. Não há confirmação de suíte original integral nem autorização para ativação na produção.
+
+## Execução de nove testes originais de HTTP — 2026-11-07
+- Copiados **literalmente os corpos dos testes versionados** `server.test.mjs` (7), `cors.test.mjs` (1) e `limitador-http.test.mjs` (1) para `/mnt/data/mandato-original`, usando o conteúdo consultado no GitHub.
+- Executados via `node --test /mnt/data/mandato-original/*.test.mjs`: **9 aprovados, 0 falhas**, duração ~352 ms.
+- Os módulos `server.mjs` e `limitador.mjs` locais são reproduções funcionalmente equivalentes, mas **não cópias literais verificadas** dos arquivos GitHub; por isso o resultado é evidência parcial, não execução integral da suíte diretamente sobre checkout do repositório.
+- Bloqueio de obtenção de checkout: `git ls-remote` falhou por DNS (`Could not resolve host: github.com`). Nenhum serviço de produção foi alterado.
