@@ -38,8 +38,8 @@ test('consulta protegida retorna respostas somente quando protocolo e chave são
  const chamadas=[];
  const ops=criarOperacoesNeon({executarCidadao:async(sql,params)=>{
   chamadas.push({sql,params});
-  if(sql.includes('consulta_segura'))return [{assunto:'Teste',status:'Recebido'}];
   if(sql.includes('consulta_respostas_segura'))return [{texto:'Resposta de teste',criado_em:'2026-11-07',caminho_privado:'NÃO EXPOR'}];
+  if(sql.includes('consulta_segura'))return [{assunto:'Teste',status:'Recebido'}];
   return [];
  },executarAdmin:async()=>[]});
  const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'a'.repeat(64)}});
