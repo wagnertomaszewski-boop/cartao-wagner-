@@ -54,6 +54,23 @@ test('PostgreSQL local não exige SSL e Neon remoto mantém TLS estrito',async()
  const instancia=await iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})});
  try{assert.equal(opcoes.ssl,false);}finally{await instancia.fechar();}
  const host='ep-teste-123.us-east-2.aws.neon.tech';
- const remoto=await iniciarHomologacao({env:{...env,DATABASE_URL:'postgresql://usuario:senha@'+host+'/neondb',NEON_HOST_HOMOLOGACAO:host},carregarPg:async()=>({default:{Pool}})});
+ const remoto=await iniciarHomologacao({env:{...env,DATABASE_URL:'postgresql://usuario:senha@'+host+'/neondb',NEON_HOST_HOMOLOGACAO:host,NEON_USUARIO_SERVICO_HOMOLOGACAO:'usuario'},carregarPg:async()=>({default:{Pool}})});
  try{assert.deepEqual(opcoes.ssl,{rejectUnauthorized:true});}finally{await remoto.fechar();}
+});
+
+test('bloqueia conta Neon privilegiada antes de criar pool',async()=>{
+ let criacoes=0;
+ class Pool{constructor(){criacoes++;}}
+ const host='ep-teste-123.us-east-2.aws.neon.tech';
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',NEON_HOST_HOMOLOGACAO:host,NEON_USUARIO_SERVICO_HOMOLOGACAO:'neondb_owner',DATABASE_URL:'postgresql://neondb_owner:senha@'+host+'/neondb'};
+ await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})}),/Conta privilegiada proibida/);
+ assert.equal(criacoes,0);
+});
+test('bloqueia usuário remoto sem correspondência à conta de serviço',async()=>{
+ let criacoes=0;
+ class Pool{constructor(){criacoes++;}}
+ const host='ep-teste-123.us-east-2.aws.neon.tech';
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',NEON_HOST_HOMOLOGACAO:host,NEON_USUARIO_SERVICO_HOMOLOGACAO:'servico_isolado',DATABASE_URL:'postgresql://outro:senha@'+host+'/neondb'};
+ await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})}),/Usuário de serviço/);
+ assert.equal(criacoes,0);
 });
