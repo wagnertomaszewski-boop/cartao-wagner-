@@ -1,0 +1,49 @@
+name: Homologacao HTTP Neon isolada
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/recuperacao-whatsapp-manual
+    paths:
+      - '.github/workflows/homologacao-http-neon.yml'
+      - 'homologacao/api-neon/**'
+permissions:
+  contents: read
+jobs:
+  integracao:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Testes originais HTTP e PostgreSQL simulado
+        run: node --test homologacao/api-neon/integracao-http-postgres.test.mjs homologacao/api-neon/limite-corpo-http.test.mjs
+      - name: Verificar segredos de homologacao
+        id: secrets
+        env:
+          URL_TESTE: ${{ secrets.NEON_HOMOLOGACAO_DATABASE_URL }}
+          HOST_TESTE: ${{ secrets.NEON_HOMOLOGACAO_HOST }}
+        run: |
+          if [ -n "$URL_TESTE" ] && [ -n "$HOST_TESTE" ]; then
+            echo "habilitado=sim" >> "$GITHUB_OUTPUT"
+          else
+            echo "habilitado=nao" >> "$GITHUB_OUTPUT"
+            echo "::warning::HTTP-Neon real NAO EXECUTADO: configure os dois segredos de homologacao."
+          fi
+      - name: Instalar driver PostgreSQL isolado
+        if: steps.secrets.outputs.habilitado == 'sim'
+        working-directory: homologacao/api-neon
+        run: npm install --no-save --no-package-lock --ignore-scripts pg@8
+      - name: Executar HTTP-Neon real
+        if: steps.secrets.outputs.habilitado == 'sim'
+        working-directory: homologacao/api-neon
+        env:
+          MANDATO_AMBIENTE: homologacao
+          HABILITAR_API_NEON: sim
+          HABILITAR_ROTAS_CIDADAO_TESTES: sim
+          NEON_USUARIO_SERVICO_HOMOLOGACAO: mandato_api_homologacao
+          NEON_HOST_HOMOLOGACAO: ${{ secrets.NEON_HOMOLOGACAO_HOST }}
+          DATABASE_URL: ${{ secrets.NEON_HOMOLOGACAO_DATABASE_URL }}
+        run: node smoke-http-neon-real.mjs
