@@ -11,9 +11,9 @@ test('recuperação chama função parametrizada e não revela existência de pr
 });
 test('consulta usa chave como parâmetro, nunca interpolada em SQL',async()=>{
  let sql,params;
- const ops=criarOperacoesNeon({executarCidadao:async(s,p)=>{if(s.includes('consulta_respostas_segura')||s.includes('consulta_historico_segura'))return [];sql=s;params=p;return [{status:'Recebido'}];},executarAdmin:async()=>[]});
+ const ops=criarOperacoesNeon({executarCidadao:async(s,p)=>{if(s.includes('consulta_respostas_segura')||s.includes('consulta_historico_segura'))return [];sql=s;params=p;return [{assunto:'Teste',status:'Recebido'}];},executarAdmin:async()=>[]});
  const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'a'.repeat(64)}});
- assert.deepEqual(r.resultado,[{status:'Recebido'}]);
+ assert.deepEqual(r.resultado,[{assunto:'Teste',status:'Recebido'}]);
  assert.deepEqual(r.respostas,[]);
  assert.deepEqual(r.historico,[]);
  assert.equal(sql,'SELECT * FROM mandato_testes.consulta_segura($1,$2)');
@@ -67,4 +67,11 @@ test('histórico seguro não expõe campos internos e exige chave válida',async
  const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'a'.repeat(64)}});
  assert.deepEqual(r.historico,[{status:'Recebido',observacao:'Encaminhado',criado_em:'2026-11-07'}]);
  assert.ok(chamadas.includes('SELECT * FROM mandato_testes.consulta_historico_segura($1,$2)'));
+});
+
+test('detalhes protegidos não expõem campos internos do banco',async()=>{
+ const ops=criarOperacoesNeon({executarCidadao:async(sql)=>sql.includes('consulta_segura')?[{assunto:'Teste',status:'recebido',cidadao_id:'NÃO EXPOR',descricao:'NÃO EXPOR',segredo_hash:'NÃO EXPOR'}]:[],executarAdmin:async()=>[]});
+ const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'a'.repeat(64)}});
+ assert.deepEqual(r.resultado,[{assunto:'Teste',status:'recebido'}]);
+ assert.ok(!JSON.stringify(r).includes('NÃO EXPOR'));
 });
