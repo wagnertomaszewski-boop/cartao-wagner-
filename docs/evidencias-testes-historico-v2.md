@@ -45,3 +45,10 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Dois eventos fictícios existentes foram explicitamente marcados como visíveis; um novo evento `NOTA INTERNA FICTÍCIA — NÃO EXIBIR` foi inserido com a visibilidade padrão privada.
 - Teste com chave válida nos papéis `mandato_cidadao_a` e `mandato_cidadao_b`: apenas `Evento fictício A` foi retornado; a nota interna não apareceu.
 - **Atenção à migração:** não marcar automaticamente históricos legados como públicos. Exigir revisão de cada classe de observação e distinguir atualizações públicas de anotações administrativas.
+
+## Revogação de função antiga de anexos — 2026-11-07
+- Auditoria encontrou `mandato_testes.consulta_anexos_segura(text,text)` retornando `caminho_privado` e com permissão de execução para ambos os papéis de cidadão de testes.
+- Revogado `EXECUTE` dessa função para `mandato_cidadao_a` e `mandato_cidadao_b` **somente no Neon de homologação**.
+- Consulta de privilégios confirmou `false` para ambos na função antiga e `true` na função nova `consulta_nomes_anexos_segura`.
+- Criado teste de regressão do executor para recusar consulta à tabela `anexos` e chamada à função antiga que retornava caminhos.
+- A suíte Node integral ainda está pendente; a alteração não foi aplicada ao Supabase de produção.
