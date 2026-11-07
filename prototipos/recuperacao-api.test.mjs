@@ -26,3 +26,14 @@ test('valida dados antes de enviar',async()=>{
   await assert.rejects(api.solicitar('x','51999990001'),/Protocolo inválido/);
   await assert.rejects(api.solicitar('TESTE-000001','123'),/WhatsApp inválido/);
 });
+
+test('bloqueia os dois projetos Supabase reais mesmo em homologação',()=>{
+  for(const id of ['pmmsdjozyyxkbuqlkfpb','kmttgzraotabxvqmrren']) {
+    assert.throws(()=>new RecuperacaoApi({ambiente:'homologacao',baseUrl:'https://'+id+'.supabase.co',publishableKey:'fake'}),/produção não permitido/);
+  }
+});
+test('rejeita URL malformada ou domínio externo',()=>{
+  for(const url of ['http://teste.supabase.co','https://teste.supabase.co.evil.com','https://teste.supabase.co/qualquer','https://teste.supabase.co?x=1']) {
+    assert.throws(()=>new RecuperacaoApi({ambiente:'homologacao',baseUrl:url,publishableKey:'fake'}));
+  }
+});
