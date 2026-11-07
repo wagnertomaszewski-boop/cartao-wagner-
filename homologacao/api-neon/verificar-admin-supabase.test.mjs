@@ -28,3 +28,8 @@ test('não aceita projeto externo nem lista vazia de administradores',()=>{
  assert.throws(()=>criarVerificadorAdmin({...cfg,supabaseUrl:'https://example.com'}));
  assert.throws(()=>criarVerificadorAdmin({...cfg,idsPermitidos:[]}));
 });
+
+test('nega URL com sufixo malicioso',()=>{assert.throws(()=>criarVerificadorAdmin({...cfg,supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co.evil.com'}));});
+test('token curto não dispara requisição',async()=>{let n=0;const verificar=criarVerificadorAdmin({...cfg,buscar:async()=>{n++;return {ok:true,json:async()=>({id:uid,aud:'authenticated'})};}});assert.equal(await verificar('curto'),false);assert.equal(n,0);});
+test('envia autenticação somente ao endpoint fixo, sem redirecionar',async()=>{const verificar=criarVerificadorAdmin({...cfg,buscar:async(url,opcoes)=>{assert.equal(url,cfg.supabaseUrl+'/auth/v1/user');assert.equal(opcoes.redirect,'error');assert.equal(opcoes.method,'GET');return {ok:true,json:async()=>({id:uid,aud:'authenticated',is_anonymous:false})};}});assert.equal(await verificar(token),true);});
+test('falha fechada diante de resposta HTTP não autorizada',async()=>{const verificar=criarVerificadorAdmin({...cfg,buscar:async()=>({ok:false})});assert.equal(await verificar(token),false);});
