@@ -1,4 +1,5 @@
 name: Homologacao HTTP Neon isolada
+# Reexecutar smoke HTTP-Neon apos configuracao dos secrets de homologacao
 on:
   workflow_dispatch:
   push:
