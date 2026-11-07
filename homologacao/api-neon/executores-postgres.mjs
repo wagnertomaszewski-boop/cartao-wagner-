@@ -5,7 +5,8 @@ const CONSULTAS_PERMITIDAS = Object.freeze({
  mandato_cidadao_a: new Set([
   'SELECT mandato_testes.pedir_recuperacao($1,$2)',
   'SELECT * FROM mandato_testes.consulta_segura($1,$2)',
-  'SELECT * FROM mandato_testes.consulta_respostas_segura($1,$2)'
+  'SELECT * FROM mandato_testes.consulta_respostas_segura($1,$2)',
+  'SELECT * FROM mandato_testes.consulta_historico_segura($1,$2)'
  ]),
  mandato_admin_teste: new Set([
   'SELECT * FROM mandato_testes.decidir_recuperacao($1,$2)'
