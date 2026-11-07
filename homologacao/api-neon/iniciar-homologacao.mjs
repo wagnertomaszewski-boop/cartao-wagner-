@@ -14,9 +14,11 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  const pool = new pg.Pool({connectionString:env.DATABASE_URL,ssl:{rejectUnauthorized:true},max:3,connectionTimeoutMillis:3000,idleTimeoutMillis:10000});
  const {executarCidadao,executarAdmin}=criarExecutoresPostgres({pool});
  const operacoesNeon=criarOperacoesNeon({executarCidadao,executarAdmin});
- // Sem limitador de tentativas e identidade verificada, rotas de dados ficam fechadas.
- const operacoes={};
- void operacoesNeon;
+ // Apenas consultas e pedidos de recuperação no banco de TESTES, com habilitação separada.
+ // A decisão administrativa continua desabilitada até existir verificação real de identidade.
+ const operacoes = env.HABILITAR_ROTAS_CIDADAO_TESTES === 'sim'
+  ? {solicitar:operacoesNeon.solicitar, consultar:operacoesNeon.consultar}
+  : {};
  // Sem autenticação de administrador integrada, o verificador sempre rejeita.
  const verificarAdmin = env.SUPABASE_ADMIN_UID && env.SUPABASE_PUBLISHABLE_KEY
   ? criarVerificadorAdmin({supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',chavePublica:env.SUPABASE_PUBLISHABLE_KEY,idsPermitidos:[env.SUPABASE_ADMIN_UID]})
