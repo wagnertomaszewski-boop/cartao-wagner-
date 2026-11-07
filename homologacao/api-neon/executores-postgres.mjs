@@ -1,6 +1,15 @@
 // Executor PostgreSQL: conexão é injetada no servidor, nunca exposta ao navegador.
 // Cada operação ocorre em uma transação; o papel é fixo, não fornecido pelo cliente.
 const PAPEIS = Object.freeze({cidadao:'mandato_cidadao_a',admin:'mandato_admin_teste'});
+const CONSULTAS_PERMITIDAS = Object.freeze({
+ mandato_cidadao_a: new Set([
+  'SELECT mandato_testes.pedir_recuperacao($1,$2)',
+  'SELECT * FROM mandato_testes.consulta_segura($1,$2)'
+ ]),
+ mandato_admin_teste: new Set([
+  'SELECT * FROM mandato_testes.decidir_recuperacao($1,$2)'
+ ])
+});
 export function criarExecutoresPostgres({pool} = {}) {
  if (!pool || typeof pool.connect !== 'function') throw new Error('Pool PostgreSQL obrigatório');
  async function executar(papel,sql,parametros=[]) {
