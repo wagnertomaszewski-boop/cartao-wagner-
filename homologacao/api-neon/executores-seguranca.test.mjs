@@ -1,0 +1,10 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {criarExecutoresPostgres} from './executores-postgres.mjs';
+const CONSULTA='SELECT * FROM mandato_testes.consulta_segura($1,$2)';
+function simular(falhar=false){const comandos=[];let liberacoes=0;const pool={async connect(){return {async query(sql,params){comandos.push([sql,params]);if(falhar&&sql===CONSULTA)throw Error('falha simulada');return {rows:[{ok:true}]};},release(){liberacoes++;}}}};return {pool,comandos,get liberacoes(){return liberacoes;}};}
+test('rejeita SQL não permitido sem abrir conexão',async()=>{const s=simular();const e=criarExecutoresPostgres({pool:s.pool});await assert.rejects(e.executarCidadao('SELECT * FROM mandato_testes.acessos_protocolo',[]),/não permitida/);assert.equal(s.comandos.length,0);});
+test('rejeita função administrativa pelo executor cidadão',async()=>{const s=simular();const e=criarExecutoresPostgres({pool:s.pool});await assert.rejects(e.executarCidadao('SELECT * FROM mandato_testes.decidir_recuperacao($1,$2)',['1',true]),/não permitida/);assert.equal(s.comandos.length,0);});
+test('transação fixa papel cidadão e libera conexão',async()=>{const s=simular();const e=criarExecutoresPostgres({pool:s.pool});await e.executarCidadao(CONSULTA,['PROTOCOLO','x'.repeat(64)]);assert.deepEqual(s.comandos.map(x=>x[0]),['BEGIN',"SET LOCAL statement_timeout = '3000ms'",'SET LOCAL ROLE mandato_cidadao_a',CONSULTA,'COMMIT']);assert.equal(s.liberacoes,1);});
+test('falha da consulta provoca rollback e liberação',async()=>{const s=simular(true);const e=criarExecutoresPostgres({pool:s.pool});await assert.rejects(e.executarCidadao(CONSULTA,['P','x'.repeat(64)]),/falha simulada/);assert.equal(s.comandos.at(-1)[0],'ROLLBACK');assert.equal(s.liberacoes,1);});
+test('admin só pode executar decisão sob papel administrativo',async()=>{const s=simular();const e=criarExecutoresPostgres({pool:s.pool});await e.executarAdmin('SELECT * FROM mandato_testes.decidir_recuperacao($1,$2)',['1',false]);assert.ok(s.comandos.some(x=>x[0]==='SET LOCAL ROLE mandato_admin_teste'));assert.equal(s.liberacoes,1);});
