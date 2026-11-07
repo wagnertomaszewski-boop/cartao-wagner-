@@ -975,6 +975,7 @@ function atualizarFiltroMovimento(){
 
 function selecionarStatusRapido(status){
   faixaSemMovimento=0;
+  filtroPrazoMandato=0;
   const select=document.getElementById("filtroStatus");
   if(select) select.value=status;
   document.querySelectorAll("#statusFiltros button").forEach(b=>b.classList.toggle("ativo",b.dataset.status===status));
@@ -1728,7 +1729,8 @@ function filtrarPrazoMandato(faixa){
   filtroPrazoMandato=[0,30,60,90,180].includes(faixa)?faixa:0;
   irPainel("solicitacoes",null,true);
   const status=document.getElementById("filtroStatus");
-  if(status){status.value="Todos";status.dispatchEvent(new Event("change",{bubbles:true}));}
+  if(status)status.value="Todos";
+  document.querySelectorAll("#statusFiltros button").forEach(b=>b.classList.toggle("ativo",b.dataset.status==="Todos"));
   carregarSolicitacoes();
 }
 async function carregarSolicitacoes() {
@@ -2206,7 +2208,9 @@ async function removerLembrete(id){
 async function salvarEncaminhamentoPrefeitura(id,botao){
   const data=document.getElementById("encaminhado-prefeitura-"+id)?.value||null;
   const protocolo=document.getElementById("protocolo-prefeitura-"+id)?.value.trim()||null;
-  if(data && data>new Date().toLocaleDateString("en-CA")){alert("A data de encaminhamento não pode ser futura.");return;}
+  const hojeLocal=new Date();
+  const hojeISO=[hojeLocal.getFullYear(),String(hojeLocal.getMonth()+1).padStart(2,"0"),String(hojeLocal.getDate()).padStart(2,"0")].join("-");
+  if(data && data>hojeISO){alert("A data de encaminhamento não pode ser futura.");return;}
   if(!data && protocolo){alert("Informe também a data do encaminhamento.");return;}
   if(!confirm("Confirmar dados do encaminhamento oficial à Prefeitura?"))return;
   botao.disabled=true;
