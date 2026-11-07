@@ -14,7 +14,7 @@ export function criarExecutoresPostgres({pool} = {}) {
  if (!pool || typeof pool.connect !== 'function') throw new Error('Pool PostgreSQL obrigatório');
  async function executar(papel,sql,parametros=[]) {
   if (!Object.values(PAPEIS).includes(papel)) throw new Error('Papel inválido');
-  if (typeof sql !== 'string' || !/^SELECT\s/i.test(sql) || !Array.isArray(parametros))
+  if (typeof sql !== 'string' || !CONSULTAS_PERMITIDAS[papel].has(sql) || !Array.isArray(parametros) || parametros.length !== 2)
     throw new Error('Consulta não permitida');
   const cliente=await pool.connect();
   let iniciou=false;
