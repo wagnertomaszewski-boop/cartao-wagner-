@@ -1986,6 +1986,11 @@ async function carregarSolicitacoes() {
                   <div class="nota-info">Opcional</div>
                 </div>
               </div>
+              <div style="margin:10px 0;padding:10px;background:#f1f7ff;border-radius:9px">
+                <strong style="font-size:13px">Fiscalização — cobranças à Prefeitura</strong>
+                <p style="font-size:12px;margin:5px 0">Registre data do encaminhamento e cobranças na anotação interna. O histórico fica reservado ao painel.</p>
+                <button type="button" onclick="registrarCobrancaMandato(${id})">Registrar cobrança na anotação</button>
+              </div>
               <div class="nota-actions">
                 ${item.lembrete_em ? `<button type="button" class="linkbtn" onclick="removerLembrete(${id})">Remover lembrete</button>` : ""}
                 <button id="btn-anotacao-${id}" class="primario" type="button" onclick="salvarAnotacaoInterna(${id})">Salvar</button>
@@ -2190,6 +2195,20 @@ async function removerLembrete(id){
   await salvarAnotacaoInterna(id);
 }
 
+function registrarCobrancaMandato(id){
+  const campo=document.getElementById("anotacao-"+id);
+  if(!campo) return;
+  const tipo=prompt("Tipo de registro: encaminhamento, cobrança ou retorno da Prefeitura","cobrança");
+  if(tipo===null) return;
+  const descricao=prompt("Informe o protocolo oficial, providência cobrada ou resposta recebida (não inclua dados pessoais sensíveis):","");
+  if(descricao===null || !descricao.trim()){alert("Informe uma descrição antes de registrar.");return;}
+  const agora=new Date();
+  const data=String(agora.getDate()).padStart(2,"0")+"/"+String(agora.getMonth()+1).padStart(2,"0")+"/"+agora.getFullYear();
+  const entrada="[Fiscalização "+data+" — "+(tipo.trim()||"cobrança")+"] "+descricao.trim();
+  campo.value=(campo.value.trim()?campo.value.trim()+"\\n":"")+entrada;
+  campo.dispatchEvent(new Event("input",{bubbles:true}));
+  alert("Registro adicionado à anotação interna. Toque em Salvar para gravar no sistema.");
+}
 async function salvarAnotacaoInterna(id) {
   const campo = document.getElementById(`anotacao-${id}`);
   const lembrete = document.getElementById(`lembrete-${id}`);
