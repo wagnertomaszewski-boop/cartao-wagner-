@@ -84,3 +84,17 @@ test('verificador de identidade falso ou com erro impede decisão',async()=>{
   });
  }
 });
+
+test('verificação de identidade recebe token do administrador autenticado, não campo enviado pelo navegador',async()=>{
+ let identidadeRecebida, decisoes=0;
+ await comServidor({
+  verificarAdmin:async token=>token==='token-ficticio-autorizado',
+  verificarIdentidade:async contexto=>{identidadeRecebida=contexto;return false;},
+  operacoes:{decidir:async()=>{decisoes++;return {};}}
+ },async base=>{
+  const resposta=await fetch(base+'/api/admin/recuperacoes/12/decisao',{method:'POST',headers:{Authorization:'Bearer token-ficticio-autorizado','Content-Type':'application/json'},body:JSON.stringify({aprovar:true,token:'token-falso',identidadeConfirmada:true})});
+  assert.equal(resposta.status,403);
+  assert.deepEqual(identidadeRecebida,{pedidoId:'12',token:'token-ficticio-autorizado'});
+  assert.equal(decisoes,0);
+ });
+});
