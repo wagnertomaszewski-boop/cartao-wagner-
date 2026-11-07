@@ -20,3 +20,11 @@ test('consulta antiga permanece apenas no modo de compatibilidade não ativado',
  assert.match(html,/consulta_publica_protocolo/);
  assert.match(html,/if\(!itens\.length\)throw Error/);
 });
+
+test('anexos no modo seguro exibem só nomes e não criam links privados',()=>{
+ assert.match(html,/id="rAnexosSeguros"/);
+ assert.match(html,/id="rListaAnexosSeguros"/);
+ assert.match(html,/Array\.isArray\(resposta\?\.anexos\)/);
+ assert.match(html,/item\.textContent=String\(anexo\.nome_arquivo/);
+ assert.doesNotMatch(html,/anexo\.caminho_privado/);
+});
