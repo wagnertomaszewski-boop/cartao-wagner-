@@ -98,3 +98,36 @@ test('verificação de identidade recebe token do administrador autenticado, nã
   assert.equal(decisoes,0);
  });
 });
+
+
+test('rotas inexistentes e métodos incorretos não executam operações',async()=>{
+ let chamadas=0;
+ await comServidor({operacoes:{consultar:async()=>{chamadas++;return {};},solicitar:async()=>{chamadas++;return {};}}},async base=>{
+  for(const [rota,metodo] of [['/health','POST'],['/api/solicitacoes/consultar','GET'],['/api/recuperacao/solicitar','GET'],['/api/admin/recuperacoes/1/decisao','GET'],['/api/desconhecida','POST']]){
+   const resposta=await fetch(base+rota,{method:metodo});
+   assert.equal(resposta.status,404,metodo+' '+rota);
+   assert.deepEqual(await resposta.json(),{erro:'Rota não encontrada'});
+  }
+  assert.equal(chamadas,0);
+ });
+});
+
+test('origem externa não pode invocar handler mesmo com corpo válido',async()=>{
+ let chamadas=0;
+ await comServidor({operacoes:{consultar:async()=>{chamadas++;return {ok:true};}}},async base=>{
+  const resposta=await fetch(base+'/api/solicitacoes/consultar',{method:'POST',headers:{Origin:'https://origem-nao-autorizada.example','Content-Type':'application/json'},body:'{}'});
+  assert.equal(resposta.status,403);
+  assert.equal(chamadas,0);
+ });
+});
+
+test('CORS autorizado não dispensa autenticação administrativa',async()=>{
+ await comServidor({origensPermitidas:['https://painel-teste.example']},async base=>{
+  const origem='https://painel-teste.example';
+  const preflight=await fetch(base+'/api/admin/recuperacoes',{method:'OPTIONS',headers:{Origin:origem,'Access-Control-Request-Method':'GET'}});
+  assert.equal(preflight.status,204);
+  assert.equal(preflight.headers.get('access-control-allow-origin'),origem);
+  const resposta=await fetch(base+'/api/admin/recuperacoes',{headers:{Origin:origem}});
+  assert.equal(resposta.status,401);
+ });
+});
