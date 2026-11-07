@@ -73,3 +73,8 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - A tabela registrou **exatamente um** pedido com status `pendente` para `900001`, demonstrando normalização do telefone e bloqueio de duplicação enquanto pendente.
 - Com papel `mandato_cidadao_b`, repetir a combinação válida e tentar protocolo `900002` com telefone de `900001` também retornou `true`. Após o teste, continuou existindo **um único pedido**, apenas para `900001`.
 - Ainda não se verificou a janela de 24h após decisão nem a identidade real de quem pede recuperação. **Aprovação administrativa não foi executada**; rota permanece bloqueada sem confirmação de identidade no servidor.
+
+## Revisão estática do teste HTTP integrado — 2026-11-07
+- `homologacao/api-neon/integracao.test.mjs` estava desatualizado: utilizava chave curta rejeitada pela validação atual e esperava apenas uma consulta de banco no fluxo protegido.
+- Atualizado para chave fictícia de 64 caracteres, quatro consultas parametrizadas de cidadão (principal, respostas, anexos, histórico) e uma decisão administrativa simulada, além do pedido inicial; seis chamadas no total.
+- Conferido o conteúdo atualizado no GitHub. **Não foi executado o teste Node real**: o ambiente local não conseguiu resolver `github.com` para clonar a ramificação. O teste administrativo utiliza verificador de identidade simulado e não valida autorização real de produção.
