@@ -59,3 +59,10 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Nova consulta a `has_table_privilege` confirmou que ambos os papéis cidadãos agora têm `SELECT=false` em **todas as sete tabelas**.
 - Regressão após revogação: os dois papéis continuaram consultando corretamente os nomes de anexos e o histórico público mediante protocolo e chave, via funções `SECURITY DEFINER`.
 - Observação: papéis de homologação representam acesso ao endpoint protegido, não a identidade real de cada cidadão; o segredo do protocolo continua sendo o fator de autorização. Antes de produção, autenticação, emissão e recuperação de segredos precisam de validação de ponta a ponta.
+
+## Recuperação WhatsApp: resposta não enumerável — 2026-11-07
+- Inspecionada definição real de `mandato_testes.pedir_recuperacao`: exige correspondência de protocolo e WhatsApp normalizado, usa bloqueio transacional e impede pedidos simultâneos/novos pedidos dentro de 24h; sempre retorna `true`.
+- Testes SQL executados com `mandato_cidadao_a` e `mandato_cidadao_b`: protocolo fictício existente com WhatsApp não cadastrado e protocolo inexistente retornaram igualmente `true`.
+- Os dois protocolos fictícios de histórico não possuem contato de recuperação cadastrado. Portanto, esses testes **não demonstram** a criação de pedido válido, a prevenção de duplicidade na prática nem o fluxo de decisão; são testes apenas de resposta indistinguível.
+- A função administrativa `decidir_recuperacao` pode rotacionar a chave, mas a rota administrativa de homologação continua desabilitada até validação real da identidade. **Não executar aprovação com dados reais ou ativar o endpoint antes dessa validação.**
+- O banco Neon de testes não é a produção Supabase. A suíte Node e a API HTTPS pública continuam pendentes.
