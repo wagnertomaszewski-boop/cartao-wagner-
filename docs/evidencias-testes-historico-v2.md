@@ -151,3 +151,9 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Comando realmente executado: `node --test /mnt/data/mandato-testes/*.test.mjs` (Node v22.16.0).
 - Saída observada: **11 testes aprovados, 0 falhas**, duração ~303 ms.
 - **Escopo e limitação:** os arquivos locais são reproduções dos componentes da API e testes independentes derivados dos casos versionados. Ainda **não** foi executada a suíte original integral do GitHub, nem teste HTTP com Neon real. A produção segue intacta.
+
+## Terceira bateria HTTP local: fluxo integrado simulado — 2026-11-07
+- Criados no ambiente local `/mnt/data/mandato-testes` uma reprodução do adaptador `operacoes-neon.mjs` e dois testes em `integracao-local.test.mjs`, baseados nos módulos versionados e executados **sem banco real**.
+- Fluxo validado: solicitação de recuperação, consulta protegida com chave fictícia, projeção de campos autorizados (sem hash, caminho privado ou nota privada), negação de token administrativo incorreto e decisão fictícia autorizada por verificador simulado. Segundo cenário: consulta com chave desconhecida retorna estruturas vazias e não executa funções auxiliares.
+- Comando: `node --test /mnt/data/mandato-testes/*.test.mjs`. Resultado repetido: **13 testes aprovados, 0 falhas**, duração ~305 ms na segunda execução.
+- **Limitação:** não são todos os arquivos de testes originais do GitHub; execução com executores simulados não demonstra integração real ao Neon nem validação de identidade real. A decisão administrativa permanece desabilitada na inicialização de homologação e na produção.
