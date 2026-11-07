@@ -31,3 +31,32 @@ test('servidor limita tempo de requisição e cabeçalhos',()=>{
  assert.equal(servidor.maxHeadersCount,64);
  servidor.close();
 });
+
+test('rota raiz retorna 404 sem indicar falha do health',async()=>{
+ const servidor=criarServidor();
+ await new Promise(resolve=>servidor.listen(0,'127.0.0.1',resolve));
+ try{
+  const base='http://127.0.0.1:'+servidor.address().port;
+  const raiz=await fetch(base+'/');
+  assert.equal(raiz.status,404);
+  assert.deepEqual(await raiz.json(),{erro:'Rota não encontrada'});
+  const health=await fetch(base+'/health');
+  assert.equal(health.status,200);
+  assert.deepEqual(await health.json(),{status:'ok',modo:'homologacao',rotasCidadaoHabilitadas:false});
+ }finally{await new Promise(resolve=>servidor.close(resolve));}
+});
+
+test('rotas de cidadão desativadas não invocam operações',async()=>{
+ const servidor=criarServidor();
+ await new Promise(resolve=>servidor.listen(0,'127.0.0.1',resolve));
+ try{
+  const base='http://127.0.0.1:'+servidor.address().port;
+  for(const rota of ['/api/solicitacoes/consultar','/api/recuperacao/solicitar']){
+   const resposta=await fetch(base+rota,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+   assert.equal(resposta.status,503);
+   assert.deepEqual(await resposta.json(),{erro:'Integração com banco ainda não habilitada'});
+  }
+  const admin=await fetch(base+'/api/admin/recuperacoes');
+  assert.equal(admin.status,401);
+ }finally{await new Promise(resolve=>servidor.close(resolve));}
+});
