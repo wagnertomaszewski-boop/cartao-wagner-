@@ -43,13 +43,15 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
     let dados = {};
     if (req.method === 'POST') {
       if (!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type'] || '')) return send(415, {erro:'Envie JSON'});
-      let corpo = '';
+      const partes = [];
+      let tamanho = 0;
       try {
         for await (const parte of req) {
-          corpo += parte;
-          if (Buffer.byteLength(corpo) > 4096) return send(413, {erro:'Requisição muito grande'});
+          tamanho += parte.length;
+          if (tamanho > 4096) return send(413, {erro:'Requisição muito grande'});
+          partes.push(parte);
         }
-        dados = JSON.parse(corpo);
+        dados = JSON.parse(Buffer.concat(partes).toString('utf8'));
         if (!dados || Array.isArray(dados) || typeof dados !== 'object') return send(400, {erro:'JSON inválido'});
       } catch { return send(400, {erro:'JSON inválido'}); }
     }
