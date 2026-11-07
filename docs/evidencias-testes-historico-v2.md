@@ -85,3 +85,8 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Consulta posterior de `has_function_privilege` confirmou `false` para ambos os papéis.
 - Esse bloqueio impede o uso desse fluxo de criação em homologação; as consultas protegidas e a recuperação permanecem separadas. Não há alteração no fluxo legado de criação em produção.
 - Para reativar, criar uma operação servidor que derive a identidade de uma sessão verificada, não do corpo enviado pelo navegador; testar autorização e compatibilidade antes de conceder execução.
+
+## Regressão da revogação de criação — 2026-11-07
+- Teste SQL real com `SET LOCAL ROLE mandato_cidadao_a` e `mandato_cidadao_b`: chamada de `criar_solicitacao_segura` foi rejeitada com `SQLSTATE 42501 permission denied` em ambos os casos; nenhuma solicitação de teste foi criada por essas chamadas.
+- Teste de compatibilidade: `consulta_segura` com protocolo/chave fictícios corretos retornou `Histórico teste A / recebido`; com chave incorreta retornou vazio.
+- Acrescentado em `executores-postgres.test.mjs` um teste de regressão que exige a rejeição da função de criação tanto pelo executor cidadão quanto pelo administrador; o teste Node ainda aguarda execução.
