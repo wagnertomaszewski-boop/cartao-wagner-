@@ -1,28 +1,33 @@
--- RASCUNHO NÃO EXECUTADO. Apenas projeto Neon de homologação.
--- Não executar em Supabase produção. Revisar permissões e backup antes.
+-- PROPOSTA NÃO EXECUTADA. Somente homologação Neon, nunca Supabase produção.
+-- Bloqueada para ativação até revisar função transacional e permissões.
+-- Sem política RLS, o acesso à tabela é negado inclusive ao proprietário
+-- comum por FORCE RLS. Não ativar endpoints antes de criar caminho restrito.
 BEGIN;
-CREATE TABLE IF NOT EXISTS mandato_testes.desafios_recuperacao (
-  solicitacao_id bigint PRIMARY KEY REFERENCES mandato_testes.solicitacoes(id) ON DELETE CASCADE,
+CREATE TABLE mandato_testes.desafios_recuperacao (
+  solicitacao_id bigint PRIMARY KEY REFERENCES mandato_testes.solicitacoes(id),
   digest bytea NOT NULL CHECK (octet_length(digest)=32),
   sal bytea NOT NULL CHECK (octet_length(sal)>=16),
   expira_em timestamptz NOT NULL,
-  tentativas integer NOT NULL DEFAULT 0 CHECK (tentativas>=0 AND tentativas<=5),
+  tentativas integer NOT NULL DEFAULT 0 CHECK (tentativas BETWEEN 0 AND 5),
   consumido_em timestamptz,
   criado_em timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE mandato_testes.desafios_recuperacao ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mandato_testes.desafios_recuperacao FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON mandato_testes.desafios_recuperacao FROM PUBLIC;
--- Nenhuma política de acesso direto nem GRANT para cidadãos/admin.
--- Acesso futuro apenas via serviço com papel restrito e função auditada.
+-- Nenhum GRANT direto a papéis cidadão ou admin.
 COMMIT;
 
--- Contrato obrigatório do serviço (NÃO IMPLEMENTADO neste SQL):
--- 1. Emitir hash HMAC-SHA256 (segredo exclusivamente no servidor) + sal aleatório,
---    e substituir desafio anterior em transação, com limites por destino e protocolo.
--- 2. Verificar código e incrementar tentativas em transação com bloqueio FOR UPDATE;
---    consumo e entrega de credencial devem ser atômicos/idempotentes.
--- 3. Em falha de entrega, invalidar desafio de modo transacional.
--- 4. Não enviar telefone, código, digest, chave ou protocolo para logs.
--- 5. Confirmar posse de canal não substitui vínculo comprovado do pedido ao morador.
--- 6. Não permitir função SECURITY DEFINER sem auditoria de search_path, owner e grants.
+-- Revisão de segurança antes da execução:
+-- 1. A criação sem IF NOT EXISTS falha explicitamente se já existir tabela:
+--    evita aceitar silenciosamente estrutura antiga/incompatível.
+-- 2. Não usar ON DELETE CASCADE para que a remoção de uma solicitação não
+--    apague silenciosamente evidências de recuperação.
+-- 3. Definir serviço e função de banco restritos, com autorização auditada,
+--    política RLS mínima ou executor BYPASSRLS dedicado de privilégios mínimos,
+--    nunca compartilhado com usuário HTTP. Revisar owner/search_path/grants.
+-- 4. Emissão, limite de tentativas e consumo exigem transações com lock;
+--    nenhuma lógica de código em memória pode substituir isso na produção.
+-- 5. Acesso à credencial exige verificação independente de vínculo ao morador.
+-- 6. Segredo HMAC apenas no servidor; sem códigos, telefone ou chaves nos logs.
+-- 7. Executar primeiro em branch Neon descartável e testar rollback.
