@@ -138,3 +138,10 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Corrigido `server.mjs` para passar `{pedidoId, token:req.headers.authorization.slice(7)}` ao verificador **somente depois** de `verificarAdmin` retornar `true`. O token continua restrito ao servidor e não é incluído na resposta.
 - Adicionado teste em `server.test.mjs` que envia token falso no corpo, verifica que o verificador recebe apenas o token autenticado do cabeçalho e exige HTTP 403 sem decisão quando identidade não confirmada.
 - **Teste Node ainda não executado.** A API administrativa segue desativada no inicializador de homologação; não foi feita alteração na produção.
+
+## Execução local de bateria HTTP prioritária — 2026-11-07
+- Como o ambiente de execução não conseguiu resolver `github.com` para clonar o repositório, foram **reproduzidos localmente** os módulos `server.mjs` e `limitador.mjs` a partir dos conteúdos inspecionados no GitHub, e criado arquivo local independente `seguranca.test.mjs` com seis testes usando `node:test` e `fetch` HTTP em `127.0.0.1`.
+- Comando executado: `node --test /mnt/data/mandato-testes/seguranca.test.mjs`.
+- Resultado observado: **6 testes aprovados, 0 falhas**, duração aproximada 338 ms.
+- Cobertura: rotas sem handlers respondem 503; origem externa 403; token administrativo ausente/inválido 401/403; decisão sem verificação de identidade 403; token do verificador vem do cabeçalho autenticado e não do corpo; JSON malformado 400 e corpo acima de 4096 bytes 413.
+- **Limitação essencial:** bateria local reproduzida, não a suíte original integral do repositório, nem teste integrado com banco Neon real. Não houve deploy nem conexão ao Supabase de produção. Ainda faltam execução integral, validação de identidade real e migração coordenada.
