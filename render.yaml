@@ -1,0 +1,27 @@
+# Blueprint opcional: importar manualmente no Render; não executa deploy sozinho.
+# Somente Neon isolado. Rotas de cidadão DESLIGADAS até teste e autorização.
+services:
+  - type: web
+    name: mandato-neon-homologacao
+    runtime: node
+    plan: free
+    rootDir: homologacao/api-neon
+    buildCommand: npm install --ignore-scripts
+    startCommand: npm start
+    autoDeploy: false
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MANDATO_AMBIENTE
+        value: homologacao
+      - key: HABILITAR_API_NEON
+        value: sim
+      - key: HABILITAR_ROTAS_CIDADAO_TESTES
+        value: nao
+      - key: NEON_USUARIO_SERVICO_HOMOLOGACAO
+        value: mandato_api_homologacao
+      - key: NEON_HOST_HOMOLOGACAO
+        sync: false
+      - key: DATABASE_URL
+        sync: false
