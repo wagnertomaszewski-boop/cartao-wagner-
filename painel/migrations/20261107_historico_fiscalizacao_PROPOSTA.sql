@@ -1,8 +1,6 @@
 -- PROPOSTA PARA REVISÃO. NÃO EXECUTAR AUTOMATICAMENTE EM PRODUÇÃO.
 -- Histórico append-only de fiscalização, privado ao administrador autorizado.
--- Exige papel administrativo em auth.app_metadata, além da visibilidade por RLS.
--- PRÉ-REQUISITO: confirmar que o login administrativo recebe app_metadata.role=admin.
--- Se não receber, as políticas negam acesso (fail closed); não aplicar até configurar.
+-- Usa a identidade administrativa já autorizada pelas políticas RLS de public.solicitacoes.\n-- PRÉ-REQUISITO: rever este identificador se a conta administrativa for alterada.\n-- Não habilitar acesso a todos os usuários autenticados.
 begin;
 
 create table if not exists public.solicitacoes_fiscalizacao_historico (
@@ -24,7 +22,7 @@ drop policy if exists "Administrador le historico de fiscalizacao" on public.sol
 create policy "Administrador le historico de fiscalizacao"
 on public.solicitacoes_fiscalizacao_historico for select to authenticated
 using (
-  (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  auth.uid() = 'ca5c30ec-828e-4c95-a0b9-a415bb9b3643'::uuid
   and exists (select 1 from public.solicitacoes s where s.id = solicitacao_id)
 );
 
@@ -32,7 +30,7 @@ drop policy if exists "Administrador registra fiscalizacao" on public.solicitaco
 create policy "Administrador registra fiscalizacao"
 on public.solicitacoes_fiscalizacao_historico for insert to authenticated
 with check (
-  (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  auth.uid() = 'ca5c30ec-828e-4c95-a0b9-a415bb9b3643'::uuid
   and registrado_por = auth.uid()
   and exists (select 1 from public.solicitacoes s where s.id = solicitacao_id)
 );
