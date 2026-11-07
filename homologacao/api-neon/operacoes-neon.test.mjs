@@ -11,10 +11,11 @@ test('recuperação chama função parametrizada e não revela existência de pr
 });
 test('consulta usa chave como parâmetro, nunca interpolada em SQL',async()=>{
  let sql,params;
- const ops=criarOperacoesNeon({executarCidadao:async(s,p)=>{if(s.includes('consulta_respostas_segura'))return [];sql=s;params=p;return [{status:'Recebido'}];},executarAdmin:async()=>[]});
+ const ops=criarOperacoesNeon({executarCidadao:async(s,p)=>{if(s.includes('consulta_respostas_segura')||s.includes('consulta_historico_segura'))return [];sql=s;params=p;return [{status:'Recebido'}];},executarAdmin:async()=>[]});
  const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'a'.repeat(64)}});
  assert.deepEqual(r.resultado,[{status:'Recebido'}]);
  assert.deepEqual(r.respostas,[]);
+ assert.deepEqual(r.historico,[]);
  assert.equal(sql,'SELECT * FROM mandato_testes.consulta_segura($1,$2)');
  assert.deepEqual(params,['TESTE-000001','a'.repeat(64)]);
 });
@@ -43,13 +44,26 @@ test('consulta protegida retorna respostas somente quando protocolo e chave são
  },executarAdmin:async()=>[]});
  const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'a'.repeat(64)}});
  assert.deepEqual(r.respostas,[{texto:'Resposta de teste',criado_em:'2026-11-07'}]);
- assert.equal(chamadas.length,2);
+ assert.equal(chamadas.length,3);
  assert.equal(chamadas[1].sql,'SELECT * FROM mandato_testes.consulta_respostas_segura($1,$2)');
 });
 test('chave inválida não dispara consulta às respostas',async()=>{
  const chamadas=[];
  const ops=criarOperacoesNeon({executarCidadao:async(sql)=>{chamadas.push(sql);return [];},executarAdmin:async()=>[]});
  const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'x'.repeat(64)}});
- assert.deepEqual(r,{resultado:[],respostas:[]});
+ assert.deepEqual(r,{resultado:[],respostas:[],historico:[]});
  assert.equal(chamadas.length,1);
+});
+
+test('histórico seguro não expõe campos internos e exige chave válida',async()=>{
+ const chamadas=[];
+ const ops=criarOperacoesNeon({executarCidadao:async(sql)=>{
+  chamadas.push(sql);
+  if(sql.includes('consulta_segura'))return [{assunto:'Teste',status:'Em andamento'}];
+  if(sql.includes('consulta_historico_segura'))return [{status:'Recebido',observacao:'Encaminhado',criado_em:'2026-11-07',solicitacao_id:99,nota_privada:'não exibir'}];
+  return [];
+ },executarAdmin:async()=>[]});
+ const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'a'.repeat(64)}});
+ assert.deepEqual(r.historico,[{status:'Recebido',observacao:'Encaminhado',criado_em:'2026-11-07'}]);
+ assert.ok(chamadas.includes('SELECT * FROM mandato_testes.consulta_historico_segura($1,$2)'));
 });
