@@ -10,6 +10,9 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  if (env.HABILITAR_API_NEON !== 'sim') throw Error('API desabilitada por padrão');
 
  if (!env.DATABASE_URL || !/^postgres(?:ql)?:\/\//.test(env.DATABASE_URL)) throw Error('DATABASE_URL do servidor obrigatória');
+ // Impede conectar acidentalmente o servidor de testes ao banco Supabase de produção.
+ const destino = new URL(env.DATABASE_URL);
+ if (destino.hostname.endsWith('.supabase.co') || destino.hostname.includes('supabase') || destino.hostname.includes('pmmsdjozyyxkbuqlkfpb')) throw Error('Banco de produção proibido na homologação');
  const {default:pg} = await carregarPg();
  const pool = new pg.Pool({connectionString:env.DATABASE_URL,ssl:{rejectUnauthorized:true},max:3,connectionTimeoutMillis:3000,idleTimeoutMillis:10000});
  const {executarCidadao,executarAdmin}=criarExecutoresPostgres({pool});
