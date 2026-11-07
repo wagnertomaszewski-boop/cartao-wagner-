@@ -74,3 +74,12 @@ test('bloqueia usuário remoto sem correspondência à conta de serviço',async(
  await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})}),/Usuário de serviço/);
  assert.equal(criacoes,0);
 });
+
+test('bloqueia cloud_admin com BYPASSRLS antes de iniciar pool',async()=>{
+ let criacoes=0;
+ class Pool{constructor(){criacoes++;}}
+ const host='ep-teste-123.us-east-2.aws.neon.tech';
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',NEON_HOST_HOMOLOGACAO:host,NEON_USUARIO_SERVICO_HOMOLOGACAO:'cloud_admin',DATABASE_URL:'postgresql://cloud_admin:senha@'+host+'/neondb'};
+ await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})}),/Conta privilegiada proibida/);
+ assert.equal(criacoes,0);
+});
