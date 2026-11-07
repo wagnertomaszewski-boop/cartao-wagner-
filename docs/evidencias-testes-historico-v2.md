@@ -78,3 +78,10 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - `homologacao/api-neon/integracao.test.mjs` estava desatualizado: utilizava chave curta rejeitada pela validação atual e esperava apenas uma consulta de banco no fluxo protegido.
 - Atualizado para chave fictícia de 64 caracteres, quatro consultas parametrizadas de cidadão (principal, respostas, anexos, histórico) e uma decisão administrativa simulada, além do pedido inicial; seis chamadas no total.
 - Conferido o conteúdo atualizado no GitHub. **Não foi executado o teste Node real**: o ambiente local não conseguiu resolver `github.com` para clonar a ramificação. O teste administrativo utiliza verificador de identidade simulado e não valida autorização real de produção.
+
+## Bloqueio preventivo da criação sem identidade verificada — 2026-11-07
+- Auditoria da definição real de `mandato_testes.criar_solicitacao_segura(uuid,text,text)` identificou que `p_cidadao_id` é aceito diretamente do chamador; a função é `SECURITY DEFINER` e não valida a identidade no servidor.
+- Revogado `EXECUTE` para `mandato_cidadao_a` e `mandato_cidadao_b` **somente no Neon de homologação**, até a implementação de autenticação/atribuição confiável de identidade.
+- Consulta posterior de `has_function_privilege` confirmou `false` para ambos os papéis.
+- Esse bloqueio impede o uso desse fluxo de criação em homologação; as consultas protegidas e a recuperação permanecem separadas. Não há alteração no fluxo legado de criação em produção.
+- Para reativar, criar uma operação servidor que derive a identidade de uma sessão verificada, não do corpo enviado pelo navegador; testar autorização e compatibilidade antes de conceder execução.
