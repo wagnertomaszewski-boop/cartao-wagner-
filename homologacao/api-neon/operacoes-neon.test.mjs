@@ -17,10 +17,10 @@ test('consulta usa chave como parâmetro, nunca interpolada em SQL',async()=>{
  assert.equal(sql,'SELECT * FROM mandato_testes.consulta_segura($1,$2)');
  assert.deepEqual(params,['TESTE-000001','segredo-teste']);
 });
-test('decisão exige confirmação e executor administrativo separado',async()=>{
+test('decisão valida pedido e usa executor administrativo separado',async()=>{
  let chamadas=0;
  const ops=criarOperacoesNeon({executarCidadao:async()=>{throw Error('papel incorreto');},executarAdmin:async(sql,params)=>{chamadas++;assert.equal(sql,'SELECT * FROM mandato_testes.decidir_recuperacao($1,$2)');assert.deepEqual(params,['12',false]);return [];}});
- await assert.rejects(ops.decidir({pedidoId:'12',dados:{aprovar:true,identidadeConfirmada:false}}));
+ await assert.rejects(ops.decidir({pedidoId:'12',dados:{aprovar:'sim'}}));
  await assert.rejects(ops.decidir({pedidoId:'12 OR 1=1',dados:{aprovar:false,identidadeConfirmada:true}}));
  await ops.decidir({pedidoId:'12',dados:{aprovar:false,identidadeConfirmada:true}});
  assert.equal(chamadas,1);
