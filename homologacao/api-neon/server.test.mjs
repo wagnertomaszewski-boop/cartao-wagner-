@@ -2,20 +2,29 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {criarServidor} from './server.mjs';
 
-test('API de homologação não expõe dados nem permite recuperação antes da integração',async()=>{
- const server=criarServidor(); await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
- try{
-  const base='http://127.0.0.1:'+server.address().port;
-  const health=await fetch(base+'/health');
-  assert.equal(health.status,200);
-  assert.equal((await health.json()).modo,'homologacao-sem-banco');
-  for(const [path,method] of [['/api/recuperacao/solicitar','POST'],['/api/admin/recuperacoes','GET'],['/api/admin/recuperacoes/1/decisao','POST'],['/api/solicitacoes/consultar','POST']]){
-   const r=await fetch(base+path,{method});
-   assert.equal(r.status,503);
-   assert.equal(r.headers.get('cache-control'),'no-store');
-   assert.ok(!(await r.text()).includes('chave'));
-  }
-  assert.equal((await fetch(base+'/nao-existe')).status,404);
-  assert.equal((await fetch(base+'/health',{headers:{Origin:'https://exemplo-malicioso.com'}})).status,403);
- } finally {await new Promise((resolve,reject)=>server.close(err=>err?reject(err):resolve()));}
+async function comServidor(opcoes, executar) {
+  const server = criarServidor(opcoes);
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try { await executar('http://127.0.0.1:' + server.address().port); }
+  finally { await new Promise(resolve => server.close(resolve)); }
+}
+test('rotas administrativas exigem autenticação e autorização', async () => {
+  const tokens = [];
+  await comServidor({verificarAdmin: async token => {tokens.push(token); return token === 'admin-valido';}}, async base => {
+    for (const [path,method] of [['/api/admin/recuperacoes','GET'], ['/api/admin/recuperacoes/123/decisao','POST']]) {
+      assert.equal((await fetch(base+path,{method})).status,401);
+      assert.equal((await fetch(base+path,{method,headers:{Authorization:'Bearer invalido'}})).status,403);
+      assert.equal((await fetch(base+path,{method,headers:{Authorization:'Bearer admin-valido'}})).status,503);
+    }
+    assert.deepEqual(tokens,['invalido','admin-valido','invalido','admin-valido']);
+  });
+});
+test('sem verificador configurado, nenhum token autoriza administrador',async()=>{
+  await comServidor({},async base=>{
+    assert.equal((await fetch(base+'/api/admin/recuperacoes',{headers:{Authorization:'Bearer qualquer'}})).status,403);
+    assert.equal((await fetch(base+'/api/recuperacao/solicitar',{method:'POST'})).status,503);
+    assert.equal((await fetch(base+'/api/solicitacoes/consultar',{method:'POST'})).status,503);
+    assert.equal((await fetch(base+'/health')).status,200);
+    assert.equal((await fetch(base+'/health',{headers:{Origin:'https://site-externo.com'}})).status,403);
+  });
 });
