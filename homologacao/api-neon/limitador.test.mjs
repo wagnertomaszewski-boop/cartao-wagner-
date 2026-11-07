@@ -17,3 +17,12 @@ test('rejeita chaves inválidas e configuração inválida',()=>{
  assert.equal(l.verificar('x'.repeat(201)),false);
  assert.throws(()=>criarLimitador({maximo:0}));
 });
+
+test('limite de memória falha fechado e permite nova chave após expiração',()=>{
+ let agora=0;
+ const l=criarLimitador({maxChaves:1,maximo:2,janelaMs:100,relogio:()=>agora});
+ assert.equal(l.verificar('a'),true);
+ assert.equal(l.verificar('b'),false);
+ agora=100;
+ assert.equal(l.verificar('b'),true);
+});
