@@ -24,3 +24,16 @@
 
 ## Evidência de 2026-11-07
 - Adicionado `homologacao/api-neon/integracao-http-postgres.test.mjs` com testes de caminho HTTP→executor PostgreSQL **simulado** e rejeição de métodos administrativos inválidos. **Ainda não executados nesta rodada**: ambiente local sem resolução DNS para GitHub, sem checkout verificável. Não confundir o teste com integração ao Neon real.
+
+## Bloqueador específico: RPCs legadas por protocolo previsível
+As funções públicas de produção `consulta_publica_protocolo`, `consultar_protocolo`, `consulta_publica_respostas_protocolo` e `consulta_publica_historico_protocolo` foram identificadas como risco de consulta por protocolo sequencial sem chave secreta. **Não desabilitar isoladamente**: o frontend V2 publicado ainda chama `consulta_publica_protocolo`, e a remoção imediata pode impedir moradores de acompanhar solicitações.
+
+Critérios obrigatórios para o corte coordenado:
+1. Garantir geração e entrega segura de chave para solicitações novas; a função de criação de teste ainda aceita `cidadao_id` enviado pelo cliente e **não pode ser ativada em produção**.
+2. Definir recuperação segura de acesso para solicitações antigas sem chave, com validação de identidade fora do navegador, canal de entrega seguro e procedimento auditável.
+3. Implementar e validar API HTTPS de consulta por protocolo + chave e acesso a anexos por autorização no servidor, sem expor `caminho_privado`.
+4. Validar compatibilidade com versões antigas instaladas, incluindo a V1 da Play Store; prever mensagem de atualização ou rota de transição antes de revogar RPCs.
+5. Preparar backup restaurável, plano de reversão e testes de equivalência com dados sintéticos; medir sucesso de consultas e solicitações durante transição.
+6. Só após critérios e aprovação específica: publicar cliente compatível, ativar fluxo seguro gradualmente e revogar execução das quatro RPCs antigas na mesma janela controlada. Verificar por chamadas reais que acesso sem chave deixou de funcionar.
+
+**Regra de segurança:** não confundir testes positivos no Neon com correção da exposição no Supabase de produção. A vulnerabilidade legada permanece até a transição coordenada.
