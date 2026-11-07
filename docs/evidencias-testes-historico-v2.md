@@ -66,3 +66,10 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Os dois protocolos fictícios de histórico não possuem contato de recuperação cadastrado. Portanto, esses testes **não demonstram** a criação de pedido válido, a prevenção de duplicidade na prática nem o fluxo de decisão; são testes apenas de resposta indistinguível.
 - A função administrativa `decidir_recuperacao` pode rotacionar a chave, mas a rota administrativa de homologação continua desabilitada até validação real da identidade. **Não executar aprovação com dados reais ou ativar o endpoint antes dessa validação.**
 - O banco Neon de testes não é a produção Supabase. A suíte Node e a API HTTPS pública continuam pendentes.
+
+## Recuperação WhatsApp: criação e antirrepetição reais — 2026-11-07
+- Cadastrado **somente no Neon de homologação** um WhatsApp fictício `51988887777` para solicitação fictícia `900001`; antes do teste não havia pedidos para essa solicitação.
+- Com papel `mandato_cidadao_a`, chamadas com telefone formatado, telefone repetido e telefone errado retornaram `true` indistintamente.
+- A tabela registrou **exatamente um** pedido com status `pendente` para `900001`, demonstrando normalização do telefone e bloqueio de duplicação enquanto pendente.
+- Com papel `mandato_cidadao_b`, repetir a combinação válida e tentar protocolo `900002` com telefone de `900001` também retornou `true`. Após o teste, continuou existindo **um único pedido**, apenas para `900001`.
+- Ainda não se verificou a janela de 24h após decisão nem a identidade real de quem pede recuperação. **Aprovação administrativa não foi executada**; rota permanece bloqueada sem confirmação de identidade no servidor.
