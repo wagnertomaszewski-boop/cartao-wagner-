@@ -16,5 +16,6 @@ test('API de homologação não expõe dados nem permite recuperação antes da 
    assert.ok(!(await r.text()).includes('chave'));
   }
   assert.equal((await fetch(base+'/nao-existe')).status,404);
+  assert.equal((await fetch(base+'/health',{headers:{Origin:'https://exemplo-malicioso.com'}})).status,403);
  } finally {await new Promise((resolve,reject)=>server.close(err=>err?reject(err):resolve()));}
 });
