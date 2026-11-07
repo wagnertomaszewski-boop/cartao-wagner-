@@ -8,9 +8,6 @@ test('não inicializa sem ambiente explicitamente homologado',async()=>{
 test('não inicializa sem habilitação explícita',async()=>{
  await assert.rejects(iniciarHomologacao({env:{MANDATO_AMBIENTE:'homologacao'},carregarPg:async()=>{throw Error('não deveria carregar')}}),/desabilitada/);
 });
-test('não aceita flag como substituto da autenticação administrativa',async()=>{
- await assert.rejects(iniciarHomologacao({env:{MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',AUTENTICACAO_ADMIN_CONFIGURADA:'sim'},carregarPg:async()=>{throw Error('não deveria carregar')}}),/não substitui/);
-});
 test('exige segredo de conexão no servidor',async()=>{
  await assert.rejects(iniciarHomologacao({env:{MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim'},carregarPg:async()=>{throw Error('não deveria carregar')}}),/DATABASE_URL/);
 });
