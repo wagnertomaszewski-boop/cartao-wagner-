@@ -2280,14 +2280,18 @@ async function registrarHistoricoFiscalizacaoMandato(id,botao){
   if(protocolo && protocolo.length>120){alert("Protocolo deve ter até 120 caracteres.");return;}
   if(!confirm("Registrar permanentemente esta fiscalização? O histórico não permite edição ou exclusão pelo painel."))return;
   botao.disabled=true;
+  let envioIniciado=false;
+  let respostaRecebida=false;
   try{
     const sessao=await obterSessaoValida();
     if(!sessao)throw new Error("Sessão expirada. Entre novamente.");
+    envioIniciado=true;
     const resposta=await requisicao(SUPABASE_URL+"/rest/v1/solicitacoes_fiscalizacao_historico",{
       method:"POST",
       headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Content-Type":"application/json","Prefer":"return=representation"},
       body:JSON.stringify({solicitacao_id:Number(id),tipo,descricao,protocolo_referencia:protocolo})
     });
+    respostaRecebida=true;
     const retorno=await resposta.json().catch(()=>null);
     if(!resposta.ok){
       if(resposta.status===404 || retorno?.code==="PGRST205" || retorno?.code==="42P01"){
@@ -2313,7 +2317,14 @@ async function registrarHistoricoFiscalizacaoMandato(id,botao){
     alert("Fiscalização registrada e confirmada por nova leitura do banco.");
     const destino=document.getElementById("historico-fiscalizacao-"+id);
     if(destino)destino.textContent="Registro confirmado. Use Consultar histórico auditável para visualizar a linha do tempo.";
-  }catch(e){alert(mensagemDeErro(e));}
+  }catch(e){
+    const erro=mensagemDeErro(e);
+    if(envioIniciado && !respostaRecebida){
+      alert("A conexão falhou durante o envio. A gravação pode ter ocorrido. Consulte o histórico antes de tentar novamente para evitar duplicidade. Detalhes: "+erro);
+    }else{
+      alert(erro);
+    }
+  }
   finally{botao.disabled=false;}
 }
 async function consultarHistoricoFiscalizacaoMandato(id,botao){
