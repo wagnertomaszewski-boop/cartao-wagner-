@@ -56,3 +56,17 @@ test('histórico usa somente função protegida com dois parâmetros',async()=>{
  await assert.rejects(executarCidadao('SELECT * FROM mandato_testes.historico_status'));
  await assert.rejects(executarAdmin(sql,['HIST-TESTE-900001',chave]));
 });
+
+test('nomes de anexos só pela função autorizada e sem acesso direto',async()=>{
+ const {pool,eventos}=simularPool();
+ const {executarCidadao,executarAdmin}=criarExecutoresPostgres({pool});
+ const sql='SELECT * FROM mandato_testes.consulta_nomes_anexos_segura($1,$2)';
+ const params=['HIST-TESTE-900001','a'.repeat(64)];
+ await executarCidadao(sql,params);
+ assert.ok(eventos.some(x=>Array.isArray(x)&&x[0]===sql&&x[1]===params));
+ const antes=eventos.length;
+ await assert.rejects(executarCidadao('SELECT * FROM mandato_testes.anexos'));
+ await assert.rejects(executarCidadao('SELECT * FROM mandato_testes.consulta_anexos_segura($1,$2)',params));
+ await assert.rejects(executarAdmin(sql,params));
+ assert.equal(eventos.length,antes);
+});
