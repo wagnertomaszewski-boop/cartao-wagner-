@@ -21,7 +21,7 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  const neonIsolado = host.endsWith('.neon.tech') && host !== 'neon.tech' && env.NEON_HOST_HOMOLOGACAO === host && destino.username.length > 0 && destino.password.length > 0;
  if (!neonIsolado && !local) throw Error('Destino de homologação não autorizado');
  const {default:pg} = await carregarPg();
- const pool = new pg.Pool({connectionString:env.DATABASE_URL,ssl:{rejectUnauthorized:true},max:3,connectionTimeoutMillis:3000,idleTimeoutMillis:10000});
+ const pool = new pg.Pool({connectionString:env.DATABASE_URL,ssl:local ? false : {rejectUnauthorized:true},max:3,connectionTimeoutMillis:3000,idleTimeoutMillis:10000});
  const {executarCidadao,executarAdmin}=criarExecutoresPostgres({pool});
  const operacoesNeon=criarOperacoesNeon({executarCidadao,executarAdmin});
  // Apenas consultas e pedidos de recuperação no banco de TESTES, com habilitação separada.
