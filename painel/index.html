@@ -1735,6 +1735,11 @@ function diasDesdeEncaminhamentoMandato(item){
 function filtrarPrazoMandato(faixa){
   filtroPrazoMandato=[-1,0,30,60,90,180].includes(faixa)?faixa:0;
   faixaSemMovimento=0;
+  // O resumo conta todas as solicitações abertas; não herdar um filtro de status anterior.
+  if(filtroPrazoMandato!==0){
+    const seletor=document.getElementById("filtroStatus");
+    if(seletor)seletor.value="Todos";
+  }
   irPainel("solicitacoes",null,true);
 }
 async function carregarSolicitacoes() {
