@@ -3,7 +3,7 @@ import {criarLimitador} from './limitador.mjs';
 
 // Handlers são injetados apenas pelo servidor, nunca definidos pelo navegador.
 // Sem handlers, as operações permanecem indisponíveis.
-export function criarServidor({verificarAdmin = async () => false, operacoes = {}, limitador = criarLimitador()} = {}) {
+export function criarServidor({verificarAdmin = async () => false, operacoes = {}, limitador = criarLimitador(), verificarIdentidade = async () => false} = {}) {
   return http.createServer(async (req, res) => {
     const send = (status, data) => {
       res.writeHead(status, {'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff'});
@@ -45,6 +45,12 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
         dados = JSON.parse(corpo);
         if (!dados || Array.isArray(dados) || typeof dados !== 'object') return send(400, {erro:'JSON inválido'});
       } catch { return send(400, {erro:'JSON inválido'}); }
+    }
+    if (adminDecisao && req.method === 'POST') {
+      // A confirmação enviada pelo navegador nunca é prova de identidade.
+      let confirmada = false;
+      try { confirmada = await verificarIdentidade({pedidoId:adminDecisao[1],dados}); } catch { confirmada = false; }
+      if (confirmada !== true) return send(403,{erro:'Identidade não confirmada pelo servidor'});
     }
     try {
       const resultado = await handler({dados, pedidoId: adminDecisao?.[1]});
