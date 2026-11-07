@@ -38,3 +38,10 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Adaptador da API atualizado para retornar `anexos: [{nome_arquivo}]`; o executor permite apenas SQL parametrizado.
 - **Não há endpoint de download**: arquivos privados não podem ser abertos ainda; requer autorização de servidor e URL temporária. Não confundir listagem de nomes com acesso ao conteúdo.
 - Testes Node atualizados no GitHub, mas a suíte integral da branch continua pendente de execução.
+
+## Restrição de observações internas — 2026-11-07
+- No banco **Neon isolado**, a tabela `mandato_testes.historico_status` recebeu a coluna `visivel_cidadao boolean NOT NULL DEFAULT false`.
+- A função `consulta_historico_segura` foi atualizada para exigir `h.visivel_cidadao IS TRUE`, além de protocolo e chave corretos.
+- Dois eventos fictícios existentes foram explicitamente marcados como visíveis; um novo evento `NOTA INTERNA FICTÍCIA — NÃO EXIBIR` foi inserido com a visibilidade padrão privada.
+- Teste com chave válida nos papéis `mandato_cidadao_a` e `mandato_cidadao_b`: apenas `Evento fictício A` foi retornado; a nota interna não apareceu.
+- **Atenção à migração:** não marcar automaticamente históricos legados como públicos. Exigir revisão de cada classe de observação e distinguir atualizações públicas de anotações administrativas.
