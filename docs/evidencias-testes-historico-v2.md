@@ -103,3 +103,8 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Inspecionado esquema `mandato_testes`: os papéis A, B e administrador têm `USAGE=true`, `CREATE=false`.
 - Matriz completa de execução das oito funções auditada: cidadãos executam apenas `consulta_segura`, `consulta_respostas_segura`, `consulta_historico_segura`, `consulta_nomes_anexos_segura` e `pedir_recuperacao`; administrador de testes executa apenas `decidir_recuperacao`; nenhuma das três funções `consulta_anexos_segura` (caminho privado) ou `criar_solicitacao_segura` (identidade arbitrária) está disponível a esses papéis.
 - Essa auditoria verifica privilégios, **não substitui** testes da aplicação HTTP, da identidade administrativa, do armazenamento de anexos ou da migração.
+
+## Regressão de autorização administrativa HTTP — 2026-11-07
+- Revisada a implementação `homologacao/api-neon/server.mjs`: rota `POST /api/admin/recuperacoes/{id}/decisao` exige token administrativo e confirmação de identidade retornada por `verificarIdentidade` no servidor; `identidadeConfirmada` no corpo não é usada como prova.
+- Adicionados dois testes em `homologacao/api-neon/server.test.mjs`: (1) sem verificador configurado, nem `aprovar:true` nem `aprovar:false` com `identidadeConfirmada:true` podem acionar `operacoes.decidir`; (2) verificador que retorna `false` ou lança exceção deve resultar em HTTP 403, sem chamar decisão.
+- **Testes adicionados, ainda não executados.** A verificação de identidade real e a entrega da nova chave ainda não estão implementadas para produção; nenhuma rota administrativa foi ativada.
