@@ -70,3 +70,12 @@ test('nomes de anexos só pela função autorizada e sem acesso direto',async()=
  await assert.rejects(executarAdmin(sql,params));
  assert.equal(eventos.length,antes);
 });
+
+test('criação de solicitação não pode aceitar identidade arbitrária pelo executor',async()=>{
+ const {pool,eventos}=simularPool();
+ const {executarCidadao,executarAdmin}=criarExecutoresPostgres({pool});
+ const sql='SELECT * FROM mandato_testes.criar_solicitacao_segura($1,$2,$3)';
+ await assert.rejects(executarCidadao(sql,['11111111-1111-4111-8111-111111111111','Assunto','Descrição']));
+ await assert.rejects(executarAdmin(sql,['11111111-1111-4111-8111-111111111111','Assunto','Descrição']));
+ assert.deepEqual(eventos,[]);
+});
