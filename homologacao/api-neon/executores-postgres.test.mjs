@@ -25,9 +25,11 @@ test('admin usa papel próprio e rollback em falha',async()=>{
  assert.ok(eventos.some(x=>Array.isArray(x)&&x[0]==='ROLLBACK'));
  assert.equal(eventos.at(-1),'release');
 });
-test('não aceita SQL que não seja SELECT',async()=>{
+test('não aceita SQL fora da lista de funções autorizadas',async()=>{
  const {pool,eventos}=simularPool();
  const {executarCidadao}=criarExecutoresPostgres({pool});
  await assert.rejects(executarCidadao('DELETE FROM mandato_testes.solicitacoes'));
+ await assert.rejects(executarCidadao('SELECT * FROM mandato_testes.solicitacoes'));
+ await assert.rejects(executarCidadao('SELECT * FROM mandato_testes.decidir_recuperacao($1,$2)', ['12',true]));
  assert.deepEqual(eventos,[]);
 });
