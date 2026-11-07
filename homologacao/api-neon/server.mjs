@@ -1,8 +1,9 @@
 import http from 'node:http';
+import {criarLimitador} from './limitador.mjs';
 
 // Handlers são injetados apenas pelo servidor, nunca definidos pelo navegador.
 // Sem handlers, as operações permanecem indisponíveis.
-export function criarServidor({verificarAdmin = async () => false, operacoes = {}} = {}) {
+export function criarServidor({verificarAdmin = async () => false, operacoes = {}, limitador = criarLimitador()} = {}) {
   return http.createServer(async (req, res) => {
     const send = (status, data) => {
       res.writeHead(status, {'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff'});
@@ -16,6 +17,13 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
     const solicitar = req.url === '/api/recuperacao/solicitar' && req.method === 'POST';
     const consultar = req.url === '/api/solicitacoes/consultar' && req.method === 'POST';
     if (!admin && !solicitar && !consultar) return send(404, {erro:'Rota não encontrada'});
+    if (solicitar || consultar) {
+      // Endereço da conexão TCP, nunca X-Forwarded-For fornecido pelo cliente.
+      // Uso apenas em homologação local; produção requer limite distribuído.
+      const endereco = req.socket.remoteAddress || 'desconhecido';
+      if (!limitador.verificar(endereco + ':' + (solicitar ? 'recuperar' : 'consultar')))
+        return send(429, {erro:'Muitas tentativas. Tente novamente mais tarde.'});
+    }
     if (admin) {
       const header = req.headers.authorization || '';
       if (!/^Bearer [^\s]+$/.test(header)) return send(401, {erro:'Autenticação necessária'});
