@@ -126,3 +126,9 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Consulta posterior a `pg_policies` confirmou `qual=false` e `with_check=false` para as quatro políticas.
 - Regressão SQL real após a mudança: ambos os papéis cidadãos ainda obtêm assunto/status, nome de anexo fictício e histórico público fictício por funções seguras com chave correta. Isso **não** prova isolamento entre os papéis: a chave válida é a autorização.
 - Nenhum dado real ou ambiente de produção foi alterado.
+
+## Entradas adulteradas em consultas seguras — 2026-11-07
+- Executados testes SQL no Neon isolado sob `SET LOCAL ROLE mandato_cidadao_a` para `consulta_segura` e `consulta_historico_segura`, sempre com dados fictícios.
+- Três cenários: protocolo contendo `' OR 1=1 --` com chave válida; chave contendo `' OR '1'='1` com protocolo válido; chave correta de 64 caracteres alterada no último caractere.
+- **Seis consultas retornaram zero linhas**, sem expor assunto ou histórico. Strings foram escapadas como literais SQL no executor de teste; a API do projeto usa consultas parametrizadas, a serem testadas na suíte Node.
+- Esta evidência não comprova ausência de todas as classes de injeção, nem substitui testes integrados HTTP e de autenticação.
