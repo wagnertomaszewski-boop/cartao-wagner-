@@ -2266,7 +2266,7 @@ function registrarCobrancaMandato(id){
   if(descricaoLimpa.length<5 || descricaoLimpa.length>2000){alert("A descrição deve ter de 5 a 2000 caracteres.");return;}
   const agora=new Date();
   const instante=agora.toISOString();
-  const entrada="[Fiscalização ${instante} — ${tipoNormalizado}] ${descricaoLimpa}";
+  const entrada="[Fiscalização "+instante+" — "+tipoNormalizado+"] "+descricaoLimpa;
   campo.value=(campo.value.trim()?campo.value.trim()+"\n":"")+entrada;
   campo.dispatchEvent(new Event("input",{bubbles:true}));
   alert("Rascunho adicionado à anotação interna (editável). Toque em Salvar para gravar. Ainda não é um histórico auditável.");
