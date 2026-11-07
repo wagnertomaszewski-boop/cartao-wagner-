@@ -97,3 +97,9 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Testes de regressão reais com os papéis A e B: `consulta_segura` com chave fictícia correta continuou retornando assunto/status, e `consulta_nomes_anexos_segura` continuou retornando somente o nome fictício do arquivo.
 - O modelo de autorização atual é **por posse de protocolo + segredo**, não por isolamento rígido entre os papéis A e B: ambos conseguem acessar o registro A quando fornecem sua chave correta. Não representar isso como isolamento por identidade; a proteção depende da confidencialidade da chave e da validação do servidor.
 - Produção Supabase não modificada.
+
+## Auditoria complementar de privilégios — 2026-11-07
+- Inspecionados privilégios `TRUNCATE`, `REFERENCES` e `TRIGGER` para os dois papéis cidadãos nas sete tabelas: todos `false`.
+- Inspecionado esquema `mandato_testes`: os papéis A, B e administrador têm `USAGE=true`, `CREATE=false`.
+- Matriz completa de execução das oito funções auditada: cidadãos executam apenas `consulta_segura`, `consulta_respostas_segura`, `consulta_historico_segura`, `consulta_nomes_anexos_segura` e `pedir_recuperacao`; administrador de testes executa apenas `decidir_recuperacao`; nenhuma das três funções `consulta_anexos_segura` (caminho privado) ou `criar_solicitacao_segura` (identidade arbitrária) está disponível a esses papéis.
+- Essa auditoria verifica privilégios, **não substitui** testes da aplicação HTTP, da identidade administrativa, do armazenamento de anexos ou da migração.
