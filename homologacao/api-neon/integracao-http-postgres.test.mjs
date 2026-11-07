@@ -92,3 +92,12 @@ test('não aceita usuário remoto arbitrário mesmo quando a configuração conc
  await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})}),/Usuário de serviço/);
  assert.equal(criacoes,0);
 });
+
+test('não aceita sslmode=no-verify na URL remota do Neon',async()=>{
+ let criacoes=0;
+ class Pool{constructor(){criacoes++;}}
+ const host='ep-teste-123.us-east-2.aws.neon.tech';
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',NEON_HOST_HOMOLOGACAO:host,NEON_USUARIO_SERVICO_HOMOLOGACAO:'mandato_api_homologacao',DATABASE_URL:'postgresql://mandato_api_homologacao:senha@'+host+'/neondb?sslmode=no-verify'};
+ await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})}),/Parâmetros SSL/);
+ assert.equal(criacoes,0);
+});
