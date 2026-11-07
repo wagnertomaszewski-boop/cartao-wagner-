@@ -2206,8 +2206,7 @@ async function removerLembrete(id){
 async function salvarEncaminhamentoPrefeitura(id,botao){
   const data=document.getElementById("encaminhado-prefeitura-"+id)?.value||null;
   const protocolo=document.getElementById("protocolo-prefeitura-"+id)?.value.trim()||null;
-  const hojeLocal=new Date();
-  const hojeISO=[hojeLocal.getFullYear(),String(hojeLocal.getMonth()+1).padStart(2,"0"),String(hojeLocal.getDate()).padStart(2,"0")].join("-");
+  const hojeISO=dataHojeISO();
   if(data && data>hojeISO){alert("A data de encaminhamento não pode ser futura.");return;}
   if(!data && protocolo){alert("Informe também a data do encaminhamento.");return;}
   if(!data && !protocolo){alert("Para remover um encaminhamento já registrado, utilize um procedimento administrativo específico. Não é permitido apagar esses dados por engano.");return;}
@@ -2223,7 +2222,8 @@ async function salvarEncaminhamentoPrefeitura(id,botao){
       body:JSON.stringify({encaminhado_prefeitura_em:data,protocolo_prefeitura:protocolo})
     });
     const retorno=await resp.json().catch(()=>[]);
-    if(!resp.ok || !Array.isArray(retorno) || !retorno.length)throw new Error(retorno.message||"Não foi possível salvar.");
+    if(!resp.ok || !Array.isArray(retorno) || retorno.length!==1)throw new Error(retorno.message||"Não foi possível confirmar a gravação.");
+    if(retorno[0].encaminhado_prefeitura_em!==data || (retorno[0].protocolo_prefeitura||null)!==protocolo)throw new Error("O servidor não confirmou os valores informados.");
     await carregarSolicitacoes();
     alert("Dados do encaminhamento salvos com sucesso.");
     await atualizarContadoresStatus();
