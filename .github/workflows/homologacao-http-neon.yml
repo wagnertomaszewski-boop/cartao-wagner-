@@ -23,6 +23,33 @@ jobs:
           node-version: '22'
       - name: Testes originais HTTP e PostgreSQL simulado
         run: node --test homologacao/api-neon/integracao-http-postgres.test.mjs homologacao/api-neon/limite-corpo-http.test.mjs homologacao/api-neon/interface-v2.test.mjs
+      - name: Validar Render publico sem credenciais nem dados reais
+        env:
+          URL_RENDER: https://mandato-neon-homologacao.onrender.com
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          const base=process.env.URL_RENDER;
+          async function consultar(path) {
+            let erro;
+            for(let tentativa=0;tentativa<3;tentativa++){
+              try {return await fetch(base+path,{signal:AbortSignal.timeout(85000)});}
+              catch(e){erro=e;}
+            }
+            throw erro;
+          }
+          const health=await consultar('/health');
+          assert.equal(health.status,200,'Render /health deve responder 200');
+          const estado=await health.json();
+          assert.equal(estado.status,'ok');
+          assert.equal(estado.modo,'homologacao');
+          assert.equal(estado.rotasCidadaoHabilitadas,false,'Render publico deve manter rotas de cidadao desligadas');
+          const raiz=await consultar('/');
+          assert.equal(raiz.status,404,'Rota raiz sem pagina e esperada');
+          const admin=await consultar('/api/admin/recuperacoes');
+          assert.equal(admin.status,401,'Administracao deve exigir autenticacao');
+          console.log('PASS: Render publico /health 200, raiz 404, admin 401 e rotas de cidadao desligadas');
+          NODE
       - name: Verificar segredos de homologacao
         id: secrets
         env:
