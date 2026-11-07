@@ -30,3 +30,11 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Resultado: **4 aprovados, 0 falhas**.
 - Ressalva: este teste foi feito em reconstrução local do adaptador, **não** na cópia integral e exata do repositório. A suíte oficial do GitHub continua pendente.
 - Alteração de código na branch: respostas de detalhes agora passam por lista explícita `{assunto,status}`, impedindo vazamento acidental de campos extras retornados pelo banco.
+
+## Metadados de anexos protegidos — 2026-11-07
+- Criada no Neon isolado a função `consulta_nomes_anexos_segura(text,text)`, com `EXECUTE` retirado de `PUBLIC` e concedido aos papéis cidadãos de homologação.
+- A função retorna somente `nome_arquivo`, jamais `caminho_privado`.
+- Teste com anexo fictício `foto-ficticia-a.jpg`: protocolo A/chave A retornou o nome; protocolo A/chave B e protocolo B/chave B não retornaram o arquivo.
+- Adaptador da API atualizado para retornar `anexos: [{nome_arquivo}]`; o executor permite apenas SQL parametrizado.
+- **Não há endpoint de download**: arquivos privados não podem ser abertos ainda; requer autorização de servidor e URL temporária. Não confundir listagem de nomes com acesso ao conteúdo.
+- Testes Node atualizados no GitHub, mas a suíte integral da branch continua pendente de execução.
