@@ -1834,7 +1834,7 @@ async function carregarSolicitacoes() {
       dados.sort((a,b)=>diasSemMovimento(b)-diasSemMovimento(a));
     }
     atualizarFiltroMovimento();
-    if(filtroPrazoMandato){
+    if([30,60,90,180].includes(filtroPrazoMandato)){
       const limites={30:60,60:90,90:180,180:Infinity};
       dados=dados.filter(item=>normalizar(item.status)!=="concluido" && diasDesdeEncaminhamentoMandato(item)>=filtroPrazoMandato && diasDesdeEncaminhamentoMandato(item)<limites[filtroPrazoMandato]);
       dados.sort((a,b)=>diasDesdeEncaminhamentoMandato(b)-diasDesdeEncaminhamentoMandato(a));
