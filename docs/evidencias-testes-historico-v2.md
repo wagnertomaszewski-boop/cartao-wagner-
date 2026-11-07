@@ -24,3 +24,9 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Mesmo papel com protocolo A e chave B: zero registros.
 - Papel `mandato_cidadao_a` com protocolo inexistente e chave A: zero registros.
 - Teste automatizado de operações atualizado para diferenciar consultas de detalhes, respostas e histórico. **Execução Node pendente**: o ambiente de execução não conseguiu acessar o repositório GitHub por DNS; não considerar esses testes aprovados até execução efetiva.
+
+## Teste local adicional — 2026-11-07
+- Executados **4 testes Node** em reconstrução local equivalente do adaptador `operacoes-neon.mjs`: detalhes/respostas/histórico com campos permitidos, rejeição de chave curta, bloqueio de consultas secundárias sem resultado autenticado e mensagem genérica de recuperação.
+- Resultado: **4 aprovados, 0 falhas**.
+- Ressalva: este teste foi feito em reconstrução local do adaptador, **não** na cópia integral e exata do repositório. A suíte oficial do GitHub continua pendente.
+- Alteração de código na branch: respostas de detalhes agora passam por lista explícita `{assunto,status}`, impedindo vazamento acidental de campos extras retornados pelo banco.
