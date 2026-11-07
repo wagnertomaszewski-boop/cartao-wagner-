@@ -23,3 +23,12 @@ test('fechar sem iniciar servidor libera conexões do pool',async()=>{
  await instancia.fechar();
  assert.equal(encerrou,true);
 });
+
+test('não aceita servidor remoto não autorizado mesmo com ambiente de homologação',async()=>{
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',DATABASE_URL:'postgresql://usuario:senha@db.outro-servidor.example:5432/testes'};
+ await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>{throw Error('NÃO deve conectar');}}),/Destino de homologação não autorizado/);
+});
+test('não confia em host Neon sem correspondência exata configurada',async()=>{
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',DATABASE_URL:'postgresql://usuario:senha@ep-qualquer.neon.tech:5432/testes',NEON_HOST_HOMOLOGACAO:'ep-outro.neon.tech'};
+ await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>{throw Error('NÃO deve conectar');}}),/Destino de homologação não autorizado/);
+});
