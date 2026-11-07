@@ -46,3 +46,14 @@ test('método incorreto em decisão administrativa não invoca handler',async()=
   assert.equal(chamadas,0);
  }finally{await new Promise(resolve=>servidor.close(resolve));}
 });
+
+test('PostgreSQL local não exige SSL e Neon remoto mantém TLS estrito',async()=>{
+ let opcoes;
+ class Pool {constructor(config){opcoes=config;}async end(){}}
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',DATABASE_URL:'postgresql://usuario:senha@localhost:5432/testes'};
+ const instancia=await iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})});
+ try{assert.equal(opcoes.ssl,false);}finally{await instancia.fechar();}
+ const host='ep-teste-123.us-east-2.aws.neon.tech';
+ const remoto=await iniciarHomologacao({env:{...env,DATABASE_URL:'postgresql://usuario:senha@'+host+'/neondb',NEON_HOST_HOMOLOGACAO:host},carregarPg:async()=>({default:{Pool}})});
+ try{assert.deepEqual(opcoes.ssl,{rejectUnauthorized:true});}finally{await remoto.fechar();}
+});
