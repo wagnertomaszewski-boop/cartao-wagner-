@@ -183,3 +183,10 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Consultado `has_function_privilege('public',oid,'EXECUTE')` para as **oito funções** do esquema `mandato_testes`: todas retornaram **false**. Não há execução das funções por concessão geral a `PUBLIC`.
 - Consultado `has_schema_privilege` nos esquemas `mandato_testes` e `public`: os três papéis possuem `USAGE`, mas **não** `CREATE`, nos dois esquemas.
 - Estes resultados verificam privilégios no banco isolado; **não** validam a segurança de produção, a identidade do cidadão ou a API HTTP implantada.
+
+## Regressão SQL real no Neon isolado — 2026-11-07, execução adicional
+Duas transações `run_sql_transaction`, sem alteração de dados e com `SET LOCAL ROLE`:
+- Papel `mandato_cidadao_a`: `consulta_segura('HIST-TESTE-900001', repeat('a',64))` retornou apenas `{assunto:'Histórico teste A',status:'recebido'}`; com `repeat('b',64)` retornou zero linhas; `consulta_nomes_anexos_segura` com chave A retornou apenas `foto-ficticia-a.jpg`.
+- Papel `mandato_cidadao_b`: `consulta_segura` com protocolo e chave corretos de A **também retornou o registro de A**; com chave incorreta B, `consulta_respostas_segura`, `consulta_nomes_anexos_segura` e `consulta_historico_segura` retornaram zero linhas.
+- **Observação importante:** o controle implementado é por posse de protocolo + chave secreta, não isolamento por identidade do papel cidadão. A proteção depende de chave forte, distribuição privada, rotação e bloqueio de tentativas. Este comportamento não deve ser descrito como autorização vinculada ao usuário autenticado.
+- Execução diretamente no banco Neon de homologação, **não** teste HTTP ou produção. Nenhuma escrita executada.
