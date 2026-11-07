@@ -17,7 +17,7 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
       res.writeHead(204,{...cabecalhosCors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Max-Age':'600','Cache-Control':'no-store'});
       return res.end();
     }
-    if (req.url === '/health' && req.method === 'GET') return send(200, {status:'ok', modo:'homologacao-sem-banco'});
+    if (req.url === '/health' && req.method === 'GET') return send(200, {status:'ok', modo:'homologacao', rotasCidadaoHabilitadas:typeof operacoes.solicitar==='function' && typeof operacoes.consultar==='function'});
     const adminLista = req.url === '/api/admin/recuperacoes' && req.method === 'GET';
     const adminDecisao = /^\/api\/admin\/recuperacoes\/([0-9]+)\/decisao$/.exec(req.url || '');
     const admin = adminLista || (adminDecisao && req.method === 'POST');
