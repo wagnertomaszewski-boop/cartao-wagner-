@@ -25,3 +25,24 @@ test('decisão valida pedido e usa executor administrativo separado',async()=>{
  await ops.decidir({pedidoId:'12',dados:{aprovar:false,identidadeConfirmada:true}});
  assert.equal(chamadas,1);
 });
+
+test('consulta protegida retorna respostas somente quando protocolo e chave são válidos',async()=>{
+ const chamadas=[];
+ const ops=criarOperacoesNeon({executarCidadao:async(sql,params)=>{
+  chamadas.push({sql,params});
+  if(sql.includes('consulta_segura'))return [{assunto:'Teste',status:'Recebido'}];
+  if(sql.includes('consulta_respostas_segura'))return [{texto:'Resposta de teste',criado_em:'2026-11-07',caminho_privado:'NÃO EXPOR'}];
+  return [];
+ },executarAdmin:async()=>[]});
+ const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'a'.repeat(64)}});
+ assert.deepEqual(r.respostas,[{texto:'Resposta de teste',criado_em:'2026-11-07'}]);
+ assert.equal(chamadas.length,2);
+ assert.equal(chamadas[1].sql,'SELECT * FROM mandato_testes.consulta_respostas_segura($1,$2)');
+});
+test('chave inválida não dispara consulta às respostas',async()=>{
+ const chamadas=[];
+ const ops=criarOperacoesNeon({executarCidadao:async(sql)=>{chamadas.push(sql);return [];},executarAdmin:async()=>[]});
+ const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'x'.repeat(64)}});
+ assert.deepEqual(r,{resultado:[],respostas:[]});
+ assert.equal(chamadas.length,1);
+});
