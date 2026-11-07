@@ -52,3 +52,22 @@ test('rotas de cidadão permanecem desabilitadas sem ativação separada',async(
   assert.equal(saude.rotasCidadaoHabilitadas,false);
  }finally{await instancia.fechar();}
 });
+
+
+test('mesmo com rotas de cidadão habilitadas, decisão administrativa permanece bloqueada',async()=>{
+ class Pool {async end(){} async connect(){throw Error('Banco não deve ser consultado');}}
+ const instancia=await iniciarHomologacao({env:{MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',HABILITAR_ROTAS_CIDADAO_TESTES:'sim',DATABASE_URL:'postgresql://usuario:senha@localhost:5432/testes'},carregarPg:async()=>({default:{Pool}})});
+ await new Promise(resolve=>instancia.servidor.listen(0,'127.0.0.1',resolve));
+ try{
+  const base='http://127.0.0.1:'+instancia.servidor.address().port;
+  const saude=await (await fetch(base+'/health')).json();
+  assert.equal(saude.rotasCidadaoHabilitadas,true);
+  const decisao=await fetch(base+'/api/admin/recuperacoes/1/decisao',{method:'POST',headers:{Authorization:'Bearer token-ficticio','Content-Type':'application/json'},body:JSON.stringify({aprovar:true,identidadeConfirmada:true})});
+  assert.equal(decisao.status,403);
+ }finally{await instancia.fechar();}
+});
+
+test('hostname que apenas contém neon.tech não é aceito como Neon isolado',async()=>{
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',DATABASE_URL:'postgresql://usuario:senha@ep-isolado.neon.tech.atacante.example:5432/testes',NEON_HOST_HOMOLOGACAO:'ep-isolado.neon.tech.atacante.example'};
+ await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>{throw Error('Não deveria conectar');}}),/Destino de homologação não autorizado/);
+});
