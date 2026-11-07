@@ -2212,6 +2212,8 @@ async function salvarEncaminhamentoPrefeitura(id,botao){
   const hojeISO=[hojeLocal.getFullYear(),String(hojeLocal.getMonth()+1).padStart(2,"0"),String(hojeLocal.getDate()).padStart(2,"0")].join("-");
   if(data && data>hojeISO){alert("A data de encaminhamento não pode ser futura.");return;}
   if(!data && protocolo){alert("Informe também a data do encaminhamento.");return;}
+  if(!data && !protocolo && !confirm("Os dois campos estão vazios. Deseja limpar os dados oficiais já cadastrados?"))return;
+  if(protocolo && protocolo.length>120){alert("O protocolo deve ter no máximo 120 caracteres.");return;}
   if(!confirm("Confirmar dados do encaminhamento oficial à Prefeitura?"))return;
   botao.disabled=true;
   try{
@@ -2224,7 +2226,7 @@ async function salvarEncaminhamentoPrefeitura(id,botao){
     });
     const retorno=await resp.json().catch(()=>[]);
     if(!resp.ok || !Array.isArray(retorno) || !retorno.length)throw new Error(retorno.message||"Não foi possível salvar.");
-    alert("Encaminhamento registrado.");
+    alert("Dados do encaminhamento salvos com sucesso.");
     await carregarSolicitacoes();
   }catch(e){alert(mensagemDeErro(e));}
   finally{botao.disabled=false;}
