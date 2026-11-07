@@ -20,7 +20,7 @@ test('cidadão usa transação, papel limitado e parâmetros',async()=>{
 test('admin usa papel próprio e rollback em falha',async()=>{
  const {pool,eventos}=simularPool({falhar:true});
  const {executarAdmin}=criarExecutoresPostgres({pool});
- await assert.rejects(executarAdmin('SELECT mandato_testes.decidir_recuperacao($1,$2)',['12',true]));
+ await assert.rejects(executarAdmin('SELECT * FROM mandato_testes.decidir_recuperacao($1,$2)',['12',true]));
  assert.ok(eventos.some(x=>Array.isArray(x)&&x[0]==='SET LOCAL ROLE mandato_admin_teste'));
  assert.ok(eventos.some(x=>Array.isArray(x)&&x[0]==='ROLLBACK'));
  assert.equal(eventos.at(-1),'release');
