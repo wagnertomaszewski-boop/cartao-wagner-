@@ -13,7 +13,7 @@ export function criarOperacoesNeon({executarCidadao, executarAdmin} = {}) {
       return {mensagem:'Se os dados corresponderem, o pedido será analisado.'};
     },
     async consultar({dados}) {
-      if (!somenteTexto(dados.protocolo, 40) || !somenteTexto(dados.chave, 128))
+      if (!somenteTexto(dados.protocolo, 40) || !somenteTexto(dados.chave, 128) || dados.chave.trim().length < 32)
         throw new Error('Dados inválidos');
       const linhas = await executarCidadao('SELECT * FROM mandato_testes.consulta_segura($1,$2)', [dados.protocolo.trim(), dados.chave]);
       const respostas = linhas.length ? await executarCidadao('SELECT * FROM mandato_testes.consulta_respostas_segura($1,$2)', [dados.protocolo.trim(), dados.chave]) : [];
