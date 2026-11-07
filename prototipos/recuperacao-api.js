@@ -3,7 +3,7 @@
  * explicitamente um backend de homologação com RPCs revisadas.
  */
 export class RecuperacaoApi {
-  constructor({baseUrl, publishableKey, ambiente='simulacao'}={}) {
+  constructor({baseUrl, publishableKey, ambiente='simulacao', projetoHomologacao}={}) {
     this.ambiente=ambiente;
     if(ambiente!=='simulacao' && ambiente!=='homologacao') throw new Error('Ambiente não autorizado');
     if(ambiente==='homologacao' && (!baseUrl || !publishableKey)) throw new Error('Configuração de homologação incompleta');
@@ -13,6 +13,7 @@ export class RecuperacaoApi {
       if(destino.protocol!=='https:' || destino.username || destino.password || destino.search || destino.hash || destino.pathname!=='/' || destino.port) throw new Error('Endereço de homologação inválido');
       if(destino.hostname==='pmmsdjozyyxkbuqlkfpb.supabase.co' || destino.hostname==='kmttgzraotabxvqmrren.supabase.co') throw new Error('Endereço de produção não permitido');
       if(!/^[-a-z0-9]+\.supabase\.co$/.test(destino.hostname)) throw new Error('Utilize um projeto Supabase de homologação');
+      if(!projetoHomologacao || !/^[a-z]{20}$/.test(projetoHomologacao) || destino.hostname!==projetoHomologacao+'.supabase.co') throw new Error('Projeto de homologação não autorizado');
     }
     this.baseUrl=baseUrl?.replace(/\/$/,'');
     this.publishableKey=publishableKey;
