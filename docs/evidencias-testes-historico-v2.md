@@ -177,3 +177,9 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Com 25 requisições HTTP simultâneas no mesmo IP, limitador local aceitou 5 (HTTP 200) e bloqueou 20 (HTTP 429); handler invocado exatamente 5 vezes.
 - Simulação de falha do banco retornou HTTP 503 e não expôs mensagem interna fictícia.
 - **Não é teste de capacidade em produção**: o limitador é em memória, por instância; os módulos locais são reproduções, e o backend real não está implantado. O limite de 5 consultas por minuto por IP pode afetar famílias/rede compartilhada e requer revisão antes da produção.
+
+## Auditoria final de privilégios herdados — 2026-11-07
+- Consultado `pg_roles` no projeto Neon de testes para `mandato_cidadao_a`, `mandato_cidadao_b` e `mandato_admin_teste`: todos são `NOLOGIN`, e a conexão de testes é membro dos três papéis, compatível com o executor `SET LOCAL ROLE`.
+- Consultado `has_function_privilege('public',oid,'EXECUTE')` para as **oito funções** do esquema `mandato_testes`: todas retornaram **false**. Não há execução das funções por concessão geral a `PUBLIC`.
+- Consultado `has_schema_privilege` nos esquemas `mandato_testes` e `public`: os três papéis possuem `USAGE`, mas **não** `CREATE`, nos dois esquemas.
+- Estes resultados verificam privilégios no banco isolado; **não** validam a segurança de produção, a identidade do cidadão ou a API HTTP implantada.
