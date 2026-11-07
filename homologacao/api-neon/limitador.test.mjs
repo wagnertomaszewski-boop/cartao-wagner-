@@ -26,3 +26,13 @@ test('limite de memória falha fechado e permite nova chave após expiração',(
  agora=100;
  assert.equal(l.verificar('b'),true);
 });
+
+test('chave existente expirada é renovada quando a memória está cheia',()=>{
+ let agora=0;
+ const l=criarLimitador({maxChaves:1,maximo:1,janelaMs:100,relogio:()=>agora});
+ assert.equal(l.verificar('a'),true);
+ assert.equal(l.verificar('a'),false);
+ agora=100;
+ assert.equal(l.verificar('a'),true);
+ assert.equal(l.verificar('a'),false);
+});
