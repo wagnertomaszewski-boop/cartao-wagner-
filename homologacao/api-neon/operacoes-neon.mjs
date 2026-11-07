@@ -17,7 +17,8 @@ export function criarOperacoesNeon({executarCidadao, executarAdmin} = {}) {
         throw new Error('Dados inválidos');
       const linhas = await executarCidadao('SELECT * FROM mandato_testes.consulta_segura($1,$2)', [dados.protocolo.trim(), dados.chave]);
       const respostas = linhas.length ? await executarCidadao('SELECT * FROM mandato_testes.consulta_respostas_segura($1,$2)', [dados.protocolo.trim(), dados.chave]) : [];
-      return {resultado:linhas, respostas:respostas.map(({texto,criado_em})=>({texto,criado_em}))};
+      const historico = linhas.length ? await executarCidadao('SELECT * FROM mandato_testes.consulta_historico_segura($1,$2)', [dados.protocolo.trim(), dados.chave]) : [];
+      return {resultado:linhas, respostas:respostas.map(({texto,criado_em})=>({texto,criado_em})), historico:historico.map(({status,observacao,criado_em})=>({status,observacao,criado_em}))};
     },
     async decidir({dados,pedidoId}) {
       if (!/^[1-9][0-9]{0,17}$/.test(pedidoId || '') || typeof dados.aprovar !== 'boolean')
