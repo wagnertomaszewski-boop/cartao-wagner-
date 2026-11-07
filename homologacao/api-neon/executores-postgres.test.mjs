@@ -31,5 +31,7 @@ test('não aceita SQL fora da lista de funções autorizadas',async()=>{
  await assert.rejects(executarCidadao('DELETE FROM mandato_testes.solicitacoes'));
  await assert.rejects(executarCidadao('SELECT * FROM mandato_testes.solicitacoes'));
  await assert.rejects(executarCidadao('SELECT * FROM mandato_testes.decidir_recuperacao($1,$2)', ['12',true]));
+ await assert.rejects(executarCidadao('SELECT mandato_testes.pedir_recuperacao($1,$2)', ['somente-um']));
+ await assert.rejects(executarCidadao('SELECT mandato_testes.pedir_recuperacao($1,$2)', ['a','b','c']));
  assert.deepEqual(eventos,[]);
 });
