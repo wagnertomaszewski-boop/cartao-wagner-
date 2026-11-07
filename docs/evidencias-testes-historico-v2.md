@@ -108,3 +108,8 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Revisada a implementação `homologacao/api-neon/server.mjs`: rota `POST /api/admin/recuperacoes/{id}/decisao` exige token administrativo e confirmação de identidade retornada por `verificarIdentidade` no servidor; `identidadeConfirmada` no corpo não é usada como prova.
 - Adicionados dois testes em `homologacao/api-neon/server.test.mjs`: (1) sem verificador configurado, nem `aprovar:true` nem `aprovar:false` com `identidadeConfirmada:true` podem acionar `operacoes.decidir`; (2) verificador que retorna `false` ou lança exceção deve resultar em HTTP 403, sem chamar decisão.
 - **Testes adicionados, ainda não executados.** A verificação de identidade real e a entrega da nova chave ainda não estão implementadas para produção; nenhuma rota administrativa foi ativada.
+
+## Consultas auxiliares com chave incorreta e inicialização fechada — 2026-11-07
+- Em Neon, com os papéis `mandato_cidadao_a` e `mandato_cidadao_b`, executadas `consulta_respostas_segura`, `consulta_historico_segura` e `consulta_nomes_anexos_segura` para `HIST-TESTE-900001` usando chave fictícia incorreta `repeat('b',64)`. As seis consultas retornaram **zero linhas**.
+- Revisado `iniciar-homologacao.mjs`: rotas cidadãs só são fornecidas ao servidor quando `HABILITAR_ROTAS_CIDADAO_TESTES='sim'` além das demais verificações de ambiente. Adicionado teste HTTP de regressão em `iniciar-homologacao.test.mjs` para exigir 503 nas duas rotas sem habilitação separada e `rotasCidadaoHabilitadas=false` no `/health`.
+- O teste Node foi escrito e versionado, **não executado**; não há servidor de homologação publicado.
