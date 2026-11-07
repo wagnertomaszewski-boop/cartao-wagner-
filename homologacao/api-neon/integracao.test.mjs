@@ -9,7 +9,7 @@ test('fluxo HTTP integrado com executores simulados e sem credenciais',async()=>
   executarCidadao:async(sql,params)=>{chamadas.push({papel:'cidadao',sql,params});return [{status:'Recebido'}];},
   executarAdmin:async(sql,params)=>{chamadas.push({papel:'admin',sql,params});return [{chave:'CHAVE-FICTICIA'}];}
  });
- const servidor=criarServidor({verificarAdmin:async token=>token==='TOKEN-FICTICIO',verificarIdentidade:async ({dados})=>dados.identidadeConfirmada===true,operacoes});
+ const servidor=criarServidor({verificarAdmin:async token=>token==='TOKEN-FICTICIO',verificarIdentidade:async ({pedidoId})=>pedidoId==='12',operacoes});
  await new Promise(resolve=>servidor.listen(0,'127.0.0.1',resolve));
  const base='http://127.0.0.1:'+servidor.address().port;
  const enviar=(rota,dados,token)=>fetch(base+rota,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(dados)});
