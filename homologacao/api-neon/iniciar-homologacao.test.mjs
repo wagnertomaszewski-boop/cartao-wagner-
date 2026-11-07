@@ -11,3 +11,7 @@ test('não inicializa sem habilitação explícita',async()=>{
 test('exige segredo de conexão no servidor',async()=>{
  await assert.rejects(iniciarHomologacao({env:{MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim'},carregarPg:async()=>{throw Error('não deveria carregar')}}),/DATABASE_URL/);
 });
+
+test('rejeita endereço de banco Supabase em homologação antes de abrir conexão',async()=>{
+ await assert.rejects(iniciarHomologacao({env:{MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',DATABASE_URL:'postgresql://usuario:senha@db.pmmsdjozyyxkbuqlkfpb.supabase.co:5432/postgres'},carregarPg:async()=>{throw Error('NÃO deve abrir conexão');}}),/Banco de produção proibido/);
+});
