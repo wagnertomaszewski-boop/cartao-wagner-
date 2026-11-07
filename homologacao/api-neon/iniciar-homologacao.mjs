@@ -12,7 +12,10 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  const {default:pg} = await carregarPg();
  const pool = new pg.Pool({connectionString:env.DATABASE_URL,ssl:{rejectUnauthorized:true},max:3,connectionTimeoutMillis:3000,idleTimeoutMillis:10000});
  const {executarCidadao,executarAdmin}=criarExecutoresPostgres({pool});
- const operacoes=criarOperacoesNeon({executarCidadao,executarAdmin});
+ const operacoesNeon=criarOperacoesNeon({executarCidadao,executarAdmin});
+ // Sem limitador de tentativas e identidade verificada, rotas de dados ficam fechadas.
+ const operacoes={};
+ void operacoesNeon;
  // Sem autenticação de administrador integrada, o verificador sempre rejeita.
  const servidor=criarServidor({operacoes,verificarAdmin:async()=>false});
  return {servidor,fechar:async()=>{await new Promise(resolve=>servidor.close(resolve));await pool.end();}};
