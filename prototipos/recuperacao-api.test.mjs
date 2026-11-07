@@ -37,3 +37,9 @@ test('rejeita URL malformada ou domínio externo',()=>{
     assert.throws(()=>new RecuperacaoApi({ambiente:'homologacao',baseUrl:url,publishableKey:'fake'}));
   }
 });
+
+test('exige identificação explícita do projeto de homologação',()=>{
+  assert.throws(()=>new RecuperacaoApi({ambiente:'homologacao',baseUrl:'https://abcdefghijklmnopqrst.supabase.co',publishableKey:'fake'}),/não autorizado/);
+  assert.throws(()=>new RecuperacaoApi({ambiente:'homologacao',baseUrl:'https://abcdefghijklmnopqrst.supabase.co',projetoHomologacao:'zyxwvutsrqponmlkjihg',publishableKey:'fake'}),/não autorizado/);
+  assert.doesNotThrow(()=>new RecuperacaoApi({ambiente:'homologacao',baseUrl:'https://abcdefghijklmnopqrst.supabase.co',projetoHomologacao:'abcdefghijklmnopqrst',publishableKey:'fake'}));
+});
