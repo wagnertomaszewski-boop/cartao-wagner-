@@ -54,7 +54,7 @@ test('PostgreSQL local não exige SSL e Neon remoto mantém TLS estrito',async()
  const instancia=await iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})});
  try{assert.equal(opcoes.ssl,false);}finally{await instancia.fechar();}
  const host='ep-teste-123.us-east-2.aws.neon.tech';
- const remoto=await iniciarHomologacao({env:{...env,DATABASE_URL:'postgresql://usuario:senha@'+host+'/neondb',NEON_HOST_HOMOLOGACAO:host,NEON_USUARIO_SERVICO_HOMOLOGACAO:'usuario'},carregarPg:async()=>({default:{Pool}})});
+ const remoto=await iniciarHomologacao({env:{...env,DATABASE_URL:'postgresql://mandato_api_homologacao:senha@'+host+'/neondb',NEON_HOST_HOMOLOGACAO:host,NEON_USUARIO_SERVICO_HOMOLOGACAO:'mandato_api_homologacao'},carregarPg:async()=>({default:{Pool}})});
  try{assert.deepEqual(opcoes.ssl,{rejectUnauthorized:true});}finally{await remoto.fechar();}
 });
 
@@ -81,5 +81,14 @@ test('bloqueia cloud_admin com BYPASSRLS antes de iniciar pool',async()=>{
  const host='ep-teste-123.us-east-2.aws.neon.tech';
  const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',NEON_HOST_HOMOLOGACAO:host,NEON_USUARIO_SERVICO_HOMOLOGACAO:'cloud_admin',DATABASE_URL:'postgresql://cloud_admin:senha@'+host+'/neondb'};
  await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})}),/Conta privilegiada proibida/);
+ assert.equal(criacoes,0);
+});
+
+test('não aceita usuário remoto arbitrário mesmo quando a configuração concorda',async()=>{
+ let criacoes=0;
+ class Pool{constructor(){criacoes++;}}
+ const host='ep-teste-123.us-east-2.aws.neon.tech';
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',NEON_HOST_HOMOLOGACAO:host,NEON_USUARIO_SERVICO_HOMOLOGACAO:'outro_usuario',DATABASE_URL:'postgresql://outro_usuario:senha@'+host+'/neondb'};
+ await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})}),/Usuário de serviço/);
  assert.equal(criacoes,0);
 });
