@@ -11,11 +11,12 @@ test('recuperação chama função parametrizada e não revela existência de pr
 });
 test('consulta usa chave como parâmetro, nunca interpolada em SQL',async()=>{
  let sql,params;
- const ops=criarOperacoesNeon({executarCidadao:async(s,p)=>{if(s.includes('consulta_respostas_segura')||s.includes('consulta_historico_segura'))return [];sql=s;params=p;return [{assunto:'Teste',status:'Recebido'}];},executarAdmin:async()=>[]});
+ const ops=criarOperacoesNeon({executarCidadao:async(s,p)=>{if(s.includes('consulta_respostas_segura')||s.includes('consulta_historico_segura')||s.includes('consulta_nomes_anexos_segura'))return [];sql=s;params=p;return [{assunto:'Teste',status:'Recebido'}];},executarAdmin:async()=>[]});
  const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'a'.repeat(64)}});
  assert.deepEqual(r.resultado,[{assunto:'Teste',status:'Recebido'}]);
  assert.deepEqual(r.respostas,[]);
  assert.deepEqual(r.historico,[]);
+ assert.deepEqual(r.anexos,[]);
  assert.equal(sql,'SELECT * FROM mandato_testes.consulta_segura($1,$2)');
  assert.deepEqual(params,['TESTE-000001','a'.repeat(64)]);
 });
@@ -44,15 +45,16 @@ test('consulta protegida retorna respostas somente quando protocolo e chave são
  },executarAdmin:async()=>[]});
  const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'a'.repeat(64)}});
  assert.deepEqual(r.respostas,[{texto:'Resposta de teste',criado_em:'2026-11-07'}]);
- assert.equal(chamadas.length,3);
+ assert.equal(chamadas.length,4);
  assert.equal(chamadas[1].sql,'SELECT * FROM mandato_testes.consulta_respostas_segura($1,$2)');
- assert.equal(chamadas[2].sql,'SELECT * FROM mandato_testes.consulta_historico_segura($1,$2)');
+ assert.equal(chamadas[2].sql,'SELECT * FROM mandato_testes.consulta_nomes_anexos_segura($1,$2)');
+ assert.equal(chamadas[3].sql,'SELECT * FROM mandato_testes.consulta_historico_segura($1,$2)');
 });
 test('chave inválida não dispara consulta às respostas',async()=>{
  const chamadas=[];
  const ops=criarOperacoesNeon({executarCidadao:async(sql)=>{chamadas.push(sql);return [];},executarAdmin:async()=>[]});
  const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'x'.repeat(64)}});
- assert.deepEqual(r,{resultado:[],respostas:[],historico:[]});
+ assert.deepEqual(r,{resultado:[],respostas:[],historico:[],anexos:[]});
  assert.equal(chamadas.length,1);
 });
 
@@ -73,5 +75,16 @@ test('detalhes protegidos não expõem campos internos do banco',async()=>{
  const ops=criarOperacoesNeon({executarCidadao:async(sql)=>sql.includes('consulta_segura')?[{assunto:'Teste',status:'recebido',cidadao_id:'NÃO EXPOR',descricao:'NÃO EXPOR',segredo_hash:'NÃO EXPOR'}]:[],executarAdmin:async()=>[]});
  const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'a'.repeat(64)}});
  assert.deepEqual(r.resultado,[{assunto:'Teste',status:'recebido'}]);
+ assert.ok(!JSON.stringify(r).includes('NÃO EXPOR'));
+});
+
+test('nomes de anexos não revelam caminhos privados',async()=>{
+ const ops=criarOperacoesNeon({executarCidadao:async(sql)=>{
+  if(sql.includes('consulta_nomes_anexos_segura'))return [{nome_arquivo:'foto.jpg',caminho_privado:'NÃO EXPOR',id:42}];
+  if(sql.includes('consulta_segura'))return [{assunto:'Teste',status:'recebido'}];
+  return [];
+ },executarAdmin:async()=>[]});
+ const r=await ops.consultar({dados:{protocolo:'TESTE-000001',chave:'a'.repeat(64)}});
+ assert.deepEqual(r.anexos,[{nome_arquivo:'foto.jpg'}]);
  assert.ok(!JSON.stringify(r).includes('NÃO EXPOR'));
 });
