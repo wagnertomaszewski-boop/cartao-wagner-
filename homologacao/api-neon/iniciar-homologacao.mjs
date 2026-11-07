@@ -26,7 +26,7 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
   const usuario = decodeURIComponent(destino.username);
   if (['neondb_owner','cloud_admin','postgres','root'].includes(usuario.toLowerCase()))
    throw Error('Conta privilegiada proibida na API');
-  if (!env.NEON_USUARIO_SERVICO_HOMOLOGACAO || usuario !== env.NEON_USUARIO_SERVICO_HOMOLOGACAO)
+  if (usuario !== 'mandato_api_homologacao' || env.NEON_USUARIO_SERVICO_HOMOLOGACAO !== usuario)
    throw Error('Usuário de serviço de homologação não autorizado');
  }
  const {default:pg} = await carregarPg();
