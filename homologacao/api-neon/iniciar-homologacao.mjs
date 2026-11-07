@@ -29,6 +29,10 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
   if (usuario !== 'mandato_api_homologacao' || env.NEON_USUARIO_SERVICO_HOMOLOGACAO !== usuario)
    throw Error('Usuário de serviço de homologação não autorizado');
  }
+ // O driver pg pode substituir a configuração TLS por parâmetros da URL.
+ // Bloquear overrides que poderiam enfraquecer a verificação de certificado.
+ if (!local && ['sslmode','sslcert','sslkey','sslrootcert'].some(chave=>destino.searchParams.has(chave)))
+  throw Error('Parâmetros SSL na DATABASE_URL não autorizados');
  const {default:pg} = await carregarPg();
  const pool = new pg.Pool({connectionString:env.DATABASE_URL,ssl:local ? false : {rejectUnauthorized:true},max:3,connectionTimeoutMillis:3000,idleTimeoutMillis:10000});
  const {executarCidadao,executarAdmin}=criarExecutoresPostgres({pool});
