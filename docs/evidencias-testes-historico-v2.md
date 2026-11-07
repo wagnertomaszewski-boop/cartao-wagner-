@@ -132,3 +132,9 @@ Executar `node --test homologacao/api-neon/*.test.mjs v2/seguranca/*.test.mjs` e
 - Três cenários: protocolo contendo `' OR 1=1 --` com chave válida; chave contendo `' OR '1'='1` com protocolo válido; chave correta de 64 caracteres alterada no último caractere.
 - **Seis consultas retornaram zero linhas**, sem expor assunto ou histórico. Strings foram escapadas como literais SQL no executor de teste; a API do projeto usa consultas parametrizadas, a serem testadas na suíte Node.
 - Esta evidência não comprova ausência de todas as classes de injeção, nem substitui testes integrados HTTP e de autenticação.
+
+## Correção prioritária de autorização HTTP — 2026-11-07
+- Detectada lacuna de contexto: `verificarIdentidade` recebia somente `pedidoId`, sem o token do administrador autenticado. Isso dificultaria vincular a confirmação de identidade à sessão autorizada.
+- Corrigido `server.mjs` para passar `{pedidoId, token:req.headers.authorization.slice(7)}` ao verificador **somente depois** de `verificarAdmin` retornar `true`. O token continua restrito ao servidor e não é incluído na resposta.
+- Adicionado teste em `server.test.mjs` que envia token falso no corpo, verifica que o verificador recebe apenas o token autenticado do cabeçalho e exige HTTP 403 sem decisão quando identidade não confirmada.
+- **Teste Node ainda não executado.** A API administrativa segue desativada no inicializador de homologação; não foi feita alteração na produção.
