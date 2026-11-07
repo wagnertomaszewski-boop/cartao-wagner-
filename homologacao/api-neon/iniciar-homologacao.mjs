@@ -13,6 +13,11 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  // Impede conectar acidentalmente o servidor de testes ao banco Supabase de produção.
  const destino = new URL(env.DATABASE_URL);
  if (destino.hostname.endsWith('.supabase.co') || destino.hostname.includes('supabase') || destino.hostname.includes('pmmsdjozyyxkbuqlkfpb')) throw Error('Banco de produção proibido na homologação');
+ // Homologação remota só pode usar o projeto Neon isolado; localhost é reservado a testes locais.
+ const host = destino.hostname.toLowerCase();
+ const neonIsolado = host.endsWith('.neon.tech') && host.includes('proud-firefly-64745516');
+ const local = ['localhost','127.0.0.1','::1'].includes(host);
+ if (!neonIsolado && !local) throw Error('Destino de homologação não autorizado');
  const {default:pg} = await carregarPg();
  const pool = new pg.Pool({connectionString:env.DATABASE_URL,ssl:{rejectUnauthorized:true},max:3,connectionTimeoutMillis:3000,idleTimeoutMillis:10000});
  const {executarCidadao,executarAdmin}=criarExecutoresPostgres({pool});
