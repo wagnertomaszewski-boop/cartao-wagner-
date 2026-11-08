@@ -54,8 +54,9 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  let registrarDecisaoSintetica=null;
  if(env.HABILITAR_DECISAO_SINTETICA_900007==='sim'){
   if(!integracaoSintetica||typeof integracaoSintetica!=='object'||
-   !['chavePublicaConferente','buscarAtestado','conferentesPermitidos','operadoresPermitidos','buscarAuth','consultarNeon','auditar']
-    .every(k=>integracaoSintetica[k]!==undefined))
+   !['buscarAtestado','buscarAuth','consultarNeon','auditar'].every(k=>typeof integracaoSintetica[k]==='function') ||
+   !['conferentesPermitidos','operadoresPermitidos'].every(k=>Array.isArray(integracaoSintetica[k]) && integracaoSintetica[k].length>0) ||
+   !integracaoSintetica.chavePublicaConferente)
    throw Error('Integração sintética privada obrigatória');
   registrarDecisaoSintetica=criarRegistroSinteticoAssinado900007({
    ...integracaoSintetica,
