@@ -13,8 +13,7 @@ test('HTTP: admin inicia, cidadão confirma; não há liberação sem autorizaç
   verificacao:{solicitar:async()=>({desafioId,envioManual:{url:'https://wa.me/5551999999999?text=103759'}})}
  });
  const confirmacaoCidadao=criarOperacoesConfirmacaoCidadao({
-  verificacao:{confirmar:async d=>!consumido&&d.codigo===codigo&&(consumido=true)},
-  registrarConfirmacao:async()=>{confirmacoes++;}
+  verificacao:{confirmar:async d=>{if(consumido||d.codigo!==codigo)return false;consumido=true;confirmacoes++;return true;}}
  });
  const srv=criarServidor({verificarAdmin:async t=>t===TOKEN,iniciarRecuperacao,confirmacaoCidadao});
  await new Promise(resolve=>srv.listen(0,'127.0.0.1',resolve));
