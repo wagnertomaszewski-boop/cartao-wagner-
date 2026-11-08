@@ -19,7 +19,7 @@ export function criarConferenteIdentidadeServidor({
   try{
    const whatsapp=await consultarWhatsappConfirmado({solicitacaoId:String(solicitacaoId),acao});
    if(whatsapp?.confirmado!==true||whatsapp?.solicitacaoId!==String(solicitacaoId))return false;
-   const pessoal=await consultarConferenciaPessoal({solicitacaoId:String(solicitacaoId),operadorId});
+   const pessoal=await consultarConferenciaPessoal({solicitacaoId:String(solicitacaoId),operadorId,acao});
    if(pessoal?.confirmado!==true||pessoal?.solicitacaoId!==String(solicitacaoId)||
     pessoal?.operadorId!==operadorId)return false;
    const reauth=await consultarReautenticacao({operadorId});
