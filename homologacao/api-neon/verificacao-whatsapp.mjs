@@ -15,11 +15,14 @@ export function criarVerificacaoWhatsapp({buscarContatoConfirmado,enviarCodigo,a
   const id=randomBytes(16).toString('hex');
   const codigo=String(randomInt(0,1000000)).padStart(6,'0');
   await armazenarDesafio({id,solicitacaoId:String(solicitacaoId),acao,hash:digest(id,codigo),expiraEm:agora()+300000,maxTentativas:5});
+  let entrega;
   try{
-   if(await enviarCodigo({telefone:contato.telefone,codigo,acao})!==true)
-    throw Error('Entrega não confirmada');
-  }catch{await consumirDesafio({id,invalidar:true});throw Error('Não foi possível enviar o código');}
-  return {desafioId:id,expiraEm:agora()+300000};
+   entrega=await enviarCodigo({telefone:contato.telefone,codigo,acao});
+   // Modo manual devolve apenas o link de abertura, não presume envio ou entrega.
+   if(entrega!==true && !(entrega && entrega.manual===true && typeof entrega.url==='string' && entrega.url.startsWith('https://wa.me/')))
+    throw Error('Preparação de envio não confirmada');
+  }catch{await consumirDesafio({id,invalidar:true});throw Error('Não foi possível preparar o código');}
+  return {desafioId:id,expiraEm:agora()+300000,...(entrega?.manual===true?{envioManual:{url:entrega.url,telefoneMascarado:entrega.telefoneMascarado}}:{})};
  }
  async function confirmar({desafioId,codigo,solicitacaoId,acao}={}){
   if(typeof desafioId!=='string'||!/^[a-f0-9]{32}$/.test(desafioId)||
