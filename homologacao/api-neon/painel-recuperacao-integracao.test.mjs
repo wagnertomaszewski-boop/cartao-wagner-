@@ -21,3 +21,13 @@ test('verificação de acesso usa sessão administrativa e somente consulta esta
  assert.match(trecho,/Authorization:'Bearer '\+sessao\.access_token/);
  assert.doesNotMatch(trecho,/method:'POST'|concluir-recuperacao|iniciar-confirmacao|localStorage|senhaLogin/);
 });
+
+test('estado da recuperação vem do servidor e não libera operação pela interface',async()=>{
+ const servidor=await readFile(new URL('./server.mjs',import.meta.url),'utf8');
+ assert.match(servidor,/recuperacaoHabilitada:typeof iniciarRecuperacao==='function' && typeof concluirRecuperacao==='function'/);
+ const inicio=painel.indexOf('async function verificarRecuperacaoSolicitacao(');
+ const fim=painel.indexOf('async function executarOperacaoChave(',inicio);
+ const trecho=painel.slice(inicio,fim);
+ assert.match(trecho,/dados\.recuperacaoHabilitada===true/);
+ assert.doesNotMatch(trecho,/method:'POST'|\/api\/admin\/chaves\/concluir-recuperacao/);
+});
