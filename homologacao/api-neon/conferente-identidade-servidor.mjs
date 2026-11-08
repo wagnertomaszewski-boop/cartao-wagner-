@@ -28,7 +28,7 @@ export function criarConferenteIdentidadeServidor({
     !Number.isSafeInteger(tempo)||!Number.isSafeInteger(reauth?.confirmadoEm)||
     reauth.confirmadoEm>tempo||tempo-reauth.confirmadoEm>300000)return false;
    const conferencia={confirmacaoWhatsapp:true,conferenciaPessoal:true,
-    reatenticacaoRecente:true,justificativa:pessoal.justificativa};
+    reautenticacaoRecente:true,justificativa:pessoal.justificativa};
    return validarConferenciaManual({...conferencia,solicitacaoId,operadorId})?conferencia:false;
   }catch{return false;}
  };
