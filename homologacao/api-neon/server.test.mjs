@@ -51,7 +51,7 @@ test('handler de homologação recebe JSON somente após validação e autentica
 test('health indica apenas habilitação das rotas, sem alegar conexão com banco',async()=>{
  await comServidor({},async base=>{
   const resposta=await (await fetch(base+'/health')).json();
-  assert.deepEqual(resposta,{status:'ok',modo:'homologacao',rotasCidadaoHabilitadas:false});
+  assert.deepEqual(resposta,{status:'ok',modo:'homologacao',rotasCidadaoHabilitadas:false,consultaPrivadaHabilitada:false});
  });
  await comServidor({operacoes:{solicitar:async()=>({}),consultar:async()=>({})}},async base=>{
   const resposta=await (await fetch(base+'/health')).json();
