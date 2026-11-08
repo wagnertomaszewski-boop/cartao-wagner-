@@ -41,3 +41,22 @@ test('falha ao gravar vínculo também desfaz a transação',async()=>{
  assert.equal(sql.filter(q=>q.startsWith('INSERT')).length,2);
  assert.equal(liberado,true);
 });
+
+test('falha ao gravar chave inicial faz rollback e impede demais inserts',async()=>{
+ const sql=[];let liberado=false;
+ const pool={connect:async()=>({
+  query:async q=>{
+   sql.push(q);
+   if(q.includes('FROM mandato_testes.solicitacoes'))return {rows:[{id:900004}]};
+   if(q.includes('INSERT INTO mandato_testes.chaves_legadas'))throw Error('falha na chave');
+   return {rows:[]};
+  },
+  release:()=>{liberado=true}
+ })};
+ const repositorio=criarRepositorioChavesLegadas({transacionar:criarTransacionarPostgres(pool)});
+ await assert.rejects(()=>repositorio.persistirHash({protocolo:'LEGADO-TESTE',hash:'a'.repeat(64),solicitacaoId:900004}),/falha na chave/);
+ assert.equal(sql.at(-1),'ROLLBACK');
+ assert.equal(sql.includes('COMMIT'),false);
+ assert.equal(sql.filter(q=>q.startsWith('INSERT')).length,1);
+ assert.equal(liberado,true);
+});
