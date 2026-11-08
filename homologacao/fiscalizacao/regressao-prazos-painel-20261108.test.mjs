@@ -42,8 +42,8 @@ test('gravação administrativa exige sessão e confirma persistência independe
  assert.match(trecho,/method:"PATCH"/);
  assert.match(trecho,/Prefer:"return=representation"/);
  assert.match(trecho,/encaminhado_prefeitura_em:data,protocolo_prefeitura:protocolo/);
- assert.match(trecho,/method:"GET"/);
- assert.match(trecho,/Authorization:"Bearer "\+sessao\.access_token/);
+ assert.match(trecho,/const verificacao=await requisicao\(/);
+ assert.match(trecho,/Authorization":"Bearer "\+sessao\.access_token/);
 });
 test('histórico administrativo exige sessão e não injeta credenciais Neon no navegador',()=>{
  for(const nome of ['registrarHistoricoFiscalizacaoMandato','consultarHistoricoFiscalizacaoMandato']){
