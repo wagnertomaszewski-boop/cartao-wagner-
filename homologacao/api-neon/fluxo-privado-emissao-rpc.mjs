@@ -17,11 +17,11 @@ export function criarFluxoPrivadoEmissaoRpc({
   auditarTentativa,relogio
  });
  return Object.freeze({
-  async emitir({protocolo,referenciaOperador}={}){
+  async emitir({protocolo,referenciaOperador,tokenOperador}={}){
    // Ignora qualquer identidadeConferida, comprovante ou solicitacaoId recebido.
    // A referência do operador não é credencial; autorização deve vir de fonte confiável.
    let autorizado=false;
-   try{autorizado=(await autorizarOperador({protocolo,referenciaOperador}))===true;}
+   try{autorizado=(await autorizarOperador({protocolo,referenciaOperador,tokenOperador}))===true;}
    catch{throw Error('Autorização de operador indisponível');}
    if(!autorizado)throw Error('Operador não autorizado');
    const comprovante=await conferirEAssinar({protocolo,referenciaOperador});
