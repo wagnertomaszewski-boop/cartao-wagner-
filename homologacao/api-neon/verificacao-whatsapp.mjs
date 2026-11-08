@@ -2,7 +2,7 @@
 // O provedor WhatsApp é injetado e deve confirmar envio real; não há modo de simulação em produção.
 import {randomInt,randomBytes,createHmac,timingSafeEqual} from 'node:crypto';
 const ID=/^[1-9][0-9]{0,15}$/;
-export function criarVerificacaoWhatsapp({buscarContatoConfirmado,enviarCodigo,armazenarDesafio,obterDesafio,consumirDesafio,segredo,agora=()=>Date.now()}={}){
+export function criarVerificacaoWhatsapp({buscarContatoConfirmado,enviarCodigo,armazenarDesafio,obterDesafio,consumirDesafio,confirmarAtomico,segredo,agora=()=>Date.now()}={}){
  for(const [nome,fn] of Object.entries({buscarContatoConfirmado,enviarCodigo,armazenarDesafio,obterDesafio,consumirDesafio}))
   if(typeof fn!=='function')throw Error('Dependência obrigatória: '+nome);
  if(typeof segredo!=='string'||Buffer.byteLength(segredo)<32)throw Error('Segredo privado obrigatório');
@@ -30,6 +30,7 @@ export function criarVerificacaoWhatsapp({buscarContatoConfirmado,enviarCodigo,a
    !ID.test(String(solicitacaoId))||!['emitir','revogar'].includes(acao))return false;
   // O armazenamento deve contabilizar tentativas atomicamente, invalidar ao atingir 5
   // e nunca retornar desafios expirados ou consumidos.
+  if(typeof confirmarAtomico==='function')return await confirmarAtomico({id:desafioId,solicitacaoId:String(solicitacaoId),acao,hash:digest(desafioId,codigo)})===true;
   const d=await obterDesafio({id:desafioId,incrementarTentativa:true});
   if(!d||d.solicitacaoId!==String(solicitacaoId)||d.acao!==acao||d.expiraEm<=agora()||
    !Buffer.isBuffer(d.hash)||d.hash.length!==32)return false;
