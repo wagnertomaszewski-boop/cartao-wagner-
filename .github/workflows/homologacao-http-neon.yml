@@ -107,3 +107,12 @@ jobs:
         run: node smoke-emissao-legada-neon-real.mjs
 
 
+
+      - name: Auditar emissao ficticia 900006 sem novas gravacoes
+        working-directory: homologacao/api-neon
+        env:
+          MANDATO_AMBIENTE: homologacao
+          HABILITAR_API_NEON: sim
+          NEON_HOST_HOMOLOGACAO: ${{ secrets.NEON_HOMOLOGACAO_HOST }}
+          DATABASE_URL: ${{ secrets.NEON_HOMOLOGACAO_DATABASE_URL }}
+        run: node smoke-emissao-900006-pos-teste.mjs
