@@ -2,14 +2,14 @@
 // Somente no servidor, nunca no navegador. NÃO ativa a consulta em produção.
 // A chave deve vir de gerenciador de segredos; nenhuma chave é gravada no repositório.
 export function criarConsultaPrivadaSupabase({
- url,serviceRoleKey,fetchPrivado=globalThis.fetch,timeoutMs=4000
+ url,expectedProjectRef,serviceRoleKey,fetchPrivado=globalThis.fetch,timeoutMs=4000
 }={}){
- if(typeof url!=='string'||typeof serviceRoleKey!=='string'||serviceRoleKey.length<20||
+ if(typeof url!=='string'||typeof expectedProjectRef!=='string'||!/^[a-z0-9]{20}$/.test(expectedProjectRef)||typeof serviceRoleKey!=='string'||serviceRoleKey.length<20||
   typeof fetchPrivado!=='function'||!Number.isSafeInteger(timeoutMs)||timeoutMs<100||timeoutMs>10000)
   throw Error('Configuração privada incompleta');
  const origem=new URL(url);
  if(origem.protocol!=='https:'||origem.username||origem.password||origem.search||
-  origem.hash||origem.pathname!=='/'||!origem.hostname.endsWith('.supabase.co'))
+  origem.hash||origem.pathname!=='/'||origem.hostname!==expectedProjectRef+'.supabase.co')
   throw Error('Origem Supabase não autorizada');
  return async function consultar(sql,parametros){
   if(sql!=='SELECT id, protocolo FROM public.solicitacoes WHERE protocolo=$1 LIMIT 2'||
