@@ -65,6 +65,23 @@ try {
  assert.deepEqual(legadoCorpo.resultado,[{assunto:'Teste legado de homologação',status:'recebido'}],
   'Chave válida deve retornar somente os dados autorizados do protocolo fictício');
  assert.ok(Array.isArray(legadoCorpo.respostas) && Array.isArray(legadoCorpo.historico) && Array.isArray(legadoCorpo.anexos));
+ // Registro 900005: chave emitida pela RPC restrita no Neon real isolado.
+ const emitidoValido=await fetch(base+'/api/solicitacoes/consultar',{
+  method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({protocolo:'LEGADO-EMISSAO-TESTE-900005',chave:'CHAVE-FICTICIA-HOMOLOGACAO-900005-VALIDA-2026'}),
+  signal:AbortSignal.timeout(8000)
+ });
+ assert.equal(emitidoValido.status,200,'Consulta da chave emitida deve responder HTTP 200');
+ const emitidoCorpo=await emitidoValido.json();
+ assert.deepEqual(emitidoCorpo.resultado,[{assunto:'Teste completo de emissão assistida',status:'recebido'}],
+  'Chave emitida pela RPC deve liberar apenas solicitação sintética 900005');
+ const emitidoInvalido=await fetch(base+'/api/solicitacoes/consultar',{
+  method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({protocolo:'LEGADO-EMISSAO-TESTE-900005',chave:'CHAVE-FICTICIA-HOMOLOGACAO-900005-INCORRETA'}),
+  signal:AbortSignal.timeout(8000)
+ });
+ assert.equal(emitidoInvalido.status,200);
+ assert.deepEqual(await emitidoInvalido.json(),{resultado:[],respostas:[],historico:[],anexos:[]});
  const legadoInvalido=await fetch(base+'/api/solicitacoes/consultar',{
   method:'POST',headers:{'Content-Type':'application/json'},
   body:JSON.stringify({protocolo:'LEGADO-TESTE-900003',chave:'CHAVE-FICTICIA-HOMOLOGACAO-900003-ERRADA-2026'}),
