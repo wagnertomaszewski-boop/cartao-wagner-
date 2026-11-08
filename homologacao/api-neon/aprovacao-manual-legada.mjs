@@ -6,7 +6,7 @@ export function criarValidacaoAprovacaoManual({consultar}={}){
   if(!Number.isSafeInteger(solicitacaoId)||solicitacaoId<=0)return false;
   try{
    const linhas=await consultar(
-    "SELECT id FROM mandato_testes.pedidos_recuperacao WHERE solicitacao_id=$1 AND status='aprovado' AND decidido_em IS NOT NULL ORDER BY decidido_em DESC LIMIT 1",
+    "SELECT id FROM mandato_testes.pedidos_recuperacao WHERE solicitacao_id=$1 AND status='aprovado' AND decidido_em >= now() - interval '24 hours' AND decidido_em <= now() ORDER BY decidido_em DESC LIMIT 1",
     [solicitacaoId]
    );
    return Array.isArray(linhas)&&linhas.length===1;
