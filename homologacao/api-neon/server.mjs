@@ -21,7 +21,7 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
     // Rota de homologação sintética, nunca disponível sem injeção explícita.
     const sintese = req.url === '/api/homologacao/decisao-sintetica-900007' && req.method === 'POST';
     const adminLista = req.url === '/api/admin/recuperacoes' && req.method === 'GET';
-    const adminDecisao = /^\/api\/admin\/recuperacoes\/([0-9]+)\/decisao$/.exec(req.url || '');
+    const adminDecisao = req.method === 'POST' ? /^\/api\/admin\/recuperacoes\/([0-9]+)\/decisao$/.exec(req.url || '') : null;
     const admin = adminLista || sintese || (adminDecisao && req.method === 'POST');
     const solicitar = req.url === '/api/recuperacao/solicitar' && req.method === 'POST';
     const consultar = req.url === '/api/solicitacoes/consultar' && req.method === 'POST';
