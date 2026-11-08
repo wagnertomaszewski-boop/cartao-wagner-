@@ -16,7 +16,7 @@ test('verificador de identidade não recebe declaração controlada pelo navegad
    body:JSON.stringify({aprovar:true,identidadeConfirmada:true})
   });
   assert.equal(resposta.status,403);
-  assert.deepEqual(argumentos,{pedidoId:'12'});
+  assert.deepEqual(argumentos,{pedidoId:'12',token:'token'});
   assert.equal(executou,false);
  }finally{await new Promise(resolve=>servidor.close(resolve));}
 });
