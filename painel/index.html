@@ -799,6 +799,8 @@ async function verificarIntegracaoChaves(){
  const botao=document.getElementById('btnVerificarIntegracaoChaves');
  if(!estado||!botao)return;
  botao.disabled=true;
+ permissoesChaves={emitir:false,revogar:false};
+ atualizarBotoesChaves();
  estado.textContent='Verificando sessão e conexão segura…';
  try{
   const sessao=await obterSessaoValida();
