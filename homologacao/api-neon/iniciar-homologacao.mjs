@@ -205,6 +205,24 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
    throw erro;
   }
  }
- const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas,registrarDecisaoSintetica,operacoesChaves,confirmacaoCidadao,iniciarRecuperacao,concluirRecuperacao});
+ // Verificação MFA real: exige token Supabase validado, AAL2 e reautenticação recente.
+ // Ausência de configuração bloqueia as operações sensíveis, inclusive em homologação.
+ let verificarMfaOperacao=async()=>false;
+ if(env.SUPABASE_ADMIN_UID && env.SUPABASE_PUBLISHABLE_KEY){
+  const [{criarResolvedorOperadorAdmin},{criarVerificadorReautenticacaoSupabase}]=await Promise.all([
+   import('./verificar-admin-supabase.mjs'),import('./reautenticacao-supabase.mjs')
+  ]);
+  const opcoes={supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',
+   chavePublica:env.SUPABASE_PUBLISHABLE_KEY,idsPermitidos:[env.SUPABASE_ADMIN_UID]};
+  const resolver=criarResolvedorOperadorAdmin(opcoes);
+  const conferir=criarVerificadorReautenticacaoSupabase(opcoes);
+  verificarMfaOperacao=async({token})=>{
+   const operadorId=await resolver(token);
+   if(!operadorId)return false;
+   const evidencia=await conferir({operadorId,token});
+   return evidencia?.confirmado===true && evidencia.operadorId===operadorId;
+  };
+ }
+ const servidor=criarServidor({operacoes,verificarAdmin,verificarMfaOperacao,origensPermitidas,registrarDecisaoSintetica,operacoesChaves,confirmacaoCidadao,iniciarRecuperacao,concluirRecuperacao});
  return {servidor,fechar:async()=>{try {if (servidor.listening) await new Promise((resolve,reject)=>servidor.close(erro=>erro?reject(erro):resolve()));} finally {await Promise.all([pool.end(),poolEscrita?.end()]);}}};
 }
