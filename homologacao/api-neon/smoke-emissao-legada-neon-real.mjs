@@ -20,7 +20,17 @@ try {
   else throw erro;
  }
  assert.equal(negado,true,'Conta de API não deve ler tabela interna de chaves');
- console.log('PASS: acesso direto bloqueado por privilégio mínimo; emissão real aguarda RPC autorizada');
+ const privilegios=await pool.query(`
+  SELECT
+   has_table_privilege(current_user,'mandato_testes.chaves_legadas','INSERT') AS insere_chaves,
+   has_table_privilege(current_user,'mandato_testes.acessos_protocolo','INSERT') AS insere_acessos,
+   has_table_privilege(current_user,'mandato_testes.auditoria_chaves_legadas','INSERT') AS insere_auditoria,
+   has_table_privilege(current_user,'mandato_testes.solicitacoes','SELECT') AS le_solicitacoes
+ `);
+ assert.deepEqual(privilegios.rows[0],{
+  insere_chaves:false,insere_acessos:false,insere_auditoria:false,le_solicitacoes:false
+ },'Conta da API deve manter privilégios mínimos nas quatro tabelas');
+ console.log('PASS: quatro tabelas protegidas contra acesso direto; emissão real aguarda RPC autorizada');
 }finally{
  await pool.end();
 }
