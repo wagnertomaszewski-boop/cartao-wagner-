@@ -67,12 +67,16 @@ try {
   signal:AbortSignal.timeout(15000)
  })));
  const mensagens=[];
+ let bloqueios=0;
  for(const r of recuperacoes){
-  assert.equal(r.status,200,'Recuperação simultânea deve retornar resposta neutra');
+  assert.ok([200,429].includes(r.status),'Recuperação simultânea deve ser neutra ou limitada');
+  if(r.status===429){bloqueios++;continue;}
   mensagens.push(await r.json());
  }
+ assert.ok(mensagens.length>=1,'Ao menos um pedido deve receber resposta neutra');
  assert.ok(mensagens.every(m=>JSON.stringify(m)===JSON.stringify(mensagens[0])));
  assert.deepEqual(mensagens[0],{mensagem:'Se os dados corresponderem, o pedido será analisado.'});
+ assert.ok(bloqueios>=1,'Proteção de taxa deve limitar a rajada de seis pedidos');
  const admin=await fetch(base+'/api/admin/recuperacoes',{signal:AbortSignal.timeout(8000)});
  assert.equal(admin.status,401,'Rota administrativa deve exigir autenticação');
  console.log('PASS: HTTP-Neon real, health, CORS, limite de corpo, consulta fictícia, chave incorreta, chave ausente, recuperações simultâneas e admin protegido');
