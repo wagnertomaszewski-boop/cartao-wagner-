@@ -20,7 +20,7 @@ async function iniciar(fn){
  }};
  const emitirAtestado=criarEmissorAtestados({
   chavePrivadaPem:privateKey.export({type:'pkcs8',format:'pem'}),
-  confirmarIdentidadeIndependente:async({evidencia})=>evidencia==='identidade-conferida-teste',
+  confirmarIdentidadeIndependente:async({evidencia})=>evidencia==='identidade-conferida-teste'?{confirmacaoWhatsapp:true,conferenciaPessoal:true,reatenticacaoRecente:true,justificativa:'Conferência pessoal confirmada no teste HTTP.'}:false,
   autorizarOperador:async({operadorId})=>operadorId===ADMIN,agora:()=>agora
  });
  const gestor=criarGestaoChavesAssinadas({
