@@ -25,18 +25,34 @@ test('datas impossíveis e futuras são rejeitadas', () => {
     assert.equal(dias(data,'2026-11-08'),-1,data);
   assert.equal(dias('2026-11-09','2026-11-08'),-1);
 });
-test('gravação exige sessão, PATCH autenticado e leitura independente', () => {
+test('gravação exige sessão, PATCH autenticado e leitura independente', async () => {
   const start = painel.indexOf('async function salvarEncaminhamentoPrefeitura(');
   const end = painel.indexOf('\nasync function registrarHistoricoFiscalizacaoMandato(',start);
   assert.ok(start>=0 && end>start);
-  const fn=painel.slice(start,end);
-  assert.match(fn,/await obterSessaoValida\(\)/);
-  assert.match(fn,/method:\s*"PATCH"/);
-  assert.match(fn,/"Authorization":\s*"Bearer "\s*\+\s*sessao\.access_token/);
-  assert.match(fn,/"Prefer":\s*"return=representation"/);
-  assert.match(fn,/method:\s*"GET"/);
-  assert.match(fn,/protocolo_prefeitura/);
-  assert.match(fn,/encaminhado_prefeitura_em/);
+  const chamadas=[],avisos=[];
+  let sessoes=0;
+  const salvo={id:123,encaminhado_prefeitura_em:'2026-11-07',protocolo_prefeitura:'HML-TESTE'};
+  const contexto=vm.createContext({
+    Number,String,Error,encodeURIComponent,
+    SUPABASE_URL:'https://backend-ficticio.invalid',SUPABASE_KEY:'chave-publica-ficticia',
+    document:{getElementById:id=>({value:id.startsWith('encaminhado')?'2026-11-07':'HML-TESTE'})},
+    dataHojeISO:()=> '2026-11-08',diasEntreDatasCivisMandato:dias,
+    confirm:()=>true,alert:m=>avisos.push(m),mensagemDeErro:e=>e.message,
+    obterSessaoValida:async()=>{sessoes++;return {access_token:'token-ficticio-de-teste'};},
+    requisicao:async(url,opcoes)=>{chamadas.push({url,opcoes});return {ok:true,json:async()=>[salvo]};},
+    carregarSolicitacoes:async()=>{},atualizarContadoresStatus:async()=>{}
+  });
+  vm.runInContext(painel.slice(start,end),contexto);
+  const botao={disabled:false};await contexto.salvarEncaminhamentoPrefeitura(123,botao);
+  assert.equal(sessoes,1);assert.equal(chamadas.length,2);
+  assert.equal(chamadas[0].opcoes.method,'PATCH');
+  assert.equal(chamadas[0].opcoes.headers.Prefer,'return=representation');
+  assert.deepEqual(JSON.parse(chamadas[0].opcoes.body),{encaminhado_prefeitura_em:'2026-11-07',protocolo_prefeitura:'HML-TESTE'});
+  // Fetch usa GET por padrão. Verifica o comportamento, sem exigir sintaxe redundante.
+  assert.equal(chamadas[1].opcoes.method||'GET','GET');
+  assert.match(chamadas[1].url,/select=id,encaminhado_prefeitura_em,protocolo_prefeitura/);
+  for(const c of chamadas)assert.equal(c.opcoes.headers.Authorization,'Bearer token-ficticio-de-teste');
+  assert.equal(botao.disabled,false);assert.ok(avisos.includes('Dados do encaminhamento salvos com sucesso.'));
 });
 test('histórico exige autenticação e permanece separado da consulta pública', () => {
   const start=painel.indexOf('async function registrarHistoricoFiscalizacaoMandato(');
