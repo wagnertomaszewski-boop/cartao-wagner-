@@ -16,7 +16,14 @@ if(!url.hostname.endsWith('.neon.tech')||url.hostname!==env.NEON_HOST_HOMOLOGACA
 const pool=new pg.Pool({connectionString:env.DATABASE_URL,ssl:{rejectUnauthorized:true},max:1});
 const protocolo='LEGADO-EMISSAO-TESTE-900006',solicitacaoId=900006;
 try{
- const consultarNeon=async(sql,args)=> (await pool.query(sql,args)).rows;
+ const consultarNeon=async(sql,args)=>{
+  if(sql.includes('FROM mandato_testes.pedidos_recuperacao')){
+   assert.deepEqual(args,[solicitacaoId]);
+   const r=await pool.query('SELECT mandato_testes.aprovacao_emissao_teste_900006($1) AS aprovado',args);
+   return r.rows[0]?.aprovado===true?[{id:1}]:[];
+  }
+  return (await pool.query(sql,args)).rows;
+ };
  const segredo=randomBytes(32);
  const comprovante=criarEmissorComprovanteAssinado({
   segredo,gerarNonce:()=>randomBytes(16).toString('hex')
