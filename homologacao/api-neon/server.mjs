@@ -27,11 +27,11 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
     const solicitar = req.url === '/api/recuperacao/solicitar' && req.method === 'POST';
     const consultar = req.url === '/api/solicitacoes/consultar' && req.method === 'POST';
     if (!admin && !solicitar && !consultar) return send(404, {erro:'Rota não encontrada'});
-    if (solicitar || consultar) {
+    if (solicitar || consultar || adminChaves) {
       // Endereço da conexão TCP, nunca X-Forwarded-For fornecido pelo cliente.
       // Uso apenas em homologação local; produção requer limite distribuído.
       const endereco = req.socket.remoteAddress || 'desconhecido';
-      if (!limitador.verificar(endereco + ':' + (solicitar ? 'recuperar' : 'consultar')))
+      if (!limitador.verificar(endereco + ':' + (solicitar ? 'recuperar' : consultar ? 'consultar' : 'admin-chaves')))
         return send(429, {erro:'Muitas tentativas. Tente novamente mais tarde.'});
     }
     if (admin) {
