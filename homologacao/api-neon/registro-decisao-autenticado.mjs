@@ -6,13 +6,13 @@ import {criarRegistradorDecisaoPrivada} from './registrar-decisao-privada.mjs';
 import {criarGravadorDecisaoRpc} from './gravador-decisao-rpc.mjs';
 export function criarRegistroDecisaoAutenticado({
  supabaseUrl,supabasePublishableKey,operadoresPermitidos,buscarAuth,
- verificarEvidencia,consultarNeon,auditar,relogio
+ verificarEvidencia,consultarNeon,registrarRpc:registrarRpcConfigurado,auditar,relogio
 }={}){
  const autorizarOperador=criarAutorizadorOperadorVinculado({
   supabaseUrl,chavePublica:supabasePublishableKey,
   operadores:operadoresPermitidos,buscar:buscarAuth
  });
- const registrarRpc=criarGravadorDecisaoRpc({consultarNeon});
+ const registrarRpc=registrarRpcConfigurado ?? criarGravadorDecisaoRpc({consultarNeon});
  return criarRegistradorDecisaoPrivada({
   autorizarOperador,verificarEvidencia,registrarRpc,auditar,relogio
  });
