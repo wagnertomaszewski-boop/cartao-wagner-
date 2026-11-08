@@ -133,7 +133,7 @@ test('CORS autorizado não dispensa autenticação administrativa',async()=>{
 });
 
 test('rotas de chaves negam sem sessão e sem handler habilitado',async()=>{
- await comServidor({verificarAdmin:async token=>token==='admin-valido',limitador:{verificar:()=>true}},async base=>{
+ await comServidor({verificarAdmin:async token=>token==='admin-valido',verificarMfaOperacao:async()=>true,limitador:{verificar:()=>true}},async base=>{
   for(const acao of ['emitir','revogar']){
    const url=base+'/api/admin/chaves/'+acao;
    assert.equal((await fetch(url,{method:'POST'})).status,401);
@@ -144,7 +144,7 @@ test('rotas de chaves negam sem sessão e sem handler habilitado',async()=>{
 });
 test('rotas de chaves encaminham token e dados apenas a handler injetado',async()=>{
  const chamadas=[];
- await comServidor({verificarAdmin:async token=>token==='admin-valido',operacoesChaves:{
+ await comServidor({verificarAdmin:async token=>token==='admin-valido',verificarMfaOperacao:async()=>true,operacoesChaves:{
   emitir:async entrada=>{chamadas.push(entrada);return {emitida:true};}
  }},async base=>{
   const r=await fetch(base+'/api/admin/chaves/emitir',{method:'POST',headers:{Authorization:'Bearer admin-valido','Content-Type':'application/json'},body:JSON.stringify({solicitacaoId:'900020',atestado:'atestado-sintetico-valido'})});
