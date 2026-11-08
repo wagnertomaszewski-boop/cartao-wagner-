@@ -8,14 +8,14 @@ const args={protocolo:'LEGADO-EMISSAO-TESTE-900007',referenciaOperador:'OP-TESTE
 const agora=1794100000000;
 function montar({identidadeConfirmada=true}={}){
  const eventos=[];
- const d={protocolo:args.protocolo,operador:args.referenciaOperador,registroId:args.registroId,conferenteId:'REV-TESTE-900007',verificada:true,identidadeConfirmada,verificadaEmMs:agora-1000};
+ const d={protocolo:args.protocolo,operador:args.referenciaOperador,registroId:args.registroId,conferenteId:'REV-CONFERENTE-900007',verificada:true,identidadeConfirmada,verificadaEmMs:agora-1000};
  const mensagem=Buffer.from(JSON.stringify(['mandato-evidencia-v1',d.protocolo,d.operador,d.registroId,d.conferenteId,d.verificada,d.identidadeConfirmada,d.verificadaEmMs]));
  const registrar=criarRegistroSinteticoAssinado900007({
   supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',
   supabasePublishableKey:'sb_publishable_chave_ficticia_homologacao',
   operadoresPermitidos:{[uid]:args.referenciaOperador},
   buscarAuth:async()=>{eventos.push('auth');return {ok:true,json:async()=>({id:uid,aud:'authenticated',is_anonymous:false})};},
-  chavePublicaConferente:publicKey,conferentesPermitidos:['REV-TESTE-900007'],
+  chavePublicaConferente:publicKey,conferentesPermitidos:['REV-CONFERENTE-900007'],
   buscarAtestado:async()=>{eventos.push('atestado');return {dados:d,assinatura:sign(null,mensagem,privateKey).toString('base64url')};},
   auditar:async()=>{eventos.push('auditoria');},
   consultarNeon:async(sql,parametros)=>{eventos.push('rpc');assert.match(sql,/registrar_decisao_sintetica_900007/);assert.deepEqual(parametros,[args.protocolo,args.referenciaOperador,args.registroId]);return [{id:'1'}];},
