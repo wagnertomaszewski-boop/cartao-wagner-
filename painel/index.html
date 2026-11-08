@@ -2225,6 +2225,7 @@ async function removerLembrete(id){
 }
 
 async function salvarEncaminhamentoPrefeitura(id,botao){
+  if(!Number.isSafeInteger(Number(id)) || Number(id)<=0){alert("Identificador da solicitação inválido.");return;}
   const data=document.getElementById("encaminhado-prefeitura-"+id)?.value||null;
   const protocolo=document.getElementById("protocolo-prefeitura-"+id)?.value.trim()||null;
   const hojeISO=dataHojeISO();
