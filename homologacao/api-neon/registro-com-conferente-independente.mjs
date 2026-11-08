@@ -3,10 +3,10 @@
 import {criarFonteEvidenciaAssinada} from './fonte-evidencia-assinada.mjs';
 import {criarRegistroDecisaoAutenticado} from './registro-decisao-autenticado.mjs';
 export function criarRegistroComConferenteIndependente({
- chavePublicaConferente,buscarAtestado,...config
+ chavePublicaConferente,buscarAtestado,conferentesPermitidos,...config
 }={}){
  const verificarEvidencia=criarFonteEvidenciaAssinada({
-  chavePublicaConferente,buscarAtestado,relogio:config.relogio
+  chavePublicaConferente,buscarAtestado,conferentesPermitidos,relogio:config.relogio
  });
  return criarRegistroDecisaoAutenticado({...config,verificarEvidencia});
 }
