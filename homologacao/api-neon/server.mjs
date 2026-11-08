@@ -45,6 +45,9 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
       try { autorizado = await verificarAdmin(header.slice(7)); } catch { autorizado = false; }
       if (autorizado !== true) return send(403, {erro:'Acesso negado'});
     }
+    if (adminChavesEstado) return send(200,{emissaoHabilitada:typeof operacoesChaves?.emitir==='function',revogacaoHabilitada:typeof operacoesChaves?.revogar==='function',recuperacaoHabilitada:typeof iniciarRecuperacao==='function' && typeof concluirRecuperacao==='function',ambiente:'homologacao'});
+    const handler = adminConcluirRecuperacao ? concluirRecuperacao : adminRecuperacaoCodigo ? iniciarRecuperacao : confirmarCodigo ? confirmacaoCidadao?.confirmar : adminChaves ? operacoesChaves?.[adminChaves[1]] : sintese ? registrarDecisaoSintetica : adminLista ? operacoes.listar : adminDecisao ? operacoes.decidir : solicitar ? operacoes.solicitar : operacoes.consultar;
+    if (typeof handler !== 'function') return send(503, {erro:'Integração com banco ainda não habilitada'});
     // Ações sensíveis exigem MFA confirmado pelo servidor, nunca um booleano do cliente.
     if (adminChaves || adminRecuperacaoCodigo || adminConcluirRecuperacao) {
       let mfaConfirmado = false;
@@ -52,9 +55,7 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
       catch { mfaConfirmado = false; }
       if (mfaConfirmado !== true) return send(403,{erro:'MFA administrativo obrigatório'});
     }
-    if (adminChavesEstado) return send(200,{emissaoHabilitada:typeof operacoesChaves?.emitir==='function',revogacaoHabilitada:typeof operacoesChaves?.revogar==='function',recuperacaoHabilitada:typeof iniciarRecuperacao==='function' && typeof concluirRecuperacao==='function',ambiente:'homologacao'});
-    const handler = adminConcluirRecuperacao ? concluirRecuperacao : adminRecuperacaoCodigo ? iniciarRecuperacao : confirmarCodigo ? confirmacaoCidadao?.confirmar : adminChaves ? operacoesChaves?.[adminChaves[1]] : sintese ? registrarDecisaoSintetica : adminLista ? operacoes.listar : adminDecisao ? operacoes.decidir : solicitar ? operacoes.solicitar : operacoes.consultar;
-    if (typeof handler !== 'function') return send(503, {erro:'Integração com banco ainda não habilitada'});
+
     let dados = {};
     if (req.method === 'POST') {
       if (!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type'] || '')) return send(415, {erro:'Envie JSON'});
