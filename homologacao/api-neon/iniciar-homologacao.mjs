@@ -55,7 +55,9 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  if(env.HABILITAR_DECISAO_SINTETICA_900007==='sim'){
   if(!integracaoSintetica||typeof integracaoSintetica!=='object'||
    !['buscarAtestado','buscarAuth','consultarNeon','auditar'].every(k=>typeof integracaoSintetica[k]==='function') ||
-   !['conferentesPermitidos','operadoresPermitidos'].every(k=>Array.isArray(integracaoSintetica[k]) && integracaoSintetica[k].length>0) ||
+   !(Array.isArray(integracaoSintetica.conferentesPermitidos) && integracaoSintetica.conferentesPermitidos.length>0) ||
+   !integracaoSintetica.operadoresPermitidos || typeof integracaoSintetica.operadoresPermitidos!=='object' ||
+   Array.isArray(integracaoSintetica.operadoresPermitidos) || Object.keys(integracaoSintetica.operadoresPermitidos).length===0 ||
    !integracaoSintetica.chavePublicaConferente)
   { await pool.end(); throw Error('Integração sintética privada obrigatória'); }
   try {
