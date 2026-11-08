@@ -20,7 +20,7 @@ async function iniciar(env){
 test('sem flag, rotas permanecem fechadas mesmo com conexão configurada',async()=>{
  const app=await iniciar(base);
  try{
-  const resposta=await fetch(app.url+'/api/solicitacoes/consultar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({protocolo:'TESTE',chave:'CHAVE'})});
+  const resposta=await fetch(app.url+'/api/solicitacoes/consultar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({protocolo:'TESTE',chave:'CHAVE-FICTICIA-DE-HOMOLOGACAO-000001'})});
   assert.equal(resposta.status,503);
   assert.equal(app.eventos.length,0);
  }finally{await app.fechar();}
@@ -28,7 +28,7 @@ test('sem flag, rotas permanecem fechadas mesmo com conexão configurada',async(
 test('flag habilita somente consultas e recuperação no banco fictício, nunca decisão',async()=>{
  const app=await iniciar({...base,HABILITAR_ROTAS_CIDADAO_TESTES:'sim'});
  try{
-  const resposta=await fetch(app.url+'/api/solicitacoes/consultar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({protocolo:'TESTE',chave:'CHAVE'})});
+  const resposta=await fetch(app.url+'/api/solicitacoes/consultar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({protocolo:'TESTE',chave:'CHAVE-FICTICIA-DE-HOMOLOGACAO-000001'})});
   assert.equal(resposta.status,200);
   assert.equal((await resposta.json()).resultado[0].status,'Recebido');
   assert.ok(app.eventos.some(([sql])=>sql==='SELECT * FROM mandato_testes.consulta_segura($1,$2)'));
