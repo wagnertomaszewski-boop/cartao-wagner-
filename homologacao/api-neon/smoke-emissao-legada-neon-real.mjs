@@ -30,6 +30,16 @@ try {
  assert.deepEqual(privilegios.rows[0],{
   insere_chaves:false,insere_acessos:false,insere_auditoria:false,le_solicitacoes:false
  },'Conta da API deve manter privilégios mínimos nas quatro tabelas');
+ // A RPC de emissão fictícia deve permanecer restrita ao papel de serviço,
+ // sem abrir INSERT nas tabelas ou EXECUTE para usuários públicos.
+ const funcoes=await pool.query(`
+  SELECT has_function_privilege(current_user,
+   'mandato_testes.emitir_chave_legada_teste_900005(text,bigint,text)','EXECUTE') AS api_executa,
+   has_function_privilege('PUBLIC',
+   'mandato_testes.emitir_chave_legada_teste_900005(text,bigint,text)','EXECUTE') AS publico_executa
+ `);
+ assert.equal(funcoes.rows[0].api_executa,true,'Somente RPC fictícia deve ser acessível à API');
+ assert.equal(funcoes.rows[0].publico_executa,false,'Emissão não pode ser pública');
  console.log('PASS: quatro tabelas protegidas contra acesso direto; emissão real aguarda RPC autorizada');
 }finally{
  await pool.end();
