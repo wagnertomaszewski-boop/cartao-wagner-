@@ -53,6 +53,11 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  // Nunca habilitar por configuração pública ou apenas por sinalizador.
  let registrarDecisaoSintetica=null;
  if(env.HABILITAR_DECISAO_SINTETICA_900007==='sim'){
+  if(typeof env.SUPABASE_ADMIN_UID!=='string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(env.SUPABASE_ADMIN_UID) ||
+   typeof env.SUPABASE_PUBLISHABLE_KEY!=='string' || !env.SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_')) {
+   await pool.end();
+   throw Error('Autenticação administrativa privada obrigatória');
+  }
   if(!integracaoSintetica||typeof integracaoSintetica!=='object'||
    !['buscarAtestado','buscarAuth','consultarNeon','auditar'].every(k=>typeof integracaoSintetica[k]==='function') ||
    !(Array.isArray(integracaoSintetica.conferentesPermitidos) && integracaoSintetica.conferentesPermitidos.length>0) ||
