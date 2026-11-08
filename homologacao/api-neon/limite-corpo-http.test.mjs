@@ -42,7 +42,7 @@ test('rota raiz retorna 404 sem indicar falha do health',async()=>{
   assert.deepEqual(await raiz.json(),{erro:'Rota não encontrada'});
   const health=await fetch(base+'/health');
   assert.equal(health.status,200);
-  assert.deepEqual(await health.json(),{status:'ok',modo:'homologacao',rotasCidadaoHabilitadas:false});
+  assert.deepEqual(await health.json(),{status:'ok',modo:'homologacao',rotasCidadaoHabilitadas:false,consultaPrivadaHabilitada:false});
  }finally{await new Promise(resolve=>servidor.close(resolve));}
 });
 
