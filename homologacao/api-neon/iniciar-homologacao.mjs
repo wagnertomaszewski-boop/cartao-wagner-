@@ -154,6 +154,19 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
    throw erro;
   }
  }
- const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas,registrarDecisaoSintetica,operacoesChaves});
+ // Confirmação do cidadão exige persistência real e integração explícita do servidor.
+ // Não é ativada automaticamente nem autoriza emissão de atestados.
+ let confirmacaoCidadao=null;
+ if(env.HABILITAR_CONFIRMACAO_CIDADAO_HOMOLOGACAO==='sim'){
+  const integracao=integracaoSintetica?.confirmacaoCidadao;
+  if(!integracao||typeof integracao.verificacao?.confirmar!=='function'||
+   typeof integracao.registrarConfirmacao!=='function'){
+   await Promise.all([pool.end(),poolEscrita?.end()]);
+   throw Error('Confirmação do cidadão exige verificação e persistência privadas');
+  }
+  const {criarOperacoesConfirmacaoCidadao}=await import('./confirmacao-cidadao.mjs');
+  confirmacaoCidadao=criarOperacoesConfirmacaoCidadao(integracao);
+ }
+ const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas,registrarDecisaoSintetica,operacoesChaves,confirmacaoCidadao});
  return {servidor,fechar:async()=>{try {if (servidor.listening) await new Promise((resolve,reject)=>servidor.close(erro=>erro?reject(erro):resolve()));} finally {await Promise.all([pool.end(),poolEscrita?.end()]);}}};
 }
