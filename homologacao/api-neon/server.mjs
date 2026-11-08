@@ -3,7 +3,7 @@ import {criarLimitador} from './limitador.mjs';
 
 // Handlers são injetados apenas pelo servidor, nunca definidos pelo navegador.
 // Sem handlers, as operações permanecem indisponíveis.
-export function criarServidor({verificarAdmin = async () => false, operacoes = {}, limitador = criarLimitador(), verificarIdentidade = async () => false, origensPermitidas = [], registrarDecisaoSintetica = null, operacoesChaves = null, confirmacaoCidadao = null} = {}) {
+export function criarServidor({verificarAdmin = async () => false, operacoes = {}, limitador = criarLimitador(), verificarIdentidade = async () => false, origensPermitidas = [], registrarDecisaoSintetica = null, operacoesChaves = null, confirmacaoCidadao = null, iniciarRecuperacao = null} = {}) {
   const servidor = http.createServer(async (req, res) => {
     const origem = req.headers.origin;
     const origemAutorizada = typeof origem === 'string' && origensPermitidas.includes(origem);
