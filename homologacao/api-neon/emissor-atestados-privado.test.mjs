@@ -8,7 +8,7 @@ const pem=privateKey.export({type:'pkcs8',format:'pem'});
 const admin='123e4567-e89b-42d3-a456-426614174000';
 const args={solicitacaoId:'900020',operadorId:admin,acao:'emitir',evidencia:'evidencia-confirmada-externamente'};
 test('emissor e verificador interoperam e atestado não pode ser reutilizado',async()=>{
- const emitir=criarEmissorAtestados({chavePrivadaPem:pem,autorizarOperador:async()=>true,confirmarIdentidadeIndependente:async()=>true,agora:()=>1762600000000});
+ const emitir=criarEmissorAtestados({chavePrivadaPem:pem,autorizarOperador:async()=>true,confirmarIdentidadeIndependente:async()=>({confirmacaoWhatsapp:true,conferenciaPessoal:true,reatenticacaoRecente:true,justificativa:'Identidade conferida no teste controlado.'}),agora:()=>1762600000000});
  const usado=new Set();
  const verificar=criarVerificadorAtestadoIdentidade({chavePublicaPem:publicKey.export({type:'spki',format:'pem'}),agora:()=>1762600001000,consumirNonce:async({nonce})=>{if(usado.has(nonce))return false;usado.add(nonce);return true;}});
  const atestado=await emitir(args);
