@@ -42,3 +42,14 @@ test('solicitação ausente bloqueia todas as gravações',async()=>{
  await assert.rejects(()=>repositorio.persistirHash({protocolo:'LEGADO-TESTE',hash:'a'.repeat(64),solicitacaoId:900004}),/não encontrada/);
  assert.equal(inserts,0);
 });
+
+test('mesma solicitação com protocolo diferente não recebe segunda chave',async()=>{
+ let inserts=0;
+ const repositorio=criarRepositorioChavesLegadas({transacionar:async fn=>fn(async(sql,args)=>{
+  if(sql.startsWith('INSERT'))inserts++;
+  if(sql.includes('FROM mandato_testes.acessos_protocolo')&&sql.includes('solicitacao_id=$1'))return [{protocolo:'LEGADO-ANTIGO'}];
+  return [];
+ })});
+ await assert.rejects(()=>repositorio.persistirHash({protocolo:'LEGADO-NOVO',hash:'a'.repeat(64),solicitacaoId:900004}),/Solicitação já possui acesso/);
+ assert.equal(inserts,0);
+});
