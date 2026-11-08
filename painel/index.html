@@ -2331,8 +2331,9 @@ async function registrarHistoricoFiscalizacaoMandato(id,botao){
   finally{botao.disabled=false;}
 }
 async function consultarHistoricoFiscalizacaoMandato(id,botao){
+  if(!/^[1-9]\d*$/.test(String(id)) || !Number.isSafeInteger(Number(id))){alert("Identificador da solicitação inválido.");return;}
   const destino=document.getElementById("historico-fiscalizacao-"+id);
-  if(!destino || !Number.isSafeInteger(Number(id)) || Number(id)<=0)return;
+  if(!destino)return;
   botao.disabled=true;
   destino.textContent="Consultando histórico...";
   try{
