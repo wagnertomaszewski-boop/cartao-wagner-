@@ -37,3 +37,34 @@ test('falha de persistência impede entrega da chave',async()=>{
  });
  await assert.rejects(()=>emissor.emitir({protocolo:'LEGADO-FICTICIO'}),/falha sintética/);
 });
+
+test('falha na auditoria bloqueia persistência e entrega da chave',async()=>{
+ let gravacoes=0;
+ const emissor=criarEmissorLegado({
+  verificarIdentidade:async()=>({solicitacaoId:900003}),
+  persistirHash:async()=>{gravacoes++;},
+  auditar:async()=>{throw Error('auditoria indisponível');}
+ });
+ await assert.rejects(()=>emissor.emitir({protocolo:'LEGADO-FICTICIO'}),/auditoria indisponível/);
+ assert.equal(gravacoes,0);
+});
+test('auditoria antecede a gravação do hash',async()=>{
+ const ordem=[];
+ const emissor=criarEmissorLegado({
+  verificarIdentidade:async()=>{ordem.push('identidade');return {solicitacaoId:900003};},
+  persistirHash:async()=>{ordem.push('persistencia');},
+  auditar:async()=>{ordem.push('auditoria');}
+ });
+ await emissor.emitir({protocolo:'LEGADO-FICTICIO'});
+ assert.deepEqual(ordem,['identidade','auditoria','persistencia']);
+});
+test('identificador inválido da verificação do servidor não grava nem audita',async()=>{
+ let efeitos=0;
+ const emissor=criarEmissorLegado({
+  verificarIdentidade:async()=>({solicitacaoId:'900003'}),
+  persistirHash:async()=>{efeitos++;},
+  auditar:async()=>{efeitos++;}
+ });
+ await assert.rejects(()=>emissor.emitir({protocolo:'LEGADO-FICTICIO'}),/Identidade não confirmada/);
+ assert.equal(efeitos,0);
+});
