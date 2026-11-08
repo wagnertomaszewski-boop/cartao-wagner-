@@ -76,7 +76,7 @@ test('hostname que apenas contém neon.tech não é aceito como Neon isolado',as
 test('rota sintética rejeita dependências privadas de tipos incorretos e fecha pool',async()=>{
  let fechamentos=0;
  class Pool {async end(){fechamentos++;} async connect(){throw Error('Não deve consultar o banco');}}
- const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',HABILITAR_DECISAO_SINTETICA_900007:'sim',DATABASE_URL:'postgresql://usuario:senha@localhost:5432/testes'};
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',HABILITAR_DECISAO_SINTETICA_900007:'sim',SUPABASE_ADMIN_UID:'11111111-1111-4111-8111-111111111111',SUPABASE_PUBLISHABLE_KEY:'sb_publishable_chave_ficticia_homologacao',DATABASE_URL:'postgresql://usuario:senha@localhost:5432/testes'};
  const base={chavePublicaConferente:'chave-de-teste',buscarAtestado:async()=>null,conferentesPermitidos:['REV-TESTE-900007'],operadoresPermitidos:{'00000000-0000-4000-8000-000000000007':'OP-TESTE-900007'},buscarAuth:async()=>null,consultarNeon:async()=>null,auditar:async()=>{}};
  for(const [campo,invalido] of [['buscarAtestado',true],['buscarAuth',{}],['consultarNeon','nao-funcao'],['auditar',null],['conferentesPermitidos',[]],['operadoresPermitidos','texto'],['chavePublicaConferente',null]]){
   await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}}),integracaoSintetica:{...base,[campo]:invalido}}),/Integração sintética privada obrigatória/,campo);
@@ -88,8 +88,17 @@ test('rota sintética rejeita dependências privadas de tipos incorretos e fecha
 test('falha na chave Ed25519 durante montagem fecha pool sem expor rota',async()=>{
  let fechamentos=0;
  class Pool {async end(){fechamentos++;} async connect(){throw Error('Não deve conectar');}}
- const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',HABILITAR_DECISAO_SINTETICA_900007:'sim',DATABASE_URL:'postgresql://usuario:senha@localhost:5432/testes'};
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',HABILITAR_DECISAO_SINTETICA_900007:'sim',SUPABASE_ADMIN_UID:'11111111-1111-4111-8111-111111111111',SUPABASE_PUBLISHABLE_KEY:'sb_publishable_chave_ficticia_homologacao',DATABASE_URL:'postgresql://usuario:senha@localhost:5432/testes'};
  const integracaoSintetica={chavePublicaConferente:'chave-invalida',buscarAtestado:async()=>null,conferentesPermitidos:['REV-TESTE-900007'],operadoresPermitidos:{'00000000-0000-4000-8000-000000000007':'OP-TESTE-900007'},buscarAuth:async()=>null,consultarNeon:async()=>null,auditar:async()=>{}};
  await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}}),integracaoSintetica}));
+ assert.equal(fechamentos,1);
+});
+
+
+test('rota sintética exige credenciais de administrador e libera pool se ausentes',async()=>{
+ let fechamentos=0;
+ class Pool {async end(){fechamentos++;} async connect(){throw Error('Não deve conectar');}}
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',HABILITAR_DECISAO_SINTETICA_900007:'sim',DATABASE_URL:'postgresql://usuario:senha@localhost:5432/testes'};
+ await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})}),/Autenticação administrativa privada obrigatória/);
  assert.equal(fechamentos,1);
 });
