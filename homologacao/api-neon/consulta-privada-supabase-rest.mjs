@@ -14,7 +14,7 @@ export function criarConsultaPrivadaSupabase({
  return async function consultar(sql,parametros){
   if(sql!=='SELECT id, protocolo FROM public.solicitacoes WHERE protocolo=$1 LIMIT 2'||
    !Array.isArray(parametros)||parametros.length!==1||
-   typeof parametros[0]!=='string'||parametros[0].length>40||!parametros[0].trim())
+   typeof parametros[0]!=='string'||parametros[0].length>40||!/^[A-Za-z0-9-]+$/.test(parametros[0]))
    throw Error('Consulta não autorizada');
   const destino=new URL('/rest/v1/solicitacoes',origem);
   destino.searchParams.set('select','id,protocolo');
