@@ -2338,7 +2338,7 @@ async function consultarHistoricoFiscalizacaoMandato(id,botao){
   try{
     const sessao=await obterSessaoValida();
     if(!sessao)throw new Error("Sessão expirada. Entre novamente.");
-    const url=SUPABASE_URL+"/rest/v1/solicitacoes_fiscalizacao_historico?select=id,tipo,descricao,protocolo_referencia,registrado_em&solicitacao_id=eq."+encodeURIComponent(id)+"&order=registrado_em.desc&limit=100";
+    const url=SUPABASE_URL+"/rest/v1/solicitacoes_fiscalizacao_historico?select=id,solicitacao_id,tipo,descricao,protocolo_referencia,registrado_em&solicitacao_id=eq."+encodeURIComponent(id)+"&order=registrado_em.desc&limit=100";
     const resposta=await requisicao(url,{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Cache-Control":"no-cache"}});
     const dados=await resposta.json().catch(()=>null);
     if(!resposta.ok){
@@ -2349,6 +2349,7 @@ async function consultarHistoricoFiscalizacaoMandato(id,botao){
       throw new Error(dados?.message||"Não foi possível consultar o histórico.");
     }
     if(!Array.isArray(dados))throw new Error("Resposta inesperada ao consultar histórico.");
+    if(dados.some(registro=>String(registro?.solicitacao_id)!==String(id)))throw new Error("Histórico retornou registro de outra solicitação. Exibição bloqueada.");
     if(!dados.length){destino.textContent="Nenhum registro de fiscalização encontrado.";return;}
     destino.replaceChildren();
     const lista=document.createElement("ol");
