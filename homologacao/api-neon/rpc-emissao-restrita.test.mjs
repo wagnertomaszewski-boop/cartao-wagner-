@@ -13,3 +13,7 @@ test('emissão restrita registra auditoria no mesmo bloco transacional',()=>{
  assert.match(sql,/INSERT INTO mandato_testes\.acessos_protocolo/i);
  assert.match(sql,/INSERT INTO mandato_testes\.auditoria_chaves_legadas/i);
 });
+
+test('RPC proposta bloqueia toda emissão até existir vínculo confiável',()=>{
+ assert.match(sql,/BEGIN\s*-- Trava de segurança:[\s\S]*?RAISE EXCEPTION 'Emissão desabilitada: vínculo protocolo-ID não verificado'/);
+});
