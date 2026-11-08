@@ -4,7 +4,7 @@ export function criarRepositorioDesafiosWhatsappNeon({pool}={}){
  if(typeof pool?.query!=='function')throw Error('Pool Neon obrigatório');
  return Object.freeze({
   confirmarAtomico:async({id,solicitacaoId,acao,hash})=>{
-   const r=await pool.query('SELECT mandato_chaves_homologacao.confirmar_desafio_whatsapp($1,$2::bigint,$3,$4) AS ok',[id,solicitacaoId,acao,hash]);
+   const r=await pool.query('SELECT mandato_chaves_homologacao.confirmar_e_registrar_whatsapp($1,$2::bigint,$3,$4) AS ok',[id,solicitacaoId,acao,hash]);
    return r.rows?.[0]?.ok===true;
   },
   armazenarDesafio:async({id,solicitacaoId,acao,hash,expiraEm})=>{
