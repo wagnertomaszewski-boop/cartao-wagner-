@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {criarEmissorLegado} from './emissao-legada-interna.mjs';
 test('emissor não pode ser criado sem verificadores e auditoria do servidor',()=>{
- assert.throws(()=>criarEmissorLegado({verificarIdentidade:async()=>true}),/obrigatórias/);
+ assert.throws(()=>criarEmissorLegado({verificarIdentidade:async()=>({solicitacaoId:900003})}),/obrigatórias/);
 });
 test('declaração de identidade no cliente não libera chave',async()=>{
  let gravacoes=0;
@@ -17,7 +17,7 @@ test('declaração de identidade no cliente não libera chave',async()=>{
 test('identidade verificada pelo servidor grava somente hash e audita',async()=>{
  let gravado,auditoria;
  const emissor=criarEmissorLegado({
-  verificarIdentidade:async({protocolo})=>protocolo==='LEGADO-FICTICIO',
+  verificarIdentidade:async({protocolo})=>protocolo==='LEGADO-FICTICIO'?{solicitacaoId:900003}:false,
   persistirHash:async dados=>{gravado=dados;},
   auditar:async dados=>{auditoria=dados;}
  });
@@ -25,7 +25,7 @@ test('identidade verificada pelo servidor grava somente hash e audita',async()=>
  assert.match(retorno.chave,/^[a-f0-9]{64}$/);
  assert.match(gravado.hash,/^[a-f0-9]{64}$/);
  assert.notEqual(retorno.chave,gravado.hash);
- assert.equal(gravado.chave,undefined);
+ assert.equal(gravado.chave,undefined);\n assert.equal(gravado.solicitacaoId,900003);
  assert.deepEqual(auditoria,{evento:'chave_legada_emitida',protocolo:'LEGADO-FICTICIO'});
 });
 test('falha de persistência impede entrega da chave',async()=>{
