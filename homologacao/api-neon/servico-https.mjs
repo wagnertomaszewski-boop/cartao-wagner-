@@ -22,6 +22,7 @@ try {
    body:JSON.stringify({protocolo,chave}),signal:AbortSignal.timeout(7000)
   });
   const corpo=await resposta.json();
+  console.log('AUTOTESTE_NEON_DIAGNOSTICO: status='+resposta.status+'; forma='+((Array.isArray(corpo.resultado))?'resultado-array':(typeof corpo.erro==='string'?'erro-generico':'inesperada')));
   if(resposta.status!==200 || !Array.isArray(corpo.resultado) || corpo.resultado.length!==0 ||
    !Array.isArray(corpo.respostas) || corpo.respostas.length!==0 ||
    !Array.isArray(corpo.historico) || corpo.historico.length!==0 ||
