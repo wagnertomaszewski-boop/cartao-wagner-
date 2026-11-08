@@ -11,7 +11,7 @@ export function criarFonteEvidenciaAssinada({
  if(typeof buscarAtestado!=='function'||typeof relogio!=='function'||
   !Number.isSafeInteger(validadeMs)||validadeMs<1||validadeMs>15*60*1000)
   throw Error('Fonte independente obrigatória');
- const chave=createPublicKey(chavePublicaConferente);
+ const chave=chavePublicaConferente?.type==='public' ? chavePublicaConferente : createPublicKey(chavePublicaConferente);
  if(chave.asymmetricKeyType!=='ed25519')throw Error('Chave Ed25519 obrigatória');
  return async function verificarEvidencia({protocolo,referenciaOperador,registroId}={}){
   if(![protocolo,referenciaOperador,registroId].every(x=>typeof x==='string'&&rx.test(x))||
