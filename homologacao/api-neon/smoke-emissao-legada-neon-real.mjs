@@ -40,6 +40,28 @@ try {
  `);
  assert.equal(funcoes.rows[0].api_executa,true,'Somente RPC fictícia deve ser acessível à API');
  assert.equal(funcoes.rows[0].publico_executa,false,'Emissão não pode ser pública');
+ const contrato=await pool.query(`
+  SELECT p.proname,pg_get_function_result(p.oid) AS retorno,
+   has_function_privilege(current_user,p.oid,'EXECUTE') AS api_executa,
+   has_function_privilege('mandato_cidadao_a',p.oid,'EXECUTE') AS cidadao_executa,
+   position('decidido_em >= now() - interval ''24 hours''' in pg_get_functiondef(p.oid))>0 AS limite_inferior,
+   position('decidido_em <= now()' in pg_get_functiondef(p.oid))>0 AS limite_superior
+  FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='mandato_testes'
+   AND p.proname IN ('emitir_chave_legada_teste_900004','emitir_chave_legada_teste_900005')
+  ORDER BY p.proname
+ `);
+ assert.deepEqual(contrato.rows.map(x=>x.proname),[
+  'emitir_chave_legada_teste_900004','emitir_chave_legada_teste_900005'
+ ],'As duas RPCs fictícias devem existir');
+ for(const funcao of contrato.rows){
+  assert.equal(funcao.retorno,'boolean','RPC deve confirmar gravação com boolean');
+  assert.equal(funcao.api_executa,true,'API deve executar RPC');
+  assert.equal(funcao.cidadao_executa,false,'Cidadão não deve executar RPC');
+  assert.equal(funcao.limite_inferior,true,'Aprovação antiga não pode ser aceita');
+  assert.equal(funcao.limite_superior,true,'Aprovação futura não pode ser aceita');
+ }
+ console.log('PASS: contrato real das duas RPCs, retorno booleano, permissões e janela de 24h');
  console.log('PASS: quatro tabelas protegidas contra acesso direto; emissão real aguarda RPC autorizada');
 }finally{
  await pool.end();
