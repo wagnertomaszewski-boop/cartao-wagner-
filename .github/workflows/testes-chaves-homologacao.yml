@@ -1,0 +1,26 @@
+name: Testes de segurança das chaves - homologação
+on:
+  push:
+    branches:
+      - feature/recuperacao-whatsapp-manual
+    paths:
+      - 'homologacao/api-neon/**'
+      - '.github/workflows/testes-chaves-homologacao.yml'
+  workflow_dispatch:
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: homologacao/api-neon
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependências fixadas
+        run: npm ci --ignore-scripts
+      - name: Executar testes sem credenciais externas
+        run: npm test
