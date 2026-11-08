@@ -17,7 +17,7 @@ export function criarConferenteIdentidadeServidor({
   // Consultas sequenciais para evitar solicitar evidências sensíveis sem necessidade.
   // Cada provedor deve consultar estado persistido e autenticado, não dados do pedido.
   try{
-   const whatsapp=await consultarWhatsappConfirmado({solicitacaoId:String(solicitacaoId)});
+   const whatsapp=await consultarWhatsappConfirmado({solicitacaoId:String(solicitacaoId),acao});
    if(whatsapp?.confirmado!==true||whatsapp?.solicitacaoId!==String(solicitacaoId))return false;
    const pessoal=await consultarConferenciaPessoal({solicitacaoId:String(solicitacaoId),operadorId});
    if(pessoal?.confirmado!==true||pessoal?.solicitacaoId!==String(solicitacaoId)||
