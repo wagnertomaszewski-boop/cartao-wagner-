@@ -177,6 +177,19 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
   const {criarInicioRecuperacaoManual}=await import('./inicio-recuperacao-manual.mjs');
   iniciarRecuperacao=criarInicioRecuperacaoManual(integracao);
  }
- const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas,registrarDecisaoSintetica,operacoesChaves,confirmacaoCidadao,iniciarRecuperacao});
+ let concluirRecuperacao=null;
+ if(env.HABILITAR_CONCLUSAO_RECUPERACAO_HOMOLOGACAO==='sim'){
+  if(!poolEscrita||!env.CHAVES_CONFERENTE_PUBLICA_PEM||!env.SUPABASE_ADMIN_UID||!env.SUPABASE_PUBLISHABLE_KEY){
+   await Promise.all([pool.end(),poolEscrita?.end()]);
+   throw Error('Conclusão requer assinatura, autenticação e escrita restrita');
+  }
+  const [{criarRecuperacaoConfirmada},{criarConclusaoRecuperacaoPainel},{criarResolvedorOperadorAdmin}]=await Promise.all([
+   import('./recuperacao-confirmada-neon.mjs'),import('./conclusao-recuperacao-painel.mjs'),import('./verificar-admin-supabase.mjs')
+  ]);
+  const resolverOperador=criarResolvedorOperadorAdmin({supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',chavePublica:env.SUPABASE_PUBLISHABLE_KEY,idsPermitidos:[env.SUPABASE_ADMIN_UID]});
+  const recuperar=criarRecuperacaoConfirmada({pool:poolEscrita,chavePublicaPem:env.CHAVES_CONFERENTE_PUBLICA_PEM,operadorPermitido:async({operadorId})=>operadorId===env.SUPABASE_ADMIN_UID});
+  concluirRecuperacao=criarConclusaoRecuperacaoPainel({resolverOperador,recuperar});
+ }
+ const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas,registrarDecisaoSintetica,operacoesChaves,confirmacaoCidadao,iniciarRecuperacao,concluirRecuperacao});
  return {servidor,fechar:async()=>{try {if (servidor.listening) await new Promise((resolve,reject)=>servidor.close(erro=>erro?reject(erro):resolve()));} finally {await Promise.all([pool.end(),poolEscrita?.end()]);}}};
 }
