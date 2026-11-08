@@ -37,5 +37,5 @@ export function criarVerificacaoWhatsapp({buscarContatoConfirmado,enviarCodigo,a
   if(!timingSafeEqual(d.hash,digest(desafioId,codigo)))return false;
   return await consumirDesafio({id:desafioId,invalidar:false})===true;
  }
- return Object.freeze({solicitar,confirmar});
+ return Object.freeze({solicitar,confirmar,persistenciaAtomica:typeof confirmarAtomico==='function'});
 }
