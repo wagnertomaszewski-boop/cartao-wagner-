@@ -1,11 +1,12 @@
 import {criarServidor} from './server.mjs';
+import {criarRegistroSinteticoAssinado900007} from './registro-sintetico-assinado-900007.mjs';
 import {criarVerificadorAdmin} from './verificar-admin-supabase.mjs';
 import {criarOperacoesNeon} from './operacoes-neon.mjs';
 import {criarExecutoresPostgres} from './executores-postgres.mjs';
 
 // Inicialização de homologação local: NÃO habilita administração sem verificador real.
 // DATABASE_URL é segredo do servidor. Nunca incluir no frontend ou no GitHub.
-export async function iniciarHomologacao({env=process.env, carregarPg=()=>import('pg')}={}) {
+export async function iniciarHomologacao({env=process.env, carregarPg=()=>import('pg'), integracaoSintetica=null}={}) {
  if (env.MANDATO_AMBIENTE !== 'homologacao') throw Error('Ambiente de homologação obrigatório');
  if (env.HABILITAR_API_NEON !== 'sim') throw Error('API desabilitada por padrão');
 
@@ -48,6 +49,20 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
   : async()=>false;
  const origensPermitidas = env.ORIGEM_PAINEL_HOMOLOGACAO === 'https://wagnertomaszewski-boop.github.io'
   ? [env.ORIGEM_PAINEL_HOMOLOGACAO] : [];
- const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas});
+ // A rota sintética exige opt-in explícito do servidor E dependências privadas.
+ // Nunca habilitar por configuração pública ou apenas por sinalizador.
+ let registrarDecisaoSintetica=null;
+ if(env.HABILITAR_DECISAO_SINTETICA_900007==='sim'){
+  if(!integracaoSintetica||typeof integracaoSintetica!=='object'||
+   !['chavePublicaConferente','buscarAtestado','conferentesPermitidos','operadoresPermitidos','buscarAuth','consultarNeon','auditar']
+    .every(k=>integracaoSintetica[k]!==undefined))
+   throw Error('Integração sintética privada obrigatória');
+  registrarDecisaoSintetica=criarRegistroSinteticoAssinado900007({
+   ...integracaoSintetica,
+   supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',
+   supabasePublishableKey:env.SUPABASE_PUBLISHABLE_KEY
+  });
+ }
+ const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas,registrarDecisaoSintetica});
  return {servidor,fechar:async()=>{try {if (servidor.listening) await new Promise((resolve,reject)=>servidor.close(erro=>erro?reject(erro):resolve()));} finally {await pool.end();}}};
 }
