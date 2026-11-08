@@ -25,12 +25,13 @@ test('identidade verificada pelo servidor grava somente hash e audita',async()=>
  assert.match(retorno.chave,/^[a-f0-9]{64}$/);
  assert.match(gravado.hash,/^[a-f0-9]{64}$/);
  assert.notEqual(retorno.chave,gravado.hash);
- assert.equal(gravado.chave,undefined);\n assert.equal(gravado.solicitacaoId,900003);
+ assert.equal(gravado.chave,undefined);
+ assert.equal(gravado.solicitacaoId,900003);
  assert.deepEqual(auditoria,{evento:'chave_legada_emitida',protocolo:'LEGADO-FICTICIO'});
 });
 test('falha de persistência impede entrega da chave',async()=>{
  const emissor=criarEmissorLegado({
-  verificarIdentidade:async()=>true,
+  verificarIdentidade:async()=>({solicitacaoId:900003}),
   persistirHash:async()=>{throw Error('falha sintética no banco');},
   auditar:async()=>{}
  });
