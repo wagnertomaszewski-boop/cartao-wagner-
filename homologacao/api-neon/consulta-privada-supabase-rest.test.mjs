@@ -5,7 +5,7 @@ const url='https://pmmsdjozyyxkbuqlkfpb.supabase.co',serviceRoleKey='x'.repeat(3
 const sql='SELECT id, protocolo FROM public.solicitacoes WHERE protocolo=$1 LIMIT 2';
 test('faz apenas leitura privada parametrizada e sem redirecionamento',async()=>{
  let chamadas=0;
- const consultar=criarConsultaPrivadaSupabase({url,serviceRoleKey,fetchPrivado:async(destino,opcoes)=>{
+ const consultar=criarConsultaPrivadaSupabase({url,expectedProjectRef:'pmmsdjozyyxkbuqlkfpb',serviceRoleKey,fetchPrivado:async(destino,opcoes)=>{
   chamadas++;
   const u=new URL(destino);
   assert.equal(u.hostname,'pmmsdjozyyxkbuqlkfpb.supabase.co');
@@ -21,11 +21,15 @@ test('faz apenas leitura privada parametrizada e sem redirecionamento',async()=>
  assert.equal(chamadas,1);
 });
 test('nega consulta arbitrária e protocolo com operadores de filtro',async()=>{
- const consultar=criarConsultaPrivadaSupabase({url,serviceRoleKey,fetchPrivado:async()=>{throw Error('Não deve consultar');}});
+ const consultar=criarConsultaPrivadaSupabase({url,expectedProjectRef:'pmmsdjozyyxkbuqlkfpb',serviceRoleKey,fetchPrivado:async()=>{throw Error('Não deve consultar');}});
  await assert.rejects(()=>consultar('SELECT * FROM public.solicitacoes',[]),/não autorizada/);
  await assert.rejects(()=>consultar(sql,['x,or.(id.gt.0)']),/não autorizada/);
 });
 test('falha fechada sem credencial e com URL insegura',()=>{
  assert.throws(()=>criarConsultaPrivadaSupabase({url,serviceRoleKey:'curta'}),/incompleta/);
  assert.throws(()=>criarConsultaPrivadaSupabase({url:'http://pmmsdjozyyxkbuqlkfpb.supabase.co',serviceRoleKey}),/não autorizada/);
+});
+
+test('impede conexão acidental a outro projeto Supabase',()=>{
+ assert.throws(()=>criarConsultaPrivadaSupabase({url,expectedProjectRef:'aaaaaaaaaaaaaaaaaaaa',serviceRoleKey}),/não autorizada/);
 });
