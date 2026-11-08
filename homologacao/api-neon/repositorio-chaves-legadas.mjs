@@ -18,6 +18,9 @@ export function criarRepositorioChavesLegadas({transacionar}={}){
     // na MESMA transação, sem expor a chave ou alterar registros existentes.
     const acesso=await executar('SELECT solicitacao_id FROM mandato_testes.acessos_protocolo WHERE protocolo=$1 LIMIT 1',[protocoloNormalizado]);
     if(acesso.length)throw Error('Protocolo já possui acesso; recuperação manual necessária');
+    // A chave primária de acessos_protocolo é solicitacao_id: evitar segunda chave para o mesmo ID.
+    const acessoDaSolicitacao=await executar('SELECT protocolo FROM mandato_testes.acessos_protocolo WHERE solicitacao_id=$1 LIMIT 1',[solicitacaoId]);
+    if(acessoDaSolicitacao.length)throw Error('Solicitação já possui acesso; recuperação manual necessária');
     const solicitacao=await executar('SELECT id FROM mandato_testes.solicitacoes WHERE id=$1 LIMIT 1',[solicitacaoId]);
     if(!solicitacao.length)throw Error('Solicitação legada não encontrada na homologação');
     await executar('INSERT INTO mandato_testes.chaves_legadas (protocolo, hash_chave) VALUES ($1,$2)',[protocoloNormalizado,hash]);
