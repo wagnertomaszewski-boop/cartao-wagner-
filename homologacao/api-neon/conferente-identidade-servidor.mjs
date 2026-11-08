@@ -12,7 +12,7 @@ export function criarConferenteIdentidadeServidor({
   const {solicitacaoId,operadorId,acao}=pedido;
   if(!['emitir','revogar'].includes(acao)||
    !validarConferenciaManual({solicitacaoId,operadorId,confirmacaoWhatsapp:true,
-    conferenciaPessoal:true,reatenticacaoRecente:true,justificativa:'Verificação preliminar do identificador.'}))
+    conferenciaPessoal:true,reautenticacaoRecente:true,justificativa:'Verificação preliminar do identificador.'}))
    return false;
   // Consultas sequenciais para evitar solicitar evidências sensíveis sem necessidade.
   // Cada provedor deve consultar estado persistido e autenticado, não dados do pedido.
