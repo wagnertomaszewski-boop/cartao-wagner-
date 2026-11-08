@@ -8,7 +8,7 @@ test('comprovante assinado aceita somente protocolo correto dentro do prazo',asy
  const validar=criarVerificadorComprovanteAssinado({segredo,relogio:()=>inicio+60000});
  assert.equal(await validar({protocolo:'LEGADO-TESTE',comprovante}),true);
  assert.equal(await validar({protocolo:'OUTRO',comprovante}),false);
- assert.equal(await validar({protocolo:'LEGADO-TESTE',comprovante:comprovante.slice(0,-1)+'0'}),false);
+ assert.equal(await validar({protocolo:'LEGADO-TESTE',comprovante:comprovante.slice(0,-1)+(comprovante.endsWith('0')?'1':'0')}),false);
  assert.equal(await criarVerificadorComprovanteAssinado({segredo,relogio:()=>inicio+900001})({protocolo:'LEGADO-TESTE',comprovante}),false);
  assert.equal(await criarVerificadorComprovanteAssinado({segredo,relogio:()=>inicio-1})({protocolo:'LEGADO-TESTE',comprovante}),false);
 });
