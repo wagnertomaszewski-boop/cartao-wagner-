@@ -354,6 +354,36 @@ async function carregarRespostasPublicas(protocolo) {
   }
 }
 
+// Integração em preparação: não habilitar antes da migração dos protocolos existentes.
+const CONSULTA_SEGURA_LEGADO_ATIVA = false;
+const API_CONSULTA_SEGURA_LEGADO = '';
+async function consultarSeguramenteLegado(protocolo) {
+  const chave = document.getElementById('chaveSeguraLegado').value;
+  try {
+    const {criarConsultaSegura} = await import('./v2/seguranca/consulta-segura.mjs');
+    const cliente = criarConsultaSegura({apiBase:API_CONSULTA_SEGURA_LEGADO});
+    const dados = await cliente.consultar({protocolo,chave});
+    const item = Array.isArray(dados.resultado) ? dados.resultado[0] : null;
+    if (!item) throw Error('Protocolo ou chave inválidos.');
+    document.getElementById('rProtocolo').textContent = protocolo;
+    document.getElementById('rStatus').textContent = item.status || 'Recebida';
+    document.getElementById('rAssunto').textContent = item.assunto || 'Solicitação';
+    document.getElementById('rLocalidade').textContent = 'Protegida';
+    document.getElementById('resultado').style.display = 'block';
+    // Não renderizar anexos nem mensagens em HTML não confiável.
+    const alvo = document.getElementById('rRespostas');
+    if (alvo) {
+      alvo.replaceChildren();
+      for (const resposta of (Array.isArray(dados.respostas) ? dados.respostas : [])) {
+        const linha = document.createElement('p');
+        linha.textContent = String(resposta.texto || '');
+        alvo.appendChild(linha);
+      }
+    }
+  } finally {
+    document.getElementById('chaveSeguraLegado').value = '';
+  }
+}
 async function consultarSolicitacao() {
 
   const protocolo =
@@ -372,6 +402,10 @@ async function consultarSolicitacao() {
   }
 
   try {
+    if (CONSULTA_SEGURA_LEGADO_ATIVA) {
+      await consultarSeguramenteLegado(protocolo);
+      return;
+    }
 
     const resposta = await fetch(
   SUPABASE_URL + "/rest/v1/rpc/consulta_publica_protocolo",
@@ -427,5 +461,16 @@ async function consultarSolicitacao() {
 
 </script>
 
+<script>
+if (CONSULTA_SEGURA_LEGADO_ATIVA) {
+  const campo = document.createElement('input');
+  campo.id = 'chaveSeguraLegado';
+  campo.type = 'password';
+  campo.autocomplete = 'off';
+  campo.placeholder = 'Chave secreta de acesso';
+  const protocolo = document.getElementById('protocolo');
+  protocolo.insertAdjacentElement('afterend',campo);
+}
+</script>
 </body>
 </html>
