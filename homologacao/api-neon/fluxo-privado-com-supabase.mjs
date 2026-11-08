@@ -3,12 +3,12 @@
 import {criarConsultaPrivadaSupabase} from './consulta-privada-supabase-rest.mjs';
 import {criarFluxoPrivadoEmissaoRpc} from './fluxo-privado-emissao-rpc.mjs';
 export function criarFluxoPrivadoComSupabase({
- supabaseUrl,supabaseServiceRoleKey,fetchPrivado,
+ supabaseUrl,supabaseProjectRef,supabaseServiceRoleKey,fetchPrivado,
  conferirIdentidade,autorizarOperador,auditarConferencia,
  consultarNeon,segredoComprovante,auditarTentativa,relogio,gerarNonce
 }={}){
  const consultarSupabasePrivado=criarConsultaPrivadaSupabase({
-  url:supabaseUrl,serviceRoleKey:supabaseServiceRoleKey,fetchPrivado
+  url:supabaseUrl,expectedProjectRef:supabaseProjectRef,serviceRoleKey:supabaseServiceRoleKey,fetchPrivado
  });
  return criarFluxoPrivadoEmissaoRpc({
   conferirIdentidade,autorizarOperador,auditarConferencia,
