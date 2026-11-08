@@ -43,7 +43,23 @@ try {
  assert.equal(resposta.status,200,'Falha na integração HTTP-Neon');
  const corpo=await resposta.json();
  assert.deepEqual(corpo,{resultado:[],respostas:[],historico:[],anexos:[]});
+ // Protocolo sintético previamente criado no Neon isolado: a chave incorreta
+ // jamais pode liberar assunto, histórico, respostas ou anexos.
+ const negado=await fetch(base+'/api/solicitacoes/consultar',{
+  method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({protocolo:'TESTE-000006',chave:'chave-incorreta-sintetica-000000000000000000000000'}),
+  signal:AbortSignal.timeout(8000)
+ });
+ assert.equal(negado.status,200,'Consulta de chave incorreta deve ser neutra');
+ assert.deepEqual(await negado.json(),{resultado:[],respostas:[],historico:[],anexos:[]},
+  'Chave incorreta não pode liberar dados de solicitação existente');
+ const semChave=await fetch(base+'/api/solicitacoes/consultar',{
+  method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({protocolo:'TESTE-000006'}),
+  signal:AbortSignal.timeout(8000)
+ });
+ assert.notEqual(semChave.status,200,'Consulta sem chave deve ser rejeitada');
  const admin=await fetch(base+'/api/admin/recuperacoes',{signal:AbortSignal.timeout(8000)});
  assert.equal(admin.status,401,'Rota administrativa deve exigir autenticação');
- console.log('PASS: HTTP-Neon real, health, CORS, limite de corpo, consulta fictícia e admin protegido');
+ console.log('PASS: HTTP-Neon real, health, CORS, limite de corpo, consulta fictícia, chave incorreta, chave ausente e admin protegido');
 } finally {await instancia.fechar();}
