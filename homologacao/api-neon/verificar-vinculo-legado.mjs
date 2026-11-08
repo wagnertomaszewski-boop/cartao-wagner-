@@ -7,9 +7,13 @@ export function criarVerificadorVinculoLegado({buscarVinculo,validarComprovante}
   if(typeof protocolo!=='string'||!protocolo.trim()||protocolo.length>40)
    return false;
   const p=protocolo.trim();
-  const valido=await validarComprovante({protocolo:p,comprovante});
-  if(valido!==true)return false;
-  const vinculo=await buscarVinculo({protocolo:p});
+  // Falha de infraestrutura nunca deve autorizar emissão (fail closed).
+  let valido, vinculo;
+  try {
+   valido=await validarComprovante({protocolo:p,comprovante});
+   if(valido!==true)return false;
+   vinculo=await buscarVinculo({protocolo:p});
+  }catch{return false;}
   if(!vinculo||!Number.isSafeInteger(vinculo.solicitacaoId)||vinculo.solicitacaoId<=0||
    vinculo.protocolo!==p)return false;
   return {solicitacaoId:vinculo.solicitacaoId};
