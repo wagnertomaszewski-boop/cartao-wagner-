@@ -38,7 +38,52 @@ function renderTimeline(status,hist=[]){const ix=stepIndex(status),el=document.g
 function dt(v){if(!v)return"";let d=new Date(v);if(isNaN(d))return"";return new Intl.DateTimeFormat("pt-BR",{timeZone:"America/Sao_Paulo",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(d)}function ax(v){if(Array.isArray(v))return v;if(!v)return[];try{let p=JSON.parse(v);return Array.isArray(p)?p:[]}catch{return[]}}
 async function historico(p,statusAtual){try{const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_historico_protocolo",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({p_protocolo:p})});const d=await r.json();renderTimeline(statusAtual,r.ok&&Array.isArray(d)?d:[])}catch{renderTimeline(statusAtual,[])}}
 async function respostas(p){const a=document.getElementById("rRespostas");a.innerHTML="";try{const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_respostas_protocolo",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({p_protocolo:p})});const d=await r.json();if(!r.ok||!d.length){a.innerHTML='<div class="muted">Ainda não há resposta registrada.</div>';return}d.forEach(x=>{const e=document.createElement("div");e.className="reply";if(x.criado_em){const t=document.createElement("time");t.textContent=dt(x.criado_em);e.appendChild(t)}if(x.mensagem){const q=document.createElement("div");q.textContent=x.mensagem;e.appendChild(q)}ax(x.anexos).forEach(z=>{if(z&&z.url){const l=document.createElement("a");l.href=z.url;l.target="_blank";l.textContent="📎 "+(z.nome||"Abrir documento");e.appendChild(l)}});a.appendChild(e)})}catch{a.innerHTML='<div class="muted">Não foi possível carregar as respostas agora.</div>'}}
-async function consultar(){const p=document.getElementById("protocolo").value.trim(),res=document.getElementById("resultado"),er=document.getElementById("erro"),b=document.getElementById("consultar");res.classList.remove("show");er.className="notice";er.style.display="none";if(!p){er.className="notice err";er.textContent="Digite o número do protocolo.";return}b.disabled=true;try{const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_protocolo",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({p_protocolo:p})});const d=await r.json();if(!r.ok||!d.length)throw new Error("Protocolo não encontrado.");const s=d[0];document.getElementById("rProtocolo").textContent=s.protocolo||p;document.getElementById("rStatus").textContent=s.status||"Recebida";document.getElementById("rAssunto").textContent=s.assunto||"Solicitação";document.getElementById("rSolicitante").textContent=s.solicitante||"Não informado";document.getElementById("rLocalidade").textContent=s.localidade||"Não informada";await historico(s.protocolo||p,s.status||"Recebida");await respostas(s.protocolo||p);res.classList.add("show");document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".pane").forEach(x=>x.style.display="none");const ta=document.querySelector('.tab[data-tab="and"]');if(ta)ta.classList.add("active");document.getElementById("and").style.display="block"}catch(e){er.className="notice err";er.textContent=e.message}finally{b.disabled=false}}
+// Caminho seguro preparado para migração, mantido DESLIGADO em homologação.
+const CONSULTA_SEGURA_ACOMPANHAR_V2_ATIVA=false;
+const API_CONSULTA_SEGURA_ACOMPANHAR_V2='';
+async function consultarSeguramenteV2(protocolo){
+ const campo=document.getElementById('chaveConsultaAcompanharV2');
+ const chave=campo.value;
+ try{
+  const {criarConsultaSegura}=await import('./seguranca/consulta-segura.mjs');
+  const api=criarConsultaSegura({apiBase:API_CONSULTA_SEGURA_ACOMPANHAR_V2});
+  const dados=await api.consultar({protocolo,chave});
+  const s=Array.isArray(dados.resultado)?dados.resultado[0]:null;
+  if(!s)throw Error('Protocolo ou chave inválidos.');
+  document.getElementById('rProtocolo').textContent=protocolo;
+  document.getElementById('rStatus').textContent=s.status||'Recebida';
+  document.getElementById('rAssunto').textContent=s.assunto||'Solicitação';
+  document.getElementById('rSolicitante').textContent='Protegido';
+  document.getElementById('rLocalidade').textContent='Protegida';
+  const historicoSeguro=Array.isArray(dados.historico)?dados.historico:[];
+  renderTimeline(s.status||'Recebida',historicoSeguro);
+  const respostasSeguras=Array.isArray(dados.respostas)?dados.respostas:[];
+  const alvo=document.getElementById('rRespostas');
+  alvo.replaceChildren();
+  for(const item of respostasSeguras){
+   const linha=document.createElement('div');
+   linha.className='reply';
+   linha.textContent=String(item.texto||'');
+   alvo.appendChild(linha);
+  }
+  document.getElementById('resultado').classList.add('show');
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.pane').forEach(x=>x.style.display='none');
+  const tab=document.querySelector('.tab[data-tab="and"]');
+  if(tab)tab.classList.add('active');
+  document.getElementById('and').style.display='block';
+ }finally{campo.value='';}
+}
+async function consultar(){const p=document.getElementById("protocolo").value.trim(),res=document.getElementById("resultado"),er=document.getElementById("erro"),b=document.getElementById("consultar");res.classList.remove("show");er.className="notice";er.style.display="none";if(!p){er.className="notice err";er.textContent="Digite o número do protocolo.";return}b.disabled=true;try{if(CONSULTA_SEGURA_ACOMPANHAR_V2_ATIVA){await consultarSeguramenteV2(p);return;}const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_protocolo",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({p_protocolo:p})});const d=await r.json();if(!r.ok||!d.length)throw new Error("Protocolo não encontrado.");const s=d[0];document.getElementById("rProtocolo").textContent=s.protocolo||p;document.getElementById("rStatus").textContent=s.status||"Recebida";document.getElementById("rAssunto").textContent=s.assunto||"Solicitação";document.getElementById("rSolicitante").textContent=s.solicitante||"Não informado";document.getElementById("rLocalidade").textContent=s.localidade||"Não informada";await historico(s.protocolo||p,s.status||"Recebida");await respostas(s.protocolo||p);res.classList.add("show");document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".pane").forEach(x=>x.style.display="none");const ta=document.querySelector('.tab[data-tab="and"]');if(ta)ta.classList.add("active");document.getElementById("and").style.display="block"}catch(e){er.className="notice err";er.textContent=e.message}finally{b.disabled=false}}
 document.getElementById("consultar").onclick=consultar;document.getElementById("protocolo").addEventListener("keydown",e=>{if(e.key==="Enter")consultar()});
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));t.classList.add("active");document.querySelectorAll(".pane").forEach(x=>x.style.display="none");document.getElementById(t.dataset.tab).style.display="block"});
+</script><script>
+if(CONSULTA_SEGURA_ACOMPANHAR_V2_ATIVA){
+ const campo=document.createElement('input');
+ campo.id='chaveConsultaAcompanharV2';
+ campo.type='password';
+ campo.autocomplete='off';
+ campo.placeholder='Chave secreta de acesso';
+ document.getElementById('protocolo').insertAdjacentElement('afterend',campo);
+}
 </script></body></html>
