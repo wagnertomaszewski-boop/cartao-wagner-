@@ -766,6 +766,28 @@ function atualizarBotoesChaves(){
   if(botao)botao.disabled=!(permissoesChaves[acao]&&pronto);
  }
 }
+async function verificarRecuperacaoSolicitacao(id,botao){
+ const secao=botao?.closest('[data-recuperacao-homologacao]');
+ const saida=secao?.querySelector('[data-resultado-recuperacao]');
+ if(!saida||!Number.isSafeInteger(id)||id<1)return;
+ botao.disabled=true;
+ saida.textContent='Verificando autenticação e disponibilidade da homologação…';
+ try{
+  const sessao=await obterSessaoValida();
+  if(!sessao?.access_token){saida.textContent='Sessão administrativa expirada. Entre novamente no Painel.';return;}
+  const resposta=await fetch(API_CHAVES_HOMOLOGACAO+'/api/admin/chaves/estado',{
+   method:'GET',headers:{Authorization:'Bearer '+sessao.access_token},
+   credentials:'omit',cache:'no-store',signal:AbortSignal.timeout(8000)
+  });
+  if(resposta.status===401||resposta.status===403){saida.textContent='Esta sessão não foi autorizada pela API de homologação.';return;}
+  if(!resposta.ok)throw Error('API indisponível');
+  const dados=await resposta.json();
+  if(dados?.ambiente!=='homologacao')throw Error('Ambiente inesperado');
+  saida.textContent='Sessão reconhecida pela API de homologação. A recuperação desta solicitação permanece bloqueada até a validação independente da identidade e do WhatsApp.';
+ }catch{saida.textContent='Não foi possível confirmar a integração. Nenhuma chave foi alterada.';}
+ finally{botao.disabled=false;}
+}
+
 async function executarOperacaoChave(acao){
  if(!['emitir','revogar'].includes(acao))return;
  const id=document.getElementById('chaveSolicitacaoId')?.value.trim();
@@ -2144,6 +2166,8 @@ async function carregarSolicitacoes() {
             <div class="gestao-body">
               <p style="font-size:13px;line-height:1.5;margin:0">A recuperação da chave privada desta solicitação ainda não está habilitada. A confirmação do WhatsApp, a verificação independente de identidade e a autorização administrativa precisam ser validadas antes da liberação.</p>
               <p style="font-size:12px;margin:9px 0 0;color:#64748b">Nenhuma chave será emitida ou revogada por esta tela enquanto a integração segura estiver pendente.</p>
+              <button type="button" onclick="verificarRecuperacaoSolicitacao(${id},this)" style="margin-top:10px">Verificar autorização na homologação</button>
+              <div data-resultado-recuperacao role="status" aria-live="polite" style="font-size:12px;margin-top:8px"></div>
             </div>
           </section>
 
