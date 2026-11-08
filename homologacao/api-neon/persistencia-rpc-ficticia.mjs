@@ -3,7 +3,8 @@
 // informado pelo cliente. As RPCs têm IDs fixos e permissões mínimas.
 const rotas=Object.freeze({
  'LEGADO-EMISSAO-TESTE-900004':{id:900004,funcao:'emitir_chave_legada_teste_900004'},
- 'LEGADO-EMISSAO-TESTE-900005':{id:900005,funcao:'emitir_chave_legada_teste_900005'}
+ 'LEGADO-EMISSAO-TESTE-900005':{id:900005,funcao:'emitir_chave_legada_teste_900005'},
+ 'LEGADO-EMISSAO-TESTE-900006':{id:900006,funcao:'emitir_chave_legada_teste_900006'}
 });
 export function criarPersistenciaRpcFicticia({consultar}={}){
  if(typeof consultar!=='function')throw Error('Executor privado obrigatório');
