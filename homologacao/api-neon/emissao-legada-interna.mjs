@@ -12,10 +12,10 @@ export function criarEmissorLegado({verificarIdentidade,persistirHash,auditar}={
    const confirmado=await verificarIdentidade({protocolo:protocolo.trim(),comprovante});
    if(!confirmado || !Number.isSafeInteger(confirmado.solicitacaoId) || confirmado.solicitacaoId<=0)throw Error('Identidade não confirmada');
    const emissao=prepararChaveLegada({protocolo,identidadeVerificada:true});
-   // Persistir somente o hash, nunca a chave. A operação deve ser transacional
-   // e ter controle de unicidade no adaptador real, ainda não implementado.
+   // A auditoria deve ser realizada ANTES da gravação para não entregar
+   // chave sem trilha mínima de auditoria. Produção exigirá auditoria atômica.
+   await auditar({evento:'chave_legada_solicitada',protocolo:emissao.protocolo});
    await persistirHash({protocolo:emissao.protocolo,hash:emissao.hash,solicitacaoId:confirmado.solicitacaoId});
-   await auditar({evento:'chave_legada_emitida',protocolo:emissao.protocolo});
    return {protocolo:emissao.protocolo,chave:emissao.chave};
   }
  };
