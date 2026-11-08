@@ -21,15 +21,16 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
     // Rota de homologação sintética, nunca disponível sem injeção explícita.
     const sintese = req.url === '/api/homologacao/decisao-sintetica-900007' && req.method === 'POST';
     const adminLista = req.url === '/api/admin/recuperacoes' && req.method === 'GET';
+    const adminRecuperacaoCodigo = req.url === '/api/admin/chaves/iniciar-confirmacao' && req.method === 'POST';
     const adminChavesEstado = req.url === '/api/admin/chaves/estado' && req.method === 'GET';
     const adminDecisao = req.method === 'POST' ? /^\/api\/admin\/recuperacoes\/([0-9]+)\/decisao$/.exec(req.url || '') : null;
     const adminChaves = req.method === 'POST' ? /^\/api\/admin\/chaves\/(emitir|revogar)$/.exec(req.url || '') : null;
-    const admin = adminChavesEstado || adminLista || sintese || (adminDecisao && req.method === 'POST') || !!adminChaves;
+    const admin = adminRecuperacaoCodigo || adminChavesEstado || adminLista || sintese || (adminDecisao && req.method === 'POST') || !!adminChaves;
     const confirmarCodigo = req.url === '/api/cidadao/confirmar-codigo' && req.method === 'POST';
     const solicitar = req.url === '/api/recuperacao/solicitar' && req.method === 'POST';
     const consultar = req.url === '/api/solicitacoes/consultar' && req.method === 'POST';
     if (!admin && !solicitar && !consultar && !confirmarCodigo) return send(404, {erro:'Rota não encontrada'});
-    if (solicitar || consultar || adminChaves || confirmarCodigo) {
+    if (solicitar || consultar || adminChaves || confirmarCodigo || adminRecuperacaoCodigo) {
       // Endereço da conexão TCP, nunca X-Forwarded-For fornecido pelo cliente.
       // Uso apenas em homologação local; produção requer limite distribuído.
       const endereco = req.socket.remoteAddress || 'desconhecido';
@@ -44,7 +45,7 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
       if (autorizado !== true) return send(403, {erro:'Acesso negado'});
     }
     if (adminChavesEstado) return send(200,{emissaoHabilitada:typeof operacoesChaves?.emitir==='function',revogacaoHabilitada:typeof operacoesChaves?.revogar==='function',ambiente:'homologacao'});
-    const handler = confirmarCodigo ? confirmacaoCidadao?.confirmar : adminChaves ? operacoesChaves?.[adminChaves[1]] : sintese ? registrarDecisaoSintetica : adminLista ? operacoes.listar : adminDecisao ? operacoes.decidir : solicitar ? operacoes.solicitar : operacoes.consultar;
+    const handler = adminRecuperacaoCodigo ? iniciarRecuperacao : confirmarCodigo ? confirmacaoCidadao?.confirmar : adminChaves ? operacoesChaves?.[adminChaves[1]] : sintese ? registrarDecisaoSintetica : adminLista ? operacoes.listar : adminDecisao ? operacoes.decidir : solicitar ? operacoes.solicitar : operacoes.consultar;
     if (typeof handler !== 'function') return send(503, {erro:'Integração com banco ainda não habilitada'});
     let dados = {};
     if (req.method === 'POST') {
@@ -68,7 +69,7 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
       if (confirmada !== true) return send(403,{erro:'Identidade não confirmada pelo servidor'});
     }
     try {
-      const resultado = sintese ? await handler({protocolo: dados.protocolo, referenciaOperador: dados.referenciaOperador, registroId: dados.registroId, tokenOperador: req.headers.authorization.slice(7)}) : adminChaves ? await handler({dados,token:req.headers.authorization.slice(7)}) : await handler({dados, pedidoId: adminDecisao?.[1]});
+      const resultado = sintese ? await handler({protocolo: dados.protocolo, referenciaOperador: dados.referenciaOperador, registroId: dados.registroId, tokenOperador: req.headers.authorization.slice(7)}) : (adminChaves || adminRecuperacaoCodigo) ? await handler({dados,token:req.headers.authorization.slice(7)}) : await handler({dados, pedidoId: adminDecisao?.[1]});
       return send(200, resultado);
     } catch { return send(503, {erro:'Operação indisponível'}); }
   });
