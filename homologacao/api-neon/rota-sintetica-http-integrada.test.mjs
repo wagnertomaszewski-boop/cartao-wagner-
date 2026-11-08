@@ -15,7 +15,7 @@ async function executar({uidSessao=uid,identidadeConfirmada=true,assinaturaCorro
  const eventos=[];
  const {publicKey,privateKey}=generateKeyPairSync('ed25519');
  const agora=Date.now();
- const dados={protocolo,operador:referenciaOperador,registroId,conferenteId:'REV-TESTE-900007',verificada:true,identidadeConfirmada,verificadaEmMs:agora-1000};
+ const dados={protocolo,operador:referenciaOperador,registroId,conferenteId:'REV-CONFERENTE-EXTERNO',verificada:true,identidadeConfirmada,verificadaEmMs:agora-1000};
  const mensagem=Buffer.from(JSON.stringify(['mandato-evidencia-v1',dados.protocolo,dados.operador,dados.registroId,dados.conferenteId,dados.verificada,dados.identidadeConfirmada,dados.verificadaEmMs]));
  const assinatura=sign(null,mensagem,privateKey).toString('base64url');
  const handler=criarRegistroSinteticoAssinado900007({
@@ -24,7 +24,7 @@ async function executar({uidSessao=uid,identidadeConfirmada=true,assinaturaCorro
   operadoresPermitidos:{[uid]:referenciaOperador},
   buscarAuth:async()=>{eventos.push('auth');return {ok:true,json:async()=>({id:uidSessao,aud:'authenticated',is_anonymous:false})};},
   chavePublicaConferente:publicKey,
-  conferentesPermitidos:['REV-TESTE-900007'],
+  conferentesPermitidos:['REV-CONFERENTE-EXTERNO'],
   buscarAtestado:async()=>{eventos.push('atestado');return {dados,assinatura:assinaturaCorrompida?((assinatura[0]==='A'?'B':'A')+assinatura.slice(1)):assinatura};},
   auditar:async()=>{eventos.push('auditoria');if(auditoriaFalha)throw Error('falha de auditoria');},
   consultarNeon:async(sql,params)=>{eventos.push('rpc');assert.match(sql,/registrar_decisao_sintetica_900007/);assert.deepEqual(params,[protocolo,referenciaOperador,registroId]);return [{id:900007}];},
