@@ -102,3 +102,21 @@ test('rota sintética exige credenciais de administrador e libera pool se ausent
  await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})}),/Autenticação administrativa privada obrigatória/);
  assert.equal(fechamentos,1);
 });
+
+test('gestão de chaves nunca é ativada apenas por sinalizador',async()=>{
+ const consultas=[];
+ class Pool {
+  async end(){consultas.push('end');}
+ }
+ const env={
+  MANDATO_AMBIENTE:'homologacao',
+  HABILITAR_API_NEON:'sim',
+  DATABASE_URL:'postgresql://teste:senha@localhost:5432/neondb',
+  HABILITAR_GESTAO_CHAVES_HOMOLOGACAO:'sim'
+ };
+ await assert.rejects(
+  iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}})}),
+  /Gestão de chaves requer integração privada/
+ );
+ assert.deepEqual(consultas,['end']);
+});
