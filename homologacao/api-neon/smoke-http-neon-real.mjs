@@ -59,7 +59,21 @@ try {
   signal:AbortSignal.timeout(8000)
  });
  assert.notEqual(semChave.status,200,'Consulta sem chave deve ser rejeitada');
+ // Pedidos simultâneos com dados fictícios: o servidor não pode falhar nem
+ // revelar se o protocolo e o contato correspondem a um registro existente.
+ const recuperacoes=await Promise.all(Array.from({length:6},()=>fetch(base+'/api/recuperacao/solicitar',{
+  method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({protocolo:'TESTE-000006',whatsapp:'51999990019'}),
+  signal:AbortSignal.timeout(15000)
+ })));
+ const mensagens=[];
+ for(const r of recuperacoes){
+  assert.equal(r.status,200,'Recuperação simultânea deve retornar resposta neutra');
+  mensagens.push(await r.json());
+ }
+ assert.ok(mensagens.every(m=>JSON.stringify(m)===JSON.stringify(mensagens[0])));
+ assert.deepEqual(mensagens[0],{mensagem:'Se os dados corresponderem, o pedido será analisado.'});
  const admin=await fetch(base+'/api/admin/recuperacoes',{signal:AbortSignal.timeout(8000)});
  assert.equal(admin.status,401,'Rota administrativa deve exigir autenticação');
- console.log('PASS: HTTP-Neon real, health, CORS, limite de corpo, consulta fictícia, chave incorreta, chave ausente e admin protegido');
+ console.log('PASS: HTTP-Neon real, health, CORS, limite de corpo, consulta fictícia, chave incorreta, chave ausente, recuperações simultâneas e admin protegido');
 } finally {await instancia.fechar();}
