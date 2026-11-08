@@ -17,6 +17,8 @@ test('bloqueia protocolo e grava somente hash na transação',async()=>{
  assert.match(sql[3][0],/SELECT id/);
  assert.deepEqual(sql[4][1],['LEGADO-TESTE',hash]);
  assert.deepEqual(sql[5][1],[900003,'LEGADO-TESTE',hash]);
+ assert.match(sql[6][0],/INSERT INTO mandato_testes.auditoria_chaves_legadas/);
+ assert.deepEqual(sql[6][1],['LEGADO-TESTE',900003,'chave_legada_emitida']);
 });
 test('chave existente bloqueia segunda emissão',async()=>{
  const sql=[];
