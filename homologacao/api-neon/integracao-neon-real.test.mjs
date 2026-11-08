@@ -20,6 +20,16 @@ test('Neon real: RPC, chave correta, incorreta, revogada e bloqueio de tabela', 
  const {default:pg}=await import('pg');
  const pool=new pg.Pool({connectionString:url,ssl:{rejectUnauthorized:true},max:1,connectionTimeoutMillis:5000});
  try {
+  const identidade=await pool.query('SELECT current_user AS usuario,current_database() AS banco');
+  assert.equal(identidade.rows[0].usuario,'mandato_api_homologacao');
+  assert.equal(identidade.rows[0].banco,'neondb');
+  const permissoes=await pool.query(`SELECT
+   has_function_privilege(current_user,'mandato_chaves_homologacao.consultar_chave(text,bytea)','EXECUTE') AS pode_consultar,
+   has_table_privilege(current_user,'mandato_chaves_homologacao.chaves_acompanhamento','SELECT') AS pode_ler_hash,
+   has_table_privilege(current_user,'mandato_chaves_homologacao.chaves_acompanhamento','INSERT') AS pode_inserir_hash`);
+  assert.equal(permissoes.rows[0].pode_consultar,true);
+  assert.equal(permissoes.rows[0].pode_ler_hash,false);
+  assert.equal(permissoes.rows[0].pode_inserir_hash,false);
   const consulta=criarOperacaoConsultaNeonRestrita({pool});
   // Registros fictícios 900009 (revogado) e 900010 (ativo) criados previamente.
   // A chave real do 900010 não é recuperável: apenas seu hash é armazenado.
