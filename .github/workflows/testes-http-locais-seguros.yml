@@ -1,0 +1,22 @@
+name: Testes HTTP locais sem segredos
+on:
+  push:
+    branches: [feature/recuperacao-whatsapp-manual]
+    paths:
+      - 'homologacao/api-neon/**'
+      - '.github/workflows/testes-http-locais-seguros.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Suite completa isolada
+        working-directory: homologacao/api-neon
+        run: npm test
