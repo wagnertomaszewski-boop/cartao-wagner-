@@ -35,7 +35,7 @@ try {
  const funcoes=await pool.query(`
   SELECT has_function_privilege(current_user,
    'mandato_testes.emitir_chave_legada_teste_900005(text,bigint,text)','EXECUTE') AS api_executa,
-   has_function_privilege('PUBLIC',
+   has_function_privilege('mandato_cidadao_a',
    'mandato_testes.emitir_chave_legada_teste_900005(text,bigint,text)','EXECUTE') AS publico_executa
  `);
  assert.equal(funcoes.rows[0].api_executa,true,'Somente RPC fictícia deve ser acessível à API');
