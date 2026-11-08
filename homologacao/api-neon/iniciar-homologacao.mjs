@@ -3,6 +3,7 @@ import {criarRegistroSinteticoAssinado900007} from './registro-sintetico-assinad
 import {criarVerificadorAdmin} from './verificar-admin-supabase.mjs';
 import {criarOperacoesNeon} from './operacoes-neon.mjs';
 import {criarExecutoresPostgres} from './executores-postgres.mjs';
+import {criarOperacaoConsultaNeonRestrita} from './operacao-consulta-neon-restrita.mjs';
 
 // Inicialização de homologação local: NÃO habilita administração sem verificador real.
 // DATABASE_URL é segredo do servidor. Nunca incluir no frontend ou no GitHub.
@@ -40,9 +41,16 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  const operacoesNeon=criarOperacoesNeon({executarCidadao,executarAdmin});
  // Apenas consultas e pedidos de recuperação no banco de TESTES, com habilitação separada.
  // A decisão administrativa continua desabilitada até existir verificação real de identidade.
- const operacoes = env.HABILITAR_ROTAS_CIDADAO_TESTES === 'sim'
-  ? {solicitar:operacoesNeon.solicitar, consultar:operacoesNeon.consultar}
-  : {};
+ const consultaPrivadaAtiva=env.HABILITAR_CONSULTA_PRIVADA_HOMOLOGACAO==='sim';
+ if(consultaPrivadaAtiva && env.HABILITAR_ROTAS_CIDADAO_TESTES==='sim'){
+  await pool.end();
+  throw Error('Modos de consulta mutuamente exclusivos');
+ }
+ const operacoes = consultaPrivadaAtiva
+  ? {consultar:criarOperacaoConsultaNeonRestrita({pool})}
+  : env.HABILITAR_ROTAS_CIDADAO_TESTES === 'sim'
+   ? {solicitar:operacoesNeon.solicitar, consultar:operacoesNeon.consultar}
+   : {};
  // Sem autenticação de administrador integrada, o verificador sempre rejeita.
  const verificarAdmin = env.SUPABASE_ADMIN_UID && env.SUPABASE_PUBLISHABLE_KEY
   ? criarVerificadorAdmin({supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',chavePublica:env.SUPABASE_PUBLISHABLE_KEY,idsPermitidos:[env.SUPABASE_ADMIN_UID]})
