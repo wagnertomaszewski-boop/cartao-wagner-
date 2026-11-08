@@ -12,7 +12,7 @@ export function criarConferenteIdentidadeServidor({
   const {solicitacaoId,operadorId,acao}=pedido;
   if(!['emitir','revogar'].includes(acao)||
    !validarConferenciaManual({solicitacaoId,operadorId,confirmacaoWhatsapp:true,
-    conferenciaPessoal:true,reautenticacaoRecente:true,justificativa:'Verificação preliminar do identificador.'}))
+    conferenciaPessoal:true,reatenticacaoRecente:true,justificativa:'Verificação preliminar do identificador.'}))
    return false;
   // Consultas sequenciais para evitar solicitar evidências sensíveis sem necessidade.
   // Cada provedor deve consultar estado persistido e autenticado, não dados do pedido.
@@ -28,7 +28,7 @@ export function criarConferenteIdentidadeServidor({
     !Number.isSafeInteger(tempo)||!Number.isSafeInteger(reauth?.confirmadoEm)||
     reauth.confirmadoEm>tempo||tempo-reauth.confirmadoEm>300000)return false;
    const conferencia={confirmacaoWhatsapp:true,conferenciaPessoal:true,
-    reautenticacaoRecente:true,justificativa:pessoal.justificativa};
+    reatenticacaoRecente:true,reautenticacaoRecente:true,justificativa:pessoal.justificativa};
    return validarConferenciaManual({...conferencia,solicitacaoId,operadorId})?conferencia:false;
   }catch{return false;}
  };
