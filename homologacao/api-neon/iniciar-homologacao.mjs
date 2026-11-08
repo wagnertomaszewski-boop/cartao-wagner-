@@ -113,6 +113,47 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
   });
   operacoesChaves=criarOperacoesChavesPainel({resolverOperador,gestor});
  }
+ // Fluxo assinado real de homologação: role separada com EXECUTE apenas na RPC.
+ // Não habilitar com chave pública ou credencial ausente; não reutilizar o pool de consulta.
+ let poolEscrita=null;
+ if(env.HABILITAR_CHAVES_ASSINADAS_HOMOLOGACAO==='sim'){
+  const [{criarGestaoChavesAssinadas},{criarOperacoesChavesPainel},{criarResolvedorOperadorAdmin}]=await Promise.all([
+   import('./gestao-chaves-assinadas.mjs'),
+   import('./operacoes-chaves-painel.mjs'),
+   import('./verificar-admin-supabase.mjs')
+  ]);
+  try{
+   if(operacoesChaves||!env.SUPABASE_ADMIN_UID||!env.SUPABASE_PUBLISHABLE_KEY||
+    !env.CHAVES_CONFERENTE_PUBLICA_PEM||!env.CHAVES_DATABASE_URL)
+    throw Error('Credenciais independentes obrigatórias para chaves assinadas');
+   const urlEscrita=new URL(env.CHAVES_DATABASE_URL);
+   if(urlEscrita.hostname!==host||decodeURIComponent(urlEscrita.username)!=='mandato_chaves_escrita_hml'||
+    !urlEscrita.password||['sslmode','sslcert','sslkey','sslrootcert'].some(k=>urlEscrita.searchParams.has(k)))
+    throw Error('Conta de escrita Neon não autorizada');
+   poolEscrita=new pg.Pool({connectionString:env.CHAVES_DATABASE_URL,ssl:local?false:{rejectUnauthorized:true},max:2,connectionTimeoutMillis:3000,idleTimeoutMillis:10000});
+   // Confirma privilégio de RPC e ausência de escrita direta ANTES de expor as rotas.
+   const direitos=await poolEscrita.query(`SELECT
+    has_function_privilege(current_user,'mandato_chaves_homologacao.aplicar_chave_privada(bigint,uuid,text,bytea,text,timestamptz)','EXECUTE') AS rpc,
+    has_table_privilege(current_user,'mandato_chaves_homologacao.chaves_acompanhamento','UPDATE') AS update_direto,
+    has_table_privilege(current_user,'mandato_chaves_homologacao.nonces_atestados','INSERT') AS insert_direto`);
+   if(direitos.rows?.[0]?.rpc!==true||direitos.rows[0].update_direto!==false||direitos.rows[0].insert_direto!==false)
+    throw Error('Privilégios de escrita incompatíveis');
+   const resolverOperador=criarResolvedorOperadorAdmin({
+    supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',
+    chavePublica:env.SUPABASE_PUBLISHABLE_KEY,idsPermitidos:[env.SUPABASE_ADMIN_UID]
+   });
+   const gestao=criarGestaoChavesAssinadas({
+    chavePublicaPem:env.CHAVES_CONFERENTE_PUBLICA_PEM,
+    poolEscrita,
+    operadorPermitido:async({operadorId})=>operadorId===env.SUPABASE_ADMIN_UID
+   });
+   operacoesChaves=criarOperacoesChavesPainel({resolverOperador,gestor:gestao});
+  }catch(erro){
+   if(poolEscrita)await poolEscrita.end();
+   await pool.end();
+   throw erro;
+  }
+ }
  const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas,registrarDecisaoSintetica,operacoesChaves});
- return {servidor,fechar:async()=>{try {if (servidor.listening) await new Promise((resolve,reject)=>servidor.close(erro=>erro?reject(erro):resolve()));} finally {await pool.end();}}};
+ return {servidor,fechar:async()=>{try {if (servidor.listening) await new Promise((resolve,reject)=>servidor.close(erro=>erro?reject(erro):resolve()));} finally {await Promise.all([pool.end(),poolEscrita?.end()]);}}};
 }
