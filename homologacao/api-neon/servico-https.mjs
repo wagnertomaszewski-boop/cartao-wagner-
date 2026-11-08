@@ -3,7 +3,14 @@
 import {iniciarHomologacao} from './iniciar-homologacao.mjs';
 const porta=Number(process.env.PORT||10000);
 if(!Number.isInteger(porta)||porta<1||porta>65535) throw Error('PORT inválida');
-const instancia=await iniciarHomologacao();
+// O modo isolado não deve sequer configurar verificadores Supabase legados.
+const envLegado=process.env.AUTH_HML_ATIVA==='sim'?{
+ ...process.env,SUPABASE_ADMIN_UID:'',SUPABASE_PUBLISHABLE_KEY:'',
+ HABILITAR_DECISAO_SINTETICA_900007:'nao',HABILITAR_GESTAO_CHAVES_HOMOLOGACAO:'nao',
+ HABILITAR_CHAVES_ASSINADAS_HOMOLOGACAO:'nao',HABILITAR_CONFIRMACAO_CIDADAO_HOMOLOGACAO:'nao',
+ HABILITAR_RECUPERACAO_MANUAL_HOMOLOGACAO:'nao',HABILITAR_CONCLUSAO_RECUPERACAO_HOMOLOGACAO:'nao'
+}:process.env;
+const instancia=await iniciarHomologacao({env:envLegado});
 let authHml=null;
 if(process.env.AUTH_HML_ATIVA==='sim'){
  const {criarServidorAuthHml}=await import('./servidor-auth-hml.mjs');
@@ -11,7 +18,7 @@ if(process.env.AUTH_HML_ATIVA==='sim'){
  const anterior=instancia.servidor.listeners('request')[0];
  instancia.servidor.removeAllListeners('request');
  instancia.servidor.on('request',async(req,res)=>{
-  if(req.url?.startsWith('/api/admin/')){
+  if(req.url?.startsWith('/api/admin/')||req.url?.startsWith('/api/homologacao/')){
    res.writeHead(410,{'Content-Type':'application/json','Cache-Control':'no-store'});
    return res.end(JSON.stringify({erro:'Use o console administrativo isolado /hml/'}));
   }
