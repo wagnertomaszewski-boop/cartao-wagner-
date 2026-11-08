@@ -31,7 +31,7 @@ test('HTTP -> sessão -> identidade -> transação -> auditoria: emite e revoga'
   auditar:criarAuditorChavesNeon()
  });
  const operacoesChaves=criarOperacoesChavesPainel({resolverOperador:async token=>token===TOKEN?ADMIN:null,gestor});
- await comServidor({verificarAdmin:async token=>token===TOKEN,operacoesChaves},async base=>{
+ await comServidor({verificarAdmin:async token=>token===TOKEN,verificarMfaOperacao:async()=>true,operacoesChaves},async base=>{
   for(const acao of ['emitir','revogar']){
    const r=await fetch(base+'/api/admin/chaves/'+acao,{
     method:'POST',headers:{Authorization:'Bearer '+TOKEN,'Content-Type':'application/json'},
@@ -57,7 +57,7 @@ test('HTTP nega comprovante falso sem abrir transação',async()=>{
   auditar:async()=>{}
  });
  const operacoesChaves=criarOperacoesChavesPainel({resolverOperador:async()=>ADMIN,gestor});
- await comServidor({verificarAdmin:async()=>true,operacoesChaves},async base=>{
+ await comServidor({verificarAdmin:async()=>true,verificarMfaOperacao:async()=>true,operacoesChaves},async base=>{
   const r=await fetch(base+'/api/admin/chaves/emitir',{method:'POST',headers:{Authorization:'Bearer '+TOKEN,'Content-Type':'application/json'},body:JSON.stringify(DADOS)});
   assert.equal(r.status,503);
  });
