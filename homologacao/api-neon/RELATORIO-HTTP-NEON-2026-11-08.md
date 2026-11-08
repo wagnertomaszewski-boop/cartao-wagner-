@@ -22,3 +22,14 @@ A integração HTTP→PostgreSQL→RPC permanece **reprovada**. Não redefinir s
 4. Depois testar negação de credenciais incorretas, rate limit, CORS, isolamento de dados e permissões mínimas; somente então propor migração por etapas com rollback.
 
 Este relatório distingue testes efetivamente executados de verificações futuras.
+
+## Atualização verificada — 08/11/2026, 18:46 UTC (consulta de logs)
+
+**A classificação anterior de bloqueio HTTP→Neon por 28P01 não é mais o estado mais recente.** Os logs de aplicação do Render mostram, às 18:43:26 UTC, os eventos exatos:
+
+- `AUTOTESTE_NEON_DIAGNOSTICO: status=200; forma=resultado-array`
+- `AUTOTESTE_NEON_RESTRITO_OK: HTTP -> PostgreSQL -> RPC, sem correspondência`
+
+Esses registros são evidência de um autoteste HTTP→PostgreSQL→RPC bem-sucedido com **consulta sem correspondência**; não provam leitura de uma solicitação real nem emissão/revogação de chave. O deploy `dep-dboc5dss728c73a1st3g` ficou `live` às 18:43:36 UTC, e o deploy posterior `dep-dboc69h42hec73d8ni9g` (commit `cfea6384b68ce81c218459047904f1ad625591e4`) ficou `live` às 18:45:26 UTC. O último build informou 0 vulnerabilidades em 15 pacotes auditados, o que não equivale a auditoria de segurança da aplicação.
+
+**Resultado:** autenticação SQL e caminho HTTP–Neon estão comprovados **para o autoteste restrito registrado**, mas ainda não há evidência de testes E2E de recuperação com identidade independente, chave anterior revogada e nova chave válida. Manter as funcionalidades públicas de recuperação/emissão desabilitadas; não mexer em produção.
