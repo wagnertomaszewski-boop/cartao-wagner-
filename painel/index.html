@@ -2225,6 +2225,8 @@ async function removerLembrete(id){
 }
 
 async function salvarEncaminhamentoPrefeitura(id,botao){
+  // Evita requisições duplicadas enquanto uma operação anterior está em andamento.
+  if(botao?.disabled)return;
   if(!/^[1-9]\d*$/.test(String(id)) || !Number.isSafeInteger(Number(id))){alert("Identificador da solicitação inválido.");return;}
   const data=document.getElementById("encaminhado-prefeitura-"+id)?.value||null;
   const protocolo=document.getElementById("protocolo-prefeitura-"+id)?.value.trim()||null;
@@ -2266,6 +2268,8 @@ async function salvarEncaminhamentoPrefeitura(id,botao){
   finally{botao.disabled=false;}
 }
 async function registrarHistoricoFiscalizacaoMandato(id,botao){
+  // Evita requisições duplicadas enquanto uma operação anterior está em andamento.
+  if(botao?.disabled)return;
   if(!/^[1-9]\d*$/.test(String(id)) || !Number.isSafeInteger(Number(id))){alert("Identificador da solicitação inválido.");return;}
   const tipos=["encaminhamento","cobranca","retorno","verificacao"];
   const entrada=prompt("Tipo: encaminhamento, cobranca, retorno ou verificacao","cobranca");
@@ -2331,6 +2335,8 @@ async function registrarHistoricoFiscalizacaoMandato(id,botao){
   finally{botao.disabled=false;}
 }
 async function consultarHistoricoFiscalizacaoMandato(id,botao){
+  // Evita requisições duplicadas enquanto uma operação anterior está em andamento.
+  if(botao?.disabled)return;
   if(!/^[1-9]\d*$/.test(String(id)) || !Number.isSafeInteger(Number(id))){alert("Identificador da solicitação inválido.");return;}
   const destino=document.getElementById("historico-fiscalizacao-"+id);
   if(!destino)return;
