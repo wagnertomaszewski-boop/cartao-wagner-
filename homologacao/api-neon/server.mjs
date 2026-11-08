@@ -17,7 +17,7 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
       res.writeHead(204,{...cabecalhosCors,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Max-Age':'600','Cache-Control':'no-store'});
       return res.end();
     }
-    if (req.url === '/health' && req.method === 'GET') return send(200, {status:'ok', modo:'homologacao', rotasCidadaoHabilitadas:typeof operacoes.solicitar==='function' && typeof operacoes.consultar==='function'});
+    if (req.url === '/health' && req.method === 'GET') return send(200, {status:'ok', modo:'homologacao', rotasCidadaoHabilitadas:typeof operacoes.solicitar==='function' && typeof operacoes.consultar==='function',consultaPrivadaHabilitada:typeof operacoes.consultar==='function' && typeof operacoes.solicitar!=='function'});
     // Rota de homologação sintética, nunca disponível sem injeção explícita.
     const sintese = req.url === '/api/homologacao/decisao-sintetica-900007' && req.method === 'POST';
     const adminLista = req.url === '/api/admin/recuperacoes' && req.method === 'GET';
