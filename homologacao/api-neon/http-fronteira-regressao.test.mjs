@@ -55,7 +55,7 @@ test('tokens com espaços ou esquema incorreto são recusados antes do verificad
     verificarAdmin: async () => { autenticacoes++; return true; },
     operacoes: { listar: async () => { operacoes++; return []; } }
   }, async base => {
-    for (const valor of ['Basic abc', 'Bearer ', 'Bearer abc def', 'Bearer abc\\tdef']) {
+    for (const valor of ['Basic abc', 'Bearer ', 'Bearer abc def', 'Bearer abc\tdef']) {
       const resposta = await fetch(base + '/api/admin/recuperacoes', { headers: { Authorization: valor } });
       assert.equal(resposta.status, 401, valor);
     }
