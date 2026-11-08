@@ -2246,7 +2246,7 @@ async function salvarEncaminhamentoPrefeitura(id,botao){
     });
     const retorno=await resp.json().catch(()=>[]);
     if(!resp.ok || !Array.isArray(retorno) || retorno.length!==1)throw new Error(retorno.message||"Não foi possível confirmar a gravação.");
-    if(retorno[0].encaminhado_prefeitura_em!==data || (retorno[0].protocolo_prefeitura||null)!==protocolo)throw new Error("O servidor não confirmou os valores informados.");
+    if(String(retorno[0].id)!==String(id) || retorno[0].encaminhado_prefeitura_em!==data || (retorno[0].protocolo_prefeitura||null)!==protocolo)throw new Error("O servidor não confirmou os valores informados.");
     // Leitura independente após o PATCH: não considerar a operação concluída
     // apenas porque a resposta de escrita repetiu os valores enviados.
     const verificacao=await requisicao(
@@ -2255,7 +2255,7 @@ async function salvarEncaminhamentoPrefeitura(id,botao){
     );
     const persistidos=await verificacao.json().catch(()=>[]);
     if(!verificacao.ok || !Array.isArray(persistidos) || persistidos.length!==1 ||
-       persistidos[0].encaminhado_prefeitura_em!==data ||
+       String(persistidos[0].id)!==String(id) || persistidos[0].encaminhado_prefeitura_em!==data ||
        (persistidos[0].protocolo_prefeitura||null)!==protocolo){
       throw new Error("A gravação foi enviada, mas a leitura de confirmação falhou. Recarregue o painel antes de tentar novamente para evitar duplicidade.");
     }
