@@ -17,7 +17,7 @@ export function criarOperacoesChavesPainel({resolverOperador,gestor}={}) {
    solicitacaoId:String(dados.solicitacaoId),
    operadorId,
    atestado:dados.atestado,
-   contexto:{origem:'painel',token}
+   contexto:{origem:'painel'}
   });
  }
  return Object.freeze({
