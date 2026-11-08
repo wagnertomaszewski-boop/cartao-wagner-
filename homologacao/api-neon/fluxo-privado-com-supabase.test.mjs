@@ -6,7 +6,7 @@ const protocolo='LEGADO-EMISSAO-TESTE-900006';
 function criar({autorizarOperador=async()=>true,conferirIdentidade=async()=>true}={}){
  const eventos=[];
  const fluxo=criarFluxoPrivadoComSupabase({
-  supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',
+  supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',supabaseProjectRef:'pmmsdjozyyxkbuqlkfpb',
   supabaseServiceRoleKey:'x'.repeat(32),
   segredoComprovante:randomBytes(32),
   autorizarOperador,conferirIdentidade,
