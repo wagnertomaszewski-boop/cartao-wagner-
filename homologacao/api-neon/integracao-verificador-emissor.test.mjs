@@ -33,3 +33,17 @@ test('integração: vínculo divergente bloqueia emissão sem efeitos',async()=>
  await assert.rejects(()=>emissor.emitir({protocolo:'LEGADO-TESTE',comprovante:'x'}),/Identidade não confirmada/);
  assert.equal(efeitos,0);
 });
+
+test('integração: espaços externos são normalizados em validação e gravação',async()=>{
+ let persistido;
+ const verificarIdentidade=criarVerificadorVinculoLegado({
+  validarComprovante:async()=>true,
+  buscarVinculo:async({protocolo})=>({protocolo,solicitacaoId:900004})
+ });
+ const emissor=criarEmissorLegado({verificarIdentidade,
+  auditar:async()=>{},persistirHash:async dados=>{persistido=dados}
+ });
+ const retorno=await emissor.emitir({protocolo:'  LEGADO-TESTE  ',comprovante:'x'});
+ assert.equal(retorno.protocolo,'LEGADO-TESTE');
+ assert.equal(persistido.protocolo,'LEGADO-TESTE');
+});
