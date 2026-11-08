@@ -19,8 +19,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: homologacao/api-neon/package-lock.json
       - name: Exigir ambiente isolado e fixture privada
         shell: bash
         run: |
@@ -30,7 +28,7 @@ jobs:
           test -n "$TESTE_CHAVE_PRIVADA" || { echo 'Chave sintetica ausente'; exit 1; }
       - name: Instalar dependencias fixadas
         working-directory: homologacao/api-neon
-        run: npm ci --ignore-scripts
+        run: npm install --no-package-lock --ignore-scripts
       - name: HTTP Node PostgreSQL Neon real
         working-directory: homologacao/api-neon
         run: node --test integracao-http-neon-real.test.mjs
