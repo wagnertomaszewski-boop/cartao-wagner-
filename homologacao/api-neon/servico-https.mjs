@@ -4,6 +4,21 @@ import {iniciarHomologacao} from './iniciar-homologacao.mjs';
 const porta=Number(process.env.PORT||10000);
 if(!Number.isInteger(porta)||porta<1||porta>65535) throw Error('PORT inválida');
 const instancia=await iniciarHomologacao();
+let authHml=null;
+if(process.env.AUTH_HML_ATIVA==='sim'){
+ const {criarServidorAuthHml}=await import('./servidor-auth-hml.mjs');
+ try{authHml=await criarServidorAuthHml();}catch(e){await instancia.fechar();throw e;}
+ const anterior=instancia.servidor.listeners('request')[0];
+ instancia.servidor.removeAllListeners('request');
+ instancia.servidor.on('request',async(req,res)=>{
+  if(req.url?.startsWith('/api/admin/')){
+   res.writeHead(410,{'Content-Type':'application/json','Cache-Control':'no-store'});
+   return res.end(JSON.stringify({erro:'Use o console administrativo isolado /hml/'}));
+  }
+  if(await authHml.handler(req,res))return;
+  return anterior(req,res);
+ });
+}
 try {
  await new Promise((resolve,reject)=>{
   instancia.servidor.once('error',reject);
@@ -31,14 +46,14 @@ try {
   console.log('AUTOTESTE_NEON_RESTRITO_OK: HTTP -> PostgreSQL -> RPC, sem correspondência');
  }
 } catch (erro) {
- await instancia.fechar();
+ await Promise.all([instancia.fechar(),authHml?.fechar()]);
  throw erro;
 }
 let encerrando=false;
 async function encerrar(){
  if(encerrando)return;
  encerrando=true;
- try{await instancia.fechar();process.exitCode=0;}catch{process.exitCode=1;}
+ try{await Promise.all([instancia.fechar(),authHml?.fechar()]);process.exitCode=0;}catch{process.exitCode=1;}
 }
 process.once('SIGTERM',encerrar);
 process.once('SIGINT',encerrar);
