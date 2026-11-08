@@ -7,7 +7,7 @@ test('aprovacao manual decidida e vinculo conferido liberam emissor interno',asy
   buscarVinculo:async()=>({protocolo:'LEGADO-TESTE',solicitacaoId:900004}),
   consultarAprovacao:async(sql,args)=>{
    assert.match(sql,/status='aprovado'/);
-   assert.match(sql,/decidido_em IS NOT NULL/);
+   assert.match(sql,/decidido_em >= now\(\) - interval '24 hours'/);
    assert.deepEqual(args,[900004]);
    return [{id:77}];
   }
