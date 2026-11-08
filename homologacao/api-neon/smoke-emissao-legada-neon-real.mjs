@@ -25,7 +25,7 @@ try{
    p===protocolo && comprovante==='TESTE_INTERNO_FIXTURE_900004' ? {solicitacaoId:900004}:false,
   auditarTentativa:async()=>{}
  });
- const existente=await pool.query('SELECT 1 FROM mandato_testes.chaves_legadas WHERE protocolo=$1',[protocolo]);
+ // A conta de API não pode ler diretamente as tabelas internas.\n // Até existir RPC restrita com verificação de identidade confiável,\n // confirmar o bloqueio em vez de tentar contorná-lo com GRANT amplo.\n let negado=false;\n try { await pool.query('SELECT 1 FROM mandato_testes.chaves_legadas WHERE protocolo=$1',[protocolo]); }\n catch(e){ if(e.code==='42501')negado=true; else throw e; }\n assert.equal(negado,true,'A conta pública da API não pode ler a tabela de chaves');\n console.log('PASS: emissão direta bloqueada por privilégio mínimo; RPC interna ainda pendente');\n /* Fluxo de emissão intencionalmente desabilitado até a função interna segura.\n const existente=await pool.query('SELECT 1 FROM mandato_testes.chaves_legadas WHERE protocolo=$1',[protocolo]);
  if(existente.rows.length){
   console.log('SKIP: fixture já emitida; execução repetida não deve substituir a chave');
  }else{
