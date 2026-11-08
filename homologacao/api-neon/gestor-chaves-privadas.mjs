@@ -12,7 +12,7 @@ export function criarGestorChavesPrivadas({confirmarIdentidade,autorizarOperador
    typeof atestado!=='string' || atestado.length<16 || atestado.length>4096)
    throw Error('Dados inválidos');
   // Atestado e autorização são conferidos no servidor, nunca a partir de flags do navegador.
-  const identidade=await confirmarIdentidade({solicitacaoId:String(solicitacaoId),atestado,contexto});
+  const identidade=await confirmarIdentidade({solicitacaoId:String(solicitacaoId),atestado,contexto:{...contexto,acao}});
   if(identidade!==true)throw Error('Identidade não confirmada');
   const autorizado=await autorizarOperador({acao,solicitacaoId:String(solicitacaoId),operadorId,contexto});
   if(autorizado!==true)throw Error('Operador não autorizado');
