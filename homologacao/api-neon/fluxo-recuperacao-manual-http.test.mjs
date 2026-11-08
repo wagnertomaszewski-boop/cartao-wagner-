@@ -15,7 +15,7 @@ test('HTTP: admin inicia, cidadão confirma; não há liberação sem autorizaç
  const confirmacaoCidadao=criarOperacoesConfirmacaoCidadao({
   verificacao:{confirmar:async d=>{if(consumido||d.codigo!==codigo)return false;consumido=true;confirmacoes++;return true;}}
  });
- const srv=criarServidor({verificarAdmin:async t=>t===TOKEN,iniciarRecuperacao,confirmacaoCidadao});
+ const srv=criarServidor({verificarAdmin:async t=>t===TOKEN,verificarMfaOperacao:async()=>true,iniciarRecuperacao,confirmacaoCidadao});
  await new Promise(resolve=>srv.listen(0,'127.0.0.1',resolve));
  const url='http://127.0.0.1:'+srv.address().port;
  const post=(path,body,token)=>fetch(url+path,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(body)});
