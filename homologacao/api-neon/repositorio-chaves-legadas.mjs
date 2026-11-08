@@ -4,7 +4,7 @@ export function criarRepositorioChavesLegadas({transacionar}={}){
  if(typeof transacionar!=='function')throw Error('Transação obrigatória');
  return {
   async persistirHash({protocolo,hash,solicitacaoId}={}){
-   if(typeof protocolo!=='string'||!protocoloNormalizado||protocolo.length>40||!/^[a-f0-9]{64}$/.test(hash||'')||!Number.isSafeInteger(solicitacaoId)||solicitacaoId<=0)
+   if(typeof protocolo!=='string'||!protocolo.trim()||protocolo.length>40||!/^[a-f0-9]{64}$/.test(hash||'')||!Number.isSafeInteger(solicitacaoId)||solicitacaoId<=0)
     throw Error('Dados inválidos');
    const protocoloNormalizado=protocolo.trim();
    return transacionar(async executar=>{
