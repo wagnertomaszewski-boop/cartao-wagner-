@@ -21,6 +21,6 @@ jobs:
         with:
           node-version: '22'
       - name: Instalar dependências fixadas
-        run: npm ci --ignore-scripts
+        run: npm install --ignore-scripts --no-audit --no-fund
       - name: Executar testes sem credenciais externas
         run: npm test
