@@ -6,7 +6,7 @@ function fixture({enviado=true}={}){
  const verificar=criarVerificacaoWhatsapp({
   segredo:'segredo-de-homologacao-32-caracteres-no-minimo',
   agora:()=>1762600000000,
-  buscarContatoConfirmado:async()=>({telefone:'+55519999999999'}),
+  buscarContatoConfirmado:async()=>({telefone:'+5551999999999'}),
   enviarCodigo:async({codigo})=>{enviadoCodigo=codigo;return enviado;},
   armazenarDesafio:async d=>{desafio=d;},
   obterDesafio:async()=>{tentativas++;return usado||tentativas>5?null:desafio;},
