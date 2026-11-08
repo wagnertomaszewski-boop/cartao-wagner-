@@ -783,7 +783,7 @@ async function verificarRecuperacaoSolicitacao(id,botao){
   if(!resposta.ok)throw Error('API indisponível');
   const dados=await resposta.json();
   if(dados?.ambiente!=='homologacao')throw Error('Ambiente inesperado');
-  saida.textContent='Sessão reconhecida pela API de homologação. A recuperação desta solicitação permanece bloqueada até a validação independente da identidade e do WhatsApp.';
+  saida.textContent=dados.recuperacaoHabilitada===true?'Sessão reconhecida. A API informa recuperação habilitada, mas esta tela permanece bloqueada até a validação completa do fluxo.':'Sessão reconhecida. Recuperação ainda não habilitada na API de homologação; nenhuma chave foi alterada.';
  }catch{saida.textContent='Não foi possível confirmar a integração. Nenhuma chave foi alterada.';}
  finally{botao.disabled=false;}
 }
