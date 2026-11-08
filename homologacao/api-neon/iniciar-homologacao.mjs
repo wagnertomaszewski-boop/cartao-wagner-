@@ -58,11 +58,16 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
    !['conferentesPermitidos','operadoresPermitidos'].every(k=>Array.isArray(integracaoSintetica[k]) && integracaoSintetica[k].length>0) ||
    !integracaoSintetica.chavePublicaConferente)
   { await pool.end(); throw Error('Integração sintética privada obrigatória'); }
-  registrarDecisaoSintetica=criarRegistroSinteticoAssinado900007({
-   ...integracaoSintetica,
-   supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',
-   supabasePublishableKey:env.SUPABASE_PUBLISHABLE_KEY
-  });
+  try {
+   registrarDecisaoSintetica=criarRegistroSinteticoAssinado900007({
+    ...integracaoSintetica,
+    supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',
+    supabasePublishableKey:env.SUPABASE_PUBLISHABLE_KEY
+   });
+  } catch (erro) {
+   await pool.end();
+   throw erro;
+  }
  }
  const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas,registrarDecisaoSintetica});
  return {servidor,fechar:async()=>{try {if (servidor.listening) await new Promise((resolve,reject)=>servidor.close(erro=>erro?reject(erro):resolve()));} finally {await pool.end();}}};
