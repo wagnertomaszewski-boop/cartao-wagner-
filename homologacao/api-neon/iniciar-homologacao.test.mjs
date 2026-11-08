@@ -107,6 +107,7 @@ test('gestão de chaves nunca é ativada apenas por sinalizador',async()=>{
  const consultas=[];
  class Pool {
   async end(){consultas.push('end');}
+  async connect(){throw Error('Nenhuma conexão de banco deve ser aberta neste teste');}
  }
  const env={
   MANDATO_AMBIENTE:'homologacao',
