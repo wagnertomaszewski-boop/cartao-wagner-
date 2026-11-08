@@ -2266,7 +2266,7 @@ async function salvarEncaminhamentoPrefeitura(id,botao){
   finally{botao.disabled=false;}
 }
 async function registrarHistoricoFiscalizacaoMandato(id,botao){
-  if(!Number.isSafeInteger(Number(id)) || Number(id)<=0)return;
+  if(!/^[1-9]\d*$/.test(String(id)) || !Number.isSafeInteger(Number(id))){alert("Identificador da solicitação inválido.");return;}
   const tipos=["encaminhamento","cobranca","retorno","verificacao"];
   const entrada=prompt("Tipo: encaminhamento, cobranca, retorno ou verificacao","cobranca");
   if(entrada===null)return;
