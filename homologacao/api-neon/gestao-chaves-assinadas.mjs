@@ -19,6 +19,7 @@ export function criarGestaoChavesAssinadas({chavePublicaPem,poolEscrita,operador
   if(await confirmar({solicitacaoId,atestado,contexto:{acao}})!==true)
    throw Error('Identidade não confirmada');
   const p=JSON.parse(Buffer.from(atestado.split('.')[0],'base64url').toString('utf8'));
+  if(typeof p.operadorId!=='string'||p.operadorId.toLowerCase()!==String(operadorId).toLowerCase())throw Error('Atestado não pertence ao operador');
   const chave=acao==='emitir'?emitirChavePrivada():null;
   await executarRpc({
    solicitacaoId:String(solicitacaoId),operadorId,acao,
