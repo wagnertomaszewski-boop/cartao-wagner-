@@ -5,13 +5,13 @@ import {createPublicKey,verify} from 'node:crypto';
 const rx=/^[A-Za-z0-9-]{1,80}$/;
 function base64url(s){return typeof s==='string'&&/^[A-Za-z0-9_-]{64,256}$/.test(s);}
 export function criarFonteEvidenciaAssinada({
- chavePublicaConferente,buscarAtestado,relogio=()=>Date.now(),
+ chavePublicaConferente,buscarAtestado,conferentesPermitidos,relogio=()=>Date.now(),
  validadeMs=15*60*1000
 }={}){
  if(typeof buscarAtestado!=='function'||typeof relogio!=='function'||
   !Number.isSafeInteger(validadeMs)||validadeMs<1||validadeMs>15*60*1000)
   throw Error('Fonte independente obrigatória');
- const chave=chavePublicaConferente?.type==='public' ? chavePublicaConferente : createPublicKey(chavePublicaConferente);
+ if(!Array.isArray(conferentesPermitidos)||conferentesPermitidos.length===0||\n  !conferentesPermitidos.every(x=>typeof x==='string'&&/^REV-[A-Za-z0-9-]{4,40}$/.test(x)))\n  throw Error('Conferentes permitidos obrigatórios');\n const conferentes=new Set(conferentesPermitidos);\n const chave=chavePublicaConferente?.type==='public' ? chavePublicaConferente : createPublicKey(chavePublicaConferente);
  if(chave.asymmetricKeyType!=='ed25519')throw Error('Chave Ed25519 obrigatória');
  return async function verificarEvidencia({protocolo,referenciaOperador,registroId}={}){
   if(![protocolo,referenciaOperador,registroId].every(x=>typeof x==='string'&&rx.test(x))||
@@ -30,7 +30,7 @@ export function criarFonteEvidenciaAssinada({
   if(d.protocolo!==protocolo||d.operador!==referenciaOperador||
    d.registroId!==registroId||d.verificada!==true||d.identidadeConfirmada!==true||
    typeof d.conferenteId!=='string'||!/^REV-[A-Za-z0-9-]{4,40}$/.test(d.conferenteId)||
-   d.conferenteId==='REV-'+referenciaOperador.slice(3))return null;
+   !conferentes.has(d.conferenteId)||\n   d.conferenteId==='REV-'+referenciaOperador.slice(3))return null;
   const agora=relogio();
   if(!Number.isSafeInteger(agora)||!Number.isSafeInteger(d.verificadaEmMs)||
    d.verificadaEmMs>agora||agora-d.verificadaEmMs>validadeMs)return null;
