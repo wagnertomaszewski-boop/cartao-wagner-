@@ -30,15 +30,15 @@ try {
  assert.deepEqual(privilegios.rows[0],{
   insere_chaves:false,insere_acessos:false,insere_auditoria:false,le_solicitacoes:false
  },'Conta da API deve manter privilégios mínimos nas quatro tabelas');
- // A RPC de emissão fictícia deve permanecer restrita ao papel de serviço,
- // sem abrir INSERT nas tabelas ou EXECUTE para usuários públicos.
+ // As RPCs legadas devem estar bloqueadas inclusive para a API HTTP.
+ // A RPC sintética 900007 é a única exceção deste grupo em homologação.
  const funcoes=await pool.query(`
   SELECT has_function_privilege(current_user,
    'mandato_testes.emitir_chave_legada_teste_900005(text,bigint,text)','EXECUTE') AS api_executa,
    has_function_privilege('mandato_cidadao_a',
    'mandato_testes.emitir_chave_legada_teste_900005(text,bigint,text)','EXECUTE') AS publico_executa
  `);
- assert.equal(funcoes.rows[0].api_executa,true,'Somente RPC fictícia deve ser acessível à API');
+ assert.equal(funcoes.rows[0].api_executa,false,'RPC legada não deve ser acessível à API');
  assert.equal(funcoes.rows[0].publico_executa,false,'Emissão não pode ser pública');
  const contrato=await pool.query(`
   SELECT p.proname,pg_get_function_result(p.oid) AS retorno,
@@ -56,13 +56,13 @@ try {
  ],'As duas RPCs fictícias devem existir');
  for(const funcao of contrato.rows){
   assert.equal(funcao.retorno,'boolean','RPC deve confirmar gravação com boolean');
-  assert.equal(funcao.api_executa,true,'API deve executar RPC');
+  assert.equal(funcao.api_executa,false,'API não deve executar RPC legada');
   assert.equal(funcao.cidadao_executa,false,'Cidadão não deve executar RPC');
   assert.equal(funcao.limite_inferior,true,'Aprovação antiga não pode ser aceita');
   assert.equal(funcao.limite_superior,true,'Aprovação futura não pode ser aceita');
  }
- console.log('PASS: contrato real das duas RPCs, retorno booleano, permissões e janela de 24h');
- console.log('PASS: quatro tabelas protegidas contra acesso direto; emissão real aguarda RPC autorizada');
+ console.log('PASS: contrato real das duas RPCs legadas, retorno booleano, bloqueio de EXECUTE e janela de 24h');
+ console.log('PASS: quatro tabelas protegidas contra acesso direto; emissão legada bloqueada');
 }finally{
  await pool.end();
 }
