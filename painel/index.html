@@ -2228,7 +2228,8 @@ async function salvarEncaminhamentoPrefeitura(id,botao){
   const data=document.getElementById("encaminhado-prefeitura-"+id)?.value||null;
   const protocolo=document.getElementById("protocolo-prefeitura-"+id)?.value.trim()||null;
   const hojeISO=dataHojeISO();
-  if(data && data>hojeISO){alert("A data de encaminhamento não pode ser futura.");return;}
+  if(data && !/^\d{4}-\d{2}-\d{2}$/.test(data)){alert("Informe uma data válida de encaminhamento.");return;}
+  if(data && diasEntreDatasCivisMandato(data,hojeISO)<0){alert("A data de encaminhamento é inválida ou futura.");return;}
   if(!data && protocolo){alert("Informe também a data do encaminhamento.");return;}
   if(!data && !protocolo){alert("Para remover um encaminhamento já registrado, utilize um procedimento administrativo específico. Não é permitido apagar esses dados por engano.");return;}
   if(protocolo && protocolo.length>120){alert("O protocolo deve ter no máximo 120 caracteres.");return;}
