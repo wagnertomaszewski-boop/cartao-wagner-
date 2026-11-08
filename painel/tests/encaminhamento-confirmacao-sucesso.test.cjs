@@ -13,7 +13,7 @@ async function executar(modo){
  const registro={id:7,encaminhado_prefeitura_em:'2026-11-07',protocolo_prefeitura:'TEST-001'};
  const dependencias={
   document:{getElementById:id=>({'encaminhado-prefeitura-7':{value:'2026-11-07'},'protocolo-prefeitura-7':{value:'TEST-001'}})[id]},
-  dataHojeISO:()=> '2026-11-07',alert:s=>avisos.push(s),confirm:()=>true,
+  dataHojeISO:()=> '2026-11-07',diasEntreDatasCivisMandato:()=>0,alert:s=>avisos.push(s),confirm:()=>true,
   obterSessaoValida:async()=>({access_token:'fake'}),
   SUPABASE_URL:'https://example.invalid',SUPABASE_KEY:'fake',
   requisicao:async(url,options)=>{
