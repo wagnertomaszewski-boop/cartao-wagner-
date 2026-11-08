@@ -1,0 +1,39 @@
+name: Homologacao real HTTP e Neon (execucao autorizada)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integracao-real:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: homologacao-neon
+    env:
+      MANDATO_TESTE_NEON_REAL: sim
+      DATABASE_URL: ${{ secrets.NEON_HOMOLOGACAO_DATABASE_URL }}
+      NEON_HOST_HOMOLOGACAO: ${{ vars.NEON_HOST_HOMOLOGACAO }}
+      TESTE_PROTOCOLO_PRIVADO: ${{ vars.TESTE_PROTOCOLO_PRIVADO }}
+      TESTE_CHAVE_PRIVADA: ${{ secrets.TESTE_CHAVE_PRIVADA }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: homologacao/api-neon/package-lock.json
+      - name: Exigir ambiente isolado e fixture privada
+        shell: bash
+        run: |
+          test -n "$DATABASE_URL" || { echo 'Segredo DATABASE_URL ausente'; exit 1; }
+          test -n "$NEON_HOST_HOMOLOGACAO" || { echo 'Host homologacao ausente'; exit 1; }
+          test -n "$TESTE_PROTOCOLO_PRIVADO" || { echo 'Protocolo sintetico ausente'; exit 1; }
+          test -n "$TESTE_CHAVE_PRIVADA" || { echo 'Chave sintetica ausente'; exit 1; }
+      - name: Instalar dependencias fixadas
+        working-directory: homologacao/api-neon
+        run: npm ci --ignore-scripts
+      - name: HTTP Node PostgreSQL Neon real
+        working-directory: homologacao/api-neon
+        run: node --test integracao-http-neon-real.test.mjs
+      - name: Politicas e acesso minimo no banco real
+        working-directory: homologacao/api-neon
+        run: node --test integracao-neon-real.test.mjs
