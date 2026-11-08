@@ -1,0 +1,13 @@
+-- PLANO NÃO EXECUTADO. Somente Neon isolado proud-firefly-64745516.
+-- REG-TESTE-900007 já foi consumido e tem decisão única.
+-- O teste positivo novo deve usar REG-TESTE-900008, sem atualizar/deletar 900007.
+-- Pré-condições: auditoria de privilégios, backup da função atual e CI verde.
+-- Mudanças coordenadas necessárias:
+-- 1. ampliar CHECK registro_id para IN ('REG-TESTE-900007','REG-TESTE-900008');
+-- 2. ampliar a função registrar_decisao_sintetica_900007 apenas para registro 900008,
+--    mantendo protocolo e operador fixos, conferente externo, confirmada e anti-replay;
+-- 3. ampliar o adaptador HTTP para permitir exclusivamente 900008 no teste isolado;
+-- 4. inserir evidência 900008 apenas via fonte de atestado independente assinada;
+-- 5. testar HTTP->Ed25519->UID->auditoria->Neon, validar decisão e consumo único.
+-- Não reaproveitar, apagar ou reativar a evidência 900007.
+-- Não executar este arquivo como migração: é uma especificação de segurança.
