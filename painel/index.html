@@ -709,7 +709,7 @@
         <p>Emissão e revogação exigem autorização administrativa e comprovação de identidade pelo servidor.</p>
         <label for="chaveSolicitacaoId">ID da solicitação</label>
         <input id="chaveSolicitacaoId" type="text" inputmode="numeric" maxlength="16" placeholder="ID da solicitação" autocomplete="off">
-        <p role="status" aria-live="polite">Operação indisponível até a integração da identidade e auditoria no servidor.</p>
+        <p id="estadoAutorizacaoChaves" role="status" aria-live="polite">Verificando disponibilidade da integração segura…</p><button type="button" onclick="verificarIntegracaoChaves()" id="btnVerificarIntegracaoChaves">Verificar integração</button>
         <button type="button" disabled title="Aguardando autorização no servidor">Emitir nova chave</button>
         <button type="button" disabled title="Aguardando autorização no servidor">Revogar chave</button>
       </section>
@@ -750,6 +750,28 @@ const SUPABASE_KEY = "sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 const STORAGE_KEY = "wagner_admin_session_v2";
 const TEMPO_LIMITE_MS = 15000;
 const arquivosPendentesPorSolicitacao = new Map();
+
+// Diagnóstico somente de leitura. Nunca envia chave, protocolo ou sessão para a rota /health.
+const API_CHAVES_HOMOLOGACAO='https://mandato-neon-homologacao.onrender.com';
+async function verificarIntegracaoChaves(){
+ const estado=document.getElementById('estadoAutorizacaoChaves');
+ const botao=document.getElementById('btnVerificarIntegracaoChaves');
+ if(!estado||!botao)return;
+ botao.disabled=true;
+ estado.textContent='Verificando sessão e conexão segura…';
+ try{
+  const sessao=await obterSessaoValida();
+  if(!sessao?.access_token){estado.textContent='Faça login no Painel para continuar.';return;}
+  const resposta=await fetch(API_CHAVES_HOMOLOGACAO+'/health',{method:'GET',cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(8000)});
+  if(!resposta.ok)throw Error('Servidor indisponível');
+  const estadoApi=await resposta.json();
+  if(estadoApi?.modo!=='homologacao'||estadoApi?.consultaPrivadaHabilitada!==true)
+   throw Error('Consulta privada não habilitada');
+  estado.textContent='Conexão de homologação ativa. Emissão e revogação aguardam autorização e confirmação de identidade pelo servidor.';
+ }catch{
+  estado.textContent='Não foi possível confirmar a integração. As operações continuam bloqueadas.';
+ }finally{botao.disabled=false;}
+}
 
 function recarregarSemCache(){
   const base=location.href.split("?")[0].split("#")[0];
