@@ -71,3 +71,15 @@ test('hostname que apenas contém neon.tech não é aceito como Neon isolado',as
  const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',DATABASE_URL:'postgresql://usuario:senha@ep-isolado.neon.tech.atacante.example:5432/testes',NEON_HOST_HOMOLOGACAO:'ep-isolado.neon.tech.atacante.example'};
  await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>{throw Error('Não deveria conectar');}}),/Destino de homologação não autorizado/);
 });
+
+
+test('rota sintética rejeita dependências privadas de tipos incorretos e fecha pool',async()=>{
+ let fechamentos=0;
+ class Pool {async end(){fechamentos++;} async connect(){throw Error('Não deve consultar o banco');}}
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',HABILITAR_DECISAO_SINTETICA_900007:'sim',DATABASE_URL:'postgresql://usuario:senha@localhost:5432/testes'};
+ const base={chavePublicaConferente:'chave-de-teste',buscarAtestado:async()=>null,conferentesPermitidos:['REV-TESTE-900007'],operadoresPermitidos:['OP-TESTE-900007'],buscarAuth:async()=>null,consultarNeon:async()=>null,auditar:async()=>{}};
+ for(const [campo,invalido] of [['buscarAtestado',true],['buscarAuth',{}],['consultarNeon','nao-funcao'],['auditar',null],['conferentesPermitidos',[]],['operadoresPermitidos','texto'],['chavePublicaConferente',null]]){
+  await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}}),integracaoSintetica:{...base,[campo]:invalido}}),/Integração sintética privada obrigatória/,campo);
+ }
+ assert.equal(fechamentos,7,'Cada inicialização rejeitada deve liberar o pool');
+});
