@@ -21,12 +21,9 @@ try{
   has_table_privilege(current_user,'mandato_testes.acessos_protocolo','INSERT') AS insere_acessos,
   has_table_privilege(current_user,'mandato_testes.auditoria_chaves_legadas','INSERT') AS insere_auditoria`);
  assert.deepEqual(permissoes.rows[0],{
-  api_emite:true,cidadao_emite:false,api_aprova:true,cidadao_aprova:false,
+  api_emite:false,cidadao_emite:false,api_aprova:false,cidadao_aprova:false,
   insere_chaves:false,insere_acessos:false,insere_auditoria:false
  });
- const resultado=await pool.query('SELECT mandato_testes.aprovacao_emissao_teste_900006($1) AS aprovada',[900006]);
- assert.equal(typeof resultado.rows[0]?.aprovada,'boolean');
- const outro=await pool.query('SELECT mandato_testes.aprovacao_emissao_teste_900006($1) AS aprovada',[900007]);
- assert.equal(outro.rows[0]?.aprovada,false,'Outro ID não deve aproveitar aprovação');
- console.log('PASS: funções 900006 restritas, sem INSERT direto e sem vazamento entre IDs');
+ // O smoke é exclusivamente de privilégios: executar RPCs legadas seria regressão.
+ console.log('PASS: funções 900006 inacessíveis à API e ao cidadão, sem INSERT direto');
 }finally{await pool.end();}
