@@ -53,6 +53,25 @@ try {
  assert.equal(negado.status,200,'Consulta de chave incorreta deve ser neutra');
  assert.deepEqual(await negado.json(),{resultado:[],respostas:[],historico:[],anexos:[]},
   'Chave incorreta não pode liberar dados de solicitação existente');
+ // Validação positiva com chave SOMENTE fictícia, previamente registrada
+ // no banco Neon isolado. Não testa ou consulta protocolos de cidadãos reais.
+ const legadoValido=await fetch(base+'/api/solicitacoes/consultar',{
+  method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({protocolo:'LEGADO-TESTE-900003',chave:'CHAVE-FICTICIA-HOMOLOGACAO-900003-VALIDA-2026'}),
+  signal:AbortSignal.timeout(8000)
+ });
+ assert.equal(legadoValido.status,200,'Consulta legada válida não respondeu HTTP 200');
+ const legadoCorpo=await legadoValido.json();
+ assert.deepEqual(legadoCorpo.resultado,[{assunto:'Teste legado de homologação',status:'recebido'}],
+  'Chave válida deve retornar somente os dados autorizados do protocolo fictício');
+ assert.ok(Array.isArray(legadoCorpo.respostas) && Array.isArray(legadoCorpo.historico) && Array.isArray(legadoCorpo.anexos));
+ const legadoInvalido=await fetch(base+'/api/solicitacoes/consultar',{
+  method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({protocolo:'LEGADO-TESTE-900003',chave:'CHAVE-FICTICIA-HOMOLOGACAO-900003-ERRADA-2026'}),
+  signal:AbortSignal.timeout(8000)
+ });
+ assert.equal(legadoInvalido.status,200);
+ assert.deepEqual(await legadoInvalido.json(),{resultado:[],respostas:[],historico:[],anexos:[]});
  const semChave=await fetch(base+'/api/solicitacoes/consultar',{
   method:'POST',headers:{'Content-Type':'application/json'},
   body:JSON.stringify({protocolo:'TESTE-000006'}),
