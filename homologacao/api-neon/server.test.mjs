@@ -133,7 +133,7 @@ test('CORS autorizado não dispensa autenticação administrativa',async()=>{
 });
 
 test('rotas de chaves negam sem sessão e sem handler habilitado',async()=>{
- await comServidor({verificarAdmin:async token=>token==='admin-valido'},async base=>{
+ await comServidor({verificarAdmin:async token=>token==='admin-valido',limitador:{verificar:()=>true}},async base=>{
   for(const acao of ['emitir','revogar']){
    const url=base+'/api/admin/chaves/'+acao;
    assert.equal((await fetch(url,{method:'POST'})).status,401);
