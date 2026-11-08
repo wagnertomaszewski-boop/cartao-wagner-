@@ -15,7 +15,7 @@ try {
  if(process.env.HABILITAR_AUTOTESTE_NEON_HOMOLOGACAO==='sim'){
   const {randomBytes}=await import('node:crypto');
   const protocolo='TESTE-SEM-CORRESPONDENCIA-'+randomBytes(5).toString('hex').toUpperCase();
-  const chave=randomBytes(32).toString('hex');
+  const chave=randomBytes(32).toString('base64url');
   const url='http://127.0.0.1:'+porta+'/api/solicitacoes/consultar';
   const resposta=await fetch(url,{
    method:'POST',headers:{'Content-Type':'application/json'},
