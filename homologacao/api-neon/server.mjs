@@ -3,7 +3,7 @@ import {criarLimitador} from './limitador.mjs';
 
 // Handlers são injetados apenas pelo servidor, nunca definidos pelo navegador.
 // Sem handlers, as operações permanecem indisponíveis.
-export function criarServidor({verificarAdmin = async () => false, operacoes = {}, limitador = criarLimitador(), verificarIdentidade = async () => false, origensPermitidas = [], registrarDecisaoSintetica = null, operacoesChaves = null, confirmacaoCidadao = null, iniciarRecuperacao = null, concluirRecuperacao = null} = {}) {
+export function criarServidor({verificarAdmin = async () => false, operacoes = {}, limitador = criarLimitador(), verificarIdentidade = async () => false, origensPermitidas = [], registrarDecisaoSintetica = null, operacoesChaves = null, confirmacaoCidadao = null, iniciarRecuperacao = null, concluirRecuperacao = null, verificarMfaOperacao = async () => false} = {}) {
   const servidor = http.createServer(async (req, res) => {
     const origem = req.headers.origin;
     const origemAutorizada = typeof origem === 'string' && origensPermitidas.includes(origem);
@@ -44,6 +44,13 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
       let autorizado = false;
       try { autorizado = await verificarAdmin(header.slice(7)); } catch { autorizado = false; }
       if (autorizado !== true) return send(403, {erro:'Acesso negado'});
+    }
+    // Ações sensíveis exigem MFA confirmado pelo servidor, nunca um booleano do cliente.
+    if (adminChaves || adminRecuperacaoCodigo || adminConcluirRecuperacao) {
+      let mfaConfirmado = false;
+      try { mfaConfirmado = await verificarMfaOperacao({token:req.headers.authorization.slice(7)}); }
+      catch { mfaConfirmado = false; }
+      if (mfaConfirmado !== true) return send(403,{erro:'MFA administrativo obrigatório'});
     }
     if (adminChavesEstado) return send(200,{emissaoHabilitada:typeof operacoesChaves?.emitir==='function',revogacaoHabilitada:typeof operacoesChaves?.revogar==='function',recuperacaoHabilitada:typeof iniciarRecuperacao==='function' && typeof concluirRecuperacao==='function',ambiente:'homologacao'});
     const handler = adminConcluirRecuperacao ? concluirRecuperacao : adminRecuperacaoCodigo ? iniciarRecuperacao : confirmarCodigo ? confirmacaoCidadao?.confirmar : adminChaves ? operacoesChaves?.[adminChaves[1]] : sintese ? registrarDecisaoSintetica : adminLista ? operacoes.listar : adminDecisao ? operacoes.decidir : solicitar ? operacoes.solicitar : operacoes.consultar;
