@@ -18,7 +18,7 @@ test('atestado Ed25519 + comprovante: troca chave ativa, bloqueia replay e prese
  }};
  const emissor=criarEmissorAtestados({
   chavePrivadaPem:privateKey.export({format:'pem',type:'pkcs8'}),
-  confirmarIdentidadeIndependente:async({evidencia})=>evidencia==='identidade-conferida-teste',
+  confirmarIdentidadeIndependente:async({evidencia})=>evidencia==='identidade-conferida-teste'?{confirmacaoWhatsapp:true,conferenciaPessoal:true,reatenticacaoRecente:true,justificativa:'Conferência manual realizada no teste isolado.'}:false,
   autorizarOperador:async()=>true,agora:()=>agora
  });
  const recuperar=criarRecuperacaoConfirmada({
