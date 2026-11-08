@@ -29,5 +29,5 @@ test('código errado ou ação diferente são negados',async()=>{
 });
 test('não confirma sem entrega pelo provedor',async()=>{
  const f=fixture({enviado:false});
- await assert.rejects(f.verificar.solicitar({solicitacaoId:'900020',acao:'emitir'}),/Não foi possível enviar/);
+ await assert.rejects(f.verificar.solicitar({solicitacaoId:'900020',acao:'emitir'}),/Não foi possível preparar/);
 });
