@@ -17,3 +17,10 @@ test('rejeita vínculo divergente, ID inválido e ausência de fonte confiável'
  assert.equal(await verificar({protocolo:'LEGADO-TESTE',comprovante:'x'}),false);
  assert.throws(()=>criarVerificadorVinculoLegado({buscarVinculo:async()=>({})}),/obrigatórias/);
 });
+
+test('falha do validador ou da fonte de vínculo bloqueia emissão',async()=>{
+ const falhaComprovante=criarVerificadorVinculoLegado({validarComprovante:async()=>{throw Error('indisponível')},buscarVinculo:async()=>({protocolo:'P',solicitacaoId:1})});
+ assert.equal(await falhaComprovante({protocolo:'P',comprovante:'x'}),false);
+ const falhaVinculo=criarVerificadorVinculoLegado({validarComprovante:async()=>true,buscarVinculo:async()=>{throw Error('indisponível')}});
+ assert.equal(await falhaVinculo({protocolo:'P',comprovante:'x'}),false);
+});
