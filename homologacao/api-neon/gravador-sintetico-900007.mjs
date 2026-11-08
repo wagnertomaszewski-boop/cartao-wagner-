@@ -13,7 +13,7 @@ export function criarGravadorSintetico900007({consultarNeon}={}){
    [protocolo,referenciaOperador,registroId]
   );
   const linhas=Array.isArray(resposta)?resposta:resposta?.rows;
-  if(!Array.isArray(linhas)||linhas.length!==1||!/^\\d+$/.test(String(linhas[0]?.id))||
+  if(!Array.isArray(linhas)||linhas.length!==1||!/^[0-9]+$/.test(String(linhas[0]?.id))||
    BigInt(linhas[0].id)<1n)throw Error('Resposta de gravação inválida');
   return {registroId,id:linhas[0].id};
  };
