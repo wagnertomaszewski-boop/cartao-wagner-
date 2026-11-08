@@ -704,6 +704,15 @@
     </section>
 
     <section id="viewMais" class="painel-view">
+      <section aria-labelledby="tituloChavesPrivadas" style="background:#fff;border:1px solid #d9e3ee;border-radius:14px;padding:16px;margin-bottom:16px">
+        <h3 id="tituloChavesPrivadas">🔐 Chaves privadas de acompanhamento</h3>
+        <p>Emissão e revogação exigem autorização administrativa e comprovação de identidade pelo servidor.</p>
+        <label for="chaveSolicitacaoId">ID da solicitação</label>
+        <input id="chaveSolicitacaoId" type="text" inputmode="numeric" maxlength="16" placeholder="ID da solicitação" autocomplete="off">
+        <p role="status" aria-live="polite">Operação indisponível até a integração da identidade e auditoria no servidor.</p>
+        <button type="button" disabled title="Aguardando autorização no servidor">Emitir nova chave</button>
+        <button type="button" disabled title="Aguardando autorização no servidor">Revogar chave</button>
+      </section>
       <h2 class="titulo">Mais</h2>
       <div class="atalhos-grid">
         <div class="atalho" onclick="irPainel('projetos',null,true)"><b>🏛️</b><strong>Projetos e ações</strong><span>Gerenciar conteúdos do mandato</span></div>
