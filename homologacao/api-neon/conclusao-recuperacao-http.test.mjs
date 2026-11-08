@@ -9,7 +9,7 @@ test('HTTP conclusão requer sessão e não aceita operador do navegador',async(
   resolverOperador:async t=>t===token?'operador-autenticado':null,
   recuperar:async args=>{chamadas.push(args);return {emitida:true};}
  });
- const srv=criarServidor({verificarAdmin:async t=>t===token,concluirRecuperacao});
+ const srv=criarServidor({verificarAdmin:async t=>t===token,verificarMfaOperacao:async()=>true,concluirRecuperacao});
  await new Promise(resolve=>srv.listen(0,'127.0.0.1',resolve));
  const url='http://127.0.0.1:'+srv.address().port;
  const dados={solicitacaoId:'900008',desafioId:'a'.repeat(32),atestado:'atestado-assinado-de-teste',operadorId:'operador-falso'};
