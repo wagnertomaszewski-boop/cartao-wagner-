@@ -106,12 +106,3 @@ jobs:
           DATABASE_URL: ${{ secrets.NEON_HOMOLOGACAO_DATABASE_URL }}
         run: node smoke-emissao-legada-neon-real.mjs
 
-      - name: Emissao integral ficticia 900006 no Neon isolado (execucao unica)
-        working-directory: homologacao/api-neon
-        env:
-          MANDATO_AMBIENTE: homologacao
-          HABILITAR_API_NEON: sim
-          AUTORIZAR_EMISSAO_FICTICIA_900006: sim
-          NEON_HOST_HOMOLOGACAO: ${{ secrets.NEON_HOMOLOGACAO_HOST }}
-          DATABASE_URL: ${{ secrets.NEON_HOMOLOGACAO_DATABASE_URL }}
-        run: node smoke-emissor-rpc-900006-real.mjs
