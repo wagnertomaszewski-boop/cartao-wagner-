@@ -167,6 +167,16 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
   const {criarOperacoesConfirmacaoCidadao}=await import('./confirmacao-cidadao.mjs');
   confirmacaoCidadao=criarOperacoesConfirmacaoCidadao(integracao);
  }
- const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas,registrarDecisaoSintetica,operacoesChaves,confirmacaoCidadao});
+ let iniciarRecuperacao=null;
+ if(env.HABILITAR_RECUPERACAO_MANUAL_HOMOLOGACAO==='sim'){
+  const integracao=integracaoSintetica?.recuperacaoManual;
+  if(!integracao||typeof integracao.resolverOperador!=='function'||typeof integracao.autorizarRecuperacao!=='function'||typeof integracao.verificacao?.solicitar!=='function'){
+   await Promise.all([pool.end(),poolEscrita?.end()]);
+   throw Error('Recuperação manual requer integrações privadas');
+  }
+  const {criarInicioRecuperacaoManual}=await import('./inicio-recuperacao-manual.mjs');
+  iniciarRecuperacao=criarInicioRecuperacaoManual(integracao);
+ }
+ const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas,registrarDecisaoSintetica,operacoesChaves,confirmacaoCidadao,iniciarRecuperacao});
  return {servidor,fechar:async()=>{try {if (servidor.listening) await new Promise((resolve,reject)=>servidor.close(erro=>erro?reject(erro):resolve()));} finally {await Promise.all([pool.end(),poolEscrita?.end()]);}}};
 }
