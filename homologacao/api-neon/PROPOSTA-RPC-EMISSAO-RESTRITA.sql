@@ -7,8 +7,11 @@ CREATE OR REPLACE FUNCTION mandato_testes.emitir_chave_legada_interna(
  p_protocolo text,p_solicitacao_id bigint,p_hash text
 ) RETURNS void LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = pg_catalog, mandato_testes
-AS $$
+AS $
 BEGIN
+ -- Trava de segurança: a proposta não comprova o vínculo legado.
+ -- Remover SOMENTE após validação independente e revisão de autorização.
+ RAISE EXCEPTION 'Emissão desabilitada: vínculo protocolo-ID não verificado';
  IF p_protocolo IS NULL OR length(trim(p_protocolo)) NOT BETWEEN 1 AND 40
     OR p_hash IS NULL OR p_hash !~ '^[a-f0-9]{64}$'
     OR p_solicitacao_id IS NULL OR p_solicitacao_id<=0
