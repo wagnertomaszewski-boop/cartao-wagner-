@@ -3,8 +3,8 @@
 export function criarRepositorioChavesLegadas({transacionar}={}){
  if(typeof transacionar!=='function')throw Error('Transação obrigatória');
  return {
-  async persistirHash({protocolo,hash}={}){
-   if(typeof protocolo!=='string'||!protocolo.trim()||protocolo.length>40||!/^[a-f0-9]{64}$/.test(hash||''))
+  async persistirHash({protocolo,hash,solicitacaoId}={}){
+   if(typeof protocolo!=='string'||!protocolo.trim()||protocolo.length>40||!/^[a-f0-9]{64}$/.test(hash||'')||!Number.isSafeInteger(solicitacaoId)||solicitacaoId<=0)
     throw Error('Dados inválidos');
    return transacionar(async executar=>{
     if(typeof executar!=='function')throw Error('Executor transacional obrigatório');
@@ -17,7 +17,7 @@ export function criarRepositorioChavesLegadas({transacionar}={}){
     // na MESMA transação, sem expor a chave ou alterar registros existentes.
     const acesso=await executar('SELECT solicitacao_id FROM mandato_testes.acessos_protocolo WHERE protocolo=$1 LIMIT 1',[protocolo.trim()]);
     if(acesso.length)throw Error('Protocolo já possui acesso; recuperação manual necessária');
-    const solicitacao=await executar('SELECT id FROM mandato_testes.solicitacoes WHERE id=$1 LIMIT 1',[Number(protocolo.trim().replace(/^LEGADO-TESTE-/,''))]);
+    const solicitacao=await executar('SELECT id FROM mandato_testes.solicitacoes WHERE id=$1 LIMIT 1',[solicitacaoId]);
     if(!solicitacao.length)throw Error('Solicitação legada não encontrada na homologação');
     await executar('INSERT INTO mandato_testes.chaves_legadas (protocolo, hash_chave) VALUES ($1,$2)',[protocolo.trim(),hash]);
     await executar('INSERT INTO mandato_testes.acessos_protocolo (solicitacao_id, protocolo, segredo_hash) VALUES ($1,$2,$3)',[solicitacao[0].id,protocolo.trim(),hash]);
