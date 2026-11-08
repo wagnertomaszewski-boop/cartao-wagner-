@@ -2,6 +2,7 @@
 // de identidade, autenticação administrativa e proteção contra replay.
 // A chave privada deve existir apenas em armazenamento secreto do emissor.
 import {createPrivateKey,randomBytes,sign} from 'node:crypto';
+import {validarConferenciaManual} from './politica-conferencia-manual.mjs';
 const ID=/^[1-9][0-9]{0,15}$/;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export function criarEmissorAtestados({chavePrivadaPem,confirmarIdentidadeIndependente,autorizarOperador,agora=()=>Date.now()}={}){
@@ -15,7 +16,8 @@ export function criarEmissorAtestados({chavePrivadaPem,confirmarIdentidadeIndepe
    throw Error('Solicitação de atestado inválida');
   const pedido={solicitacaoId:String(solicitacaoId),operadorId,acao,evidencia};
   if(await autorizarOperador(pedido)!==true)throw Error('Operador não autorizado');
-  if(await confirmarIdentidadeIndependente(pedido)!==true)throw Error('Identidade não comprovada');
+  const conferencia=await confirmarIdentidadeIndependente(pedido);
+  if(!validarConferenciaManual({...conferencia,solicitacaoId:String(solicitacaoId),operadorId}))throw Error('Identidade não comprovada');
   const emitidoEm=agora();
   if(!Number.isSafeInteger(emitidoEm))throw Error('Relógio inválido');
   const dados={v:1,finalidade:'gestao-chave-privada',solicitacaoId:String(solicitacaoId),
