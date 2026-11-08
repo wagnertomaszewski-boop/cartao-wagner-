@@ -26,8 +26,8 @@ test('nega consulta arbitrária e protocolo com operadores de filtro',async()=>{
  await assert.rejects(()=>consultar(sql,['x,or.(id.gt.0)']),/não autorizada/);
 });
 test('falha fechada sem credencial e com URL insegura',()=>{
- assert.throws(()=>criarConsultaPrivadaSupabase({url,serviceRoleKey:'curta'}),/incompleta/);
- assert.throws(()=>criarConsultaPrivadaSupabase({url:'http://pmmsdjozyyxkbuqlkfpb.supabase.co',serviceRoleKey}),/não autorizada/);
+ assert.throws(()=>criarConsultaPrivadaSupabase({url,expectedProjectRef:'pmmsdjozyyxkbuqlkfpb',serviceRoleKey:'curta'}),/incompleta/);
+ assert.throws(()=>criarConsultaPrivadaSupabase({url:'http://pmmsdjozyyxkbuqlkfpb.supabase.co',expectedProjectRef:'pmmsdjozyyxkbuqlkfpb',serviceRoleKey}),/não autorizada/);
 });
 
 test('impede conexão acidental a outro projeto Supabase',()=>{
