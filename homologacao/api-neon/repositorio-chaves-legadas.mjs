@@ -21,6 +21,7 @@ export function criarRepositorioChavesLegadas({transacionar}={}){
     if(!solicitacao.length)throw Error('Solicitação legada não encontrada na homologação');
     await executar('INSERT INTO mandato_testes.chaves_legadas (protocolo, hash_chave) VALUES ($1,$2)',[protocolo.trim(),hash]);
     await executar('INSERT INTO mandato_testes.acessos_protocolo (solicitacao_id, protocolo, segredo_hash) VALUES ($1,$2,$3)',[solicitacao[0].id,protocolo.trim(),hash]);
+    await executar('INSERT INTO mandato_testes.auditoria_chaves_legadas (protocolo, solicitacao_id, evento) VALUES ($1,$2,$3)',[protocolo.trim(),solicitacaoId,'chave_legada_emitida']);
     return {gravado:true};
    });
   }
