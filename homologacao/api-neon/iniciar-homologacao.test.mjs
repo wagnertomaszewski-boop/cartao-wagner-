@@ -83,3 +83,13 @@ test('rota sintética rejeita dependências privadas de tipos incorretos e fecha
  }
  assert.equal(fechamentos,7,'Cada inicialização rejeitada deve liberar o pool');
 });
+
+
+test('falha na chave Ed25519 durante montagem fecha pool sem expor rota',async()=>{
+ let fechamentos=0;
+ class Pool {async end(){fechamentos++;} async connect(){throw Error('Não deve conectar');}}
+ const env={MANDATO_AMBIENTE:'homologacao',HABILITAR_API_NEON:'sim',HABILITAR_DECISAO_SINTETICA_900007:'sim',DATABASE_URL:'postgresql://usuario:senha@localhost:5432/testes'};
+ const integracaoSintetica={chavePublicaConferente:'chave-invalida',buscarAtestado:async()=>null,conferentesPermitidos:['REV-TESTE-900007'],operadoresPermitidos:['OP-TESTE-900007'],buscarAuth:async()=>null,consultarNeon:async()=>null,auditar:async()=>{}};
+ await assert.rejects(iniciarHomologacao({env,carregarPg:async()=>({default:{Pool}}),integracaoSintetica}));
+ assert.equal(fechamentos,1);
+});
