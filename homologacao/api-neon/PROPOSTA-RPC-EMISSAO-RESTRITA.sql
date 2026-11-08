@@ -14,7 +14,7 @@ BEGIN
     OR p_solicitacao_id IS NULL OR p_solicitacao_id<=0
  THEN RAISE EXCEPTION 'Dados inválidos'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended(p_protocolo,0));
- IF NOT EXISTS (SELECT 1 FROM mandato_testes.solicitacoes WHERE id=p_solicitacao_id)
+ -- A existência do ID não prova vínculo com o protocolo.\n -- Antes de qualquer GRANT, exigir vínculo comprovado por fonte legada confiável.\n IF NOT EXISTS (SELECT 1 FROM mandato_testes.solicitacoes WHERE id=p_solicitacao_id)
  THEN RAISE EXCEPTION 'Solicitação não encontrada'; END IF;
  IF EXISTS (SELECT 1 FROM mandato_testes.chaves_legadas WHERE protocolo=p_protocolo)
     OR EXISTS (SELECT 1 FROM mandato_testes.acessos_protocolo WHERE protocolo=p_protocolo)
