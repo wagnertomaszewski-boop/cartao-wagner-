@@ -12,7 +12,7 @@ function atestar(alteracoes={}){
  return {dados:d,assinatura:sign(null,mensagem,privateKey).toString('base64url')};
 }
 test('aceita atestado independente válido e recente',async()=>{
- const fonte=criarFonteEvidenciaAssinada({chavePublicaConferente:publicKey,buscarAtestado:async()=>atestar(),relogio:()=>agora});
+ const fonte=criarFonteEvidenciaAssinada({chavePublicaConferente:publicKey,conferentesPermitidos:['REV-SEGUNDO-OPERADOR'],buscarAtestado:async()=>atestar(),relogio:()=>agora});
  assert.equal((await fonte(args)).identidadeConfirmada,true);
 });
 test('rejeita atestado adulterado, expirado e de outro protocolo',async()=>{
@@ -21,14 +21,19 @@ test('rejeita atestado adulterado, expirado e de outro protocolo',async()=>{
   atestar({verificadaEmMs:agora-16*60*1000}),
   atestar({protocolo:'OUTRO'})
  ]){
-  const fonte=criarFonteEvidenciaAssinada({chavePublicaConferente:publicKey,buscarAtestado:async()=>documento,relogio:()=>agora});
+  const fonte=criarFonteEvidenciaAssinada({chavePublicaConferente:publicKey,conferentesPermitidos:['REV-SEGUNDO-OPERADOR'],buscarAtestado:async()=>documento,relogio:()=>agora});
   assert.equal(await fonte(args),null);
  }
 });
 test('não aceita assinatura de chave não confiável nem fonte indisponível',async()=>{
  const outra=generateKeyPairSync('ed25519').publicKey;
- const fonte=criarFonteEvidenciaAssinada({chavePublicaConferente:outra,buscarAtestado:async()=>atestar(),relogio:()=>agora});
+ const fonte=criarFonteEvidenciaAssinada({chavePublicaConferente:outra,conferentesPermitidos:['REV-SEGUNDO-OPERADOR'],buscarAtestado:async()=>atestar(),relogio:()=>agora});
  assert.equal(await fonte(args),null);
- const indisponivel=criarFonteEvidenciaAssinada({chavePublicaConferente:publicKey,buscarAtestado:async()=>{throw Error('offline');}});
+ const indisponivel=criarFonteEvidenciaAssinada({chavePublicaConferente:publicKey,conferentesPermitidos:['REV-SEGUNDO-OPERADOR'],buscarAtestado:async()=>{throw Error('offline');}});
  assert.equal(await indisponivel(args),null);
+});
+
+test('rejeita conferente fora da lista autorizada',async()=>{
+ const fonte=criarFonteEvidenciaAssinada({chavePublicaConferente:publicKey,conferentesPermitidos:['REV-OUTRO-OPERADOR'],buscarAtestado:async()=>atestar(),relogio:()=>agora});
+ assert.equal(await fonte(args),null);
 });
