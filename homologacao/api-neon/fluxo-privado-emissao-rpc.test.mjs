@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import {randomBytes} from 'node:crypto';
 import {criarFluxoPrivadoEmissaoRpc} from './fluxo-privado-emissao-rpc.mjs';
 const protocolo='LEGADO-EMISSAO-TESTE-900006',segredo=randomBytes(32);
-function configurar({conferir=async()=>true}={}){
+function configurar({conferir=async()=>true,autorizar=async()=>true}={}){
  const eventos=[];
  const fluxo=criarFluxoPrivadoEmissaoRpc({
-  segredoComprovante:segredo,conferirIdentidade:conferir,
+  segredoComprovante:segredo,conferirIdentidade:conferir,autorizarOperador:autorizar,
   auditarConferencia:async()=>{eventos.push('conferencia');},
   auditarTentativa:async()=>{eventos.push('tentativa');},
   consultarSupabasePrivado:async()=>[{id:900006,protocolo}],
@@ -31,5 +31,16 @@ test('campo de cliente não autoriza emissão',async()=>{
   protocolo,referenciaOperador:'OP-TESTE-900006',
   identidadeConferida:true,solicitacaoId:900006,comprovante:'forjado'
  }),/Identidade não confirmada/);
+ assert.deepEqual(eventos,[]);
+});
+
+test('referência de operador sem autorização não inicia conferência nem emissão',async()=>{
+ const {fluxo,eventos}=configurar({autorizar:async()=>false});
+ await assert.rejects(()=>fluxo.emitir({protocolo,referenciaOperador:'OP-TESTE-900006',identidadeConferida:true}),/Operador não autorizado/);
+ assert.deepEqual(eventos,[]);
+});
+test('falha de autorização do operador bloqueia emissão',async()=>{
+ const {fluxo,eventos}=configurar({autorizar:async()=>{throw Error('indisponível');}});
+ await assert.rejects(()=>fluxo.emitir({protocolo,referenciaOperador:'OP-TESTE-900006'}),/Autorização de operador indisponível/);
  assert.deepEqual(eventos,[]);
 });
