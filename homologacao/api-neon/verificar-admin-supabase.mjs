@@ -1,3 +1,23 @@
+// Resolve identidade administrativa somente após consulta autenticada ao Auth.
+// O identificador do operador nunca é aceito diretamente do navegador.
+export function criarResolvedorOperadorAdmin({supabaseUrl,chavePublica,idsPermitidos,buscar=fetch}={}) {
+ const verificar=criarVerificadorAdmin({supabaseUrl,chavePublica,idsPermitidos,buscar});
+ return async function resolver(token) {
+  if(!await verificar(token))return null;
+  const url=new URL(supabaseUrl);
+  try{
+   const resposta=await buscar(url.origin+'/auth/v1/user',{
+    method:'GET',headers:{apikey:chavePublica,Authorization:'Bearer '+token,Accept:'application/json'},
+    signal:AbortSignal.timeout(4000),redirect:'error'
+   });
+   if(!resposta.ok)return null;
+   const usuario=await resposta.json();
+   const id=typeof usuario?.id==='string'?usuario.id.toLowerCase():'';
+   return idsPermitidos.some(x=>x.toLowerCase()===id)&&usuario.aud==='authenticated'&&!usuario.is_anonymous?id:null;
+  }catch{return null;}
+ };
+}
+
 // Verifica a sessão com o servidor de autenticação Supabase, nunca confia no JWT decodificado pelo navegador.
 // Somente IDs explicitamente autorizados pelo operador podem acessar o painel de recuperação.
 export function criarVerificadorAdmin({supabaseUrl, chavePublica, idsPermitidos, buscar=fetch}={}) {
