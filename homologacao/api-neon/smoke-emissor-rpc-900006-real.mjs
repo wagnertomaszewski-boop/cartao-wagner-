@@ -36,7 +36,7 @@ try{
  assert.equal(chamadasVinculo,1);
  assert.equal(resultado.protocolo,protocolo);
  assert.match(resultado.chave,/^[a-f0-9]{64}$/);
- const acesso=await pool.query('SELECT id FROM mandato_testes.consulta_segura($1,$2)',[protocolo,resultado.chave]);
+ const acesso=await pool.query('SELECT assunto,status FROM mandato_testes.consulta_segura($1,$2)',[protocolo,resultado.chave]);
  assert.equal(acesso.rows.length,1,'Chave emitida deve permitir consulta segura');
  await assert.rejects(()=>emissor.emitir({protocolo,comprovante}),/Inexistente ou duplicado/);
  console.log('PASS: emissão fictícia 900006 no Neon real, consulta com chave e bloqueio de duplicata');
