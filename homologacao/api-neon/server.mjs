@@ -3,7 +3,7 @@ import {criarLimitador} from './limitador.mjs';
 
 // Handlers são injetados apenas pelo servidor, nunca definidos pelo navegador.
 // Sem handlers, as operações permanecem indisponíveis.
-export function criarServidor({verificarAdmin = async () => false, operacoes = {}, limitador = criarLimitador(), verificarIdentidade = async () => false, origensPermitidas = [], registrarDecisaoSintetica = null, operacoesChaves = null} = {}) {
+export function criarServidor({verificarAdmin = async () => false, operacoes = {}, limitador = criarLimitador(), verificarIdentidade = async () => false, origensPermitidas = [], registrarDecisaoSintetica = null, operacoesChaves = null, confirmacaoCidadao = null} = {}) {
   const servidor = http.createServer(async (req, res) => {
     const origem = req.headers.origin;
     const origemAutorizada = typeof origem === 'string' && origensPermitidas.includes(origem);
@@ -25,14 +25,15 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
     const adminDecisao = req.method === 'POST' ? /^\/api\/admin\/recuperacoes\/([0-9]+)\/decisao$/.exec(req.url || '') : null;
     const adminChaves = req.method === 'POST' ? /^\/api\/admin\/chaves\/(emitir|revogar)$/.exec(req.url || '') : null;
     const admin = adminChavesEstado || adminLista || sintese || (adminDecisao && req.method === 'POST') || !!adminChaves;
+    const confirmarCodigo = req.url === '/api/cidadao/confirmar-codigo' && req.method === 'POST';
     const solicitar = req.url === '/api/recuperacao/solicitar' && req.method === 'POST';
     const consultar = req.url === '/api/solicitacoes/consultar' && req.method === 'POST';
-    if (!admin && !solicitar && !consultar) return send(404, {erro:'Rota não encontrada'});
-    if (solicitar || consultar || adminChaves) {
+    if (!admin && !solicitar && !consultar && !confirmarCodigo) return send(404, {erro:'Rota não encontrada'});
+    if (solicitar || consultar || adminChaves || confirmarCodigo) {
       // Endereço da conexão TCP, nunca X-Forwarded-For fornecido pelo cliente.
       // Uso apenas em homologação local; produção requer limite distribuído.
       const endereco = req.socket.remoteAddress || 'desconhecido';
-      if (!limitador.verificar(endereco + ':' + (solicitar ? 'recuperar' : consultar ? 'consultar' : 'admin-chaves')))
+      if (!limitador.verificar(endereco + ':' + (solicitar ? 'recuperar' : consultar ? 'consultar' : confirmarCodigo ? 'confirmar-codigo' : 'admin-chaves')))
         return send(429, {erro:'Muitas tentativas. Tente novamente mais tarde.'});
     }
     if (admin) {
@@ -43,7 +44,7 @@ export function criarServidor({verificarAdmin = async () => false, operacoes = {
       if (autorizado !== true) return send(403, {erro:'Acesso negado'});
     }
     if (adminChavesEstado) return send(200,{emissaoHabilitada:typeof operacoesChaves?.emitir==='function',revogacaoHabilitada:typeof operacoesChaves?.revogar==='function',ambiente:'homologacao'});
-    const handler = adminChaves ? operacoesChaves?.[adminChaves[1]] : sintese ? registrarDecisaoSintetica : adminLista ? operacoes.listar : adminDecisao ? operacoes.decidir : solicitar ? operacoes.solicitar : operacoes.consultar;
+    const handler = confirmarCodigo ? confirmacaoCidadao?.confirmar : adminChaves ? operacoesChaves?.[adminChaves[1]] : sintese ? registrarDecisaoSintetica : adminLista ? operacoes.listar : adminDecisao ? operacoes.decidir : solicitar ? operacoes.solicitar : operacoes.consultar;
     if (typeof handler !== 'function') return send(503, {erro:'Integração com banco ainda não habilitada'});
     let dados = {};
     if (req.method === 'POST') {
