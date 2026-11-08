@@ -1,9 +1,9 @@
 // Confirmação pelo próprio cidadão: página pública sem autenticação administrativa.
 // A confirmação do código é apenas prova de posse do código, NÃO de identidade
 // quando o operador também vê o código no link manual do WhatsApp.
-export function criarOperacoesConfirmacaoCidadao({verificacao,registrarConfirmacao}={}){
- if(typeof verificacao?.confirmar!=='function'||typeof registrarConfirmacao!=='function')
-  throw Error('Verificação e registro independentes obrigatórios');
+export function criarOperacoesConfirmacaoCidadao({verificacao}={}){
+ if(typeof verificacao?.confirmar!=='function')
+  throw Error('Confirmação atômica obrigatória');
  return Object.freeze({
   confirmar:async({dados}={})=>{
    const {desafioId,codigo,solicitacaoId,acao}=dados||{};
@@ -13,8 +13,7 @@ export function criarOperacoesConfirmacaoCidadao({verificacao,registrarConfirmac
     !['emitir','revogar'].includes(acao))throw Error('Dados inválidos');
    const confirmado=await verificacao.confirmar({desafioId,codigo,solicitacaoId,acao});
    if(confirmado!==true)return {confirmado:false};
-   // Registrar somente confirmação do código; não emitir atestado de identidade.
-   await registrarConfirmacao({desafioId,solicitacaoId:String(solicitacaoId),acao});
+   // A função Neon confirma e registra atomicamente; não repetir a escrita.
    return {confirmado:true};
   }
  });
