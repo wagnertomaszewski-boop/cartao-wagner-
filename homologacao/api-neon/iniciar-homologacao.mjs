@@ -84,6 +84,35 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
    throw erro;
   }
  }
- const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas,registrarDecisaoSintetica});
+ // As rotas de chaves nunca são habilitadas só por um sinalizador.
+ // Exige identidade validada por serviço externo, autorização administrativa e
+ // executor transacional explicitamente fornecidos pelo ambiente de homologação.
+ let operacoesChaves=null;
+ if(env.HABILITAR_GESTAO_CHAVES_HOMOLOGACAO==='sim'){
+  const integracao=integracaoSintetica?.gestaoChaves;
+  if(!env.SUPABASE_ADMIN_UID || !env.SUPABASE_PUBLISHABLE_KEY ||
+   !integracao || typeof integracao.confirmarIdentidade!=='function' ||
+   typeof integracao.autorizarOperador!=='function' ||
+   typeof integracao.transacionar!=='function') {
+   await pool.end();
+   throw Error('Gestão de chaves requer integração privada de identidade e escrita autorizada');
+  }
+  const [{criarResolvedorOperadorAdmin},{criarGestorChavesPrivadas},{criarAuditorChavesNeon},{criarOperacoesChavesPainel}]=await Promise.all([
+   import('./verificar-admin-supabase.mjs'),import('./gestor-chaves-privadas.mjs'),
+   import('./auditoria-chaves-neon.mjs'),import('./operacoes-chaves-painel.mjs')
+  ]);
+  const resolverOperador=criarResolvedorOperadorAdmin({
+   supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',
+   chavePublica:env.SUPABASE_PUBLISHABLE_KEY,idsPermitidos:[env.SUPABASE_ADMIN_UID]
+  });
+  const gestor=criarGestorChavesPrivadas({
+   confirmarIdentidade:integracao.confirmarIdentidade,
+   autorizarOperador:integracao.autorizarOperador,
+   transacionar:integracao.transacionar,
+   auditar:criarAuditorChavesNeon()
+  });
+  operacoesChaves=criarOperacoesChavesPainel({resolverOperador,gestor});
+ }
+ const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas,registrarDecisaoSintetica,operacoesChaves});
  return {servidor,fechar:async()=>{try {if (servidor.listening) await new Promise((resolve,reject)=>servidor.close(erro=>erro?reject(erro):resolve()));} finally {await pool.end();}}};
 }
