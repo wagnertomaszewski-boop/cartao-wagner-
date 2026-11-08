@@ -27,7 +27,7 @@ test('identidade verificada pelo servidor grava somente hash e audita',async()=>
  assert.notEqual(retorno.chave,gravado.hash);
  assert.equal(gravado.chave,undefined);
  assert.equal(gravado.solicitacaoId,900003);
- assert.deepEqual(auditoria,{evento:'chave_legada_emitida',protocolo:'LEGADO-FICTICIO'});
+ assert.deepEqual(auditoria,{evento:'chave_legada_solicitada',protocolo:'LEGADO-FICTICIO'});
 });
 test('falha de persistência impede entrega da chave',async()=>{
  const emissor=criarEmissorLegado({
