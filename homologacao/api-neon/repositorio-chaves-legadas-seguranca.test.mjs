@@ -22,3 +22,23 @@ test('hash inválido não inicia transação',async()=>{
  await assert.rejects(()=>repositorio.persistirHash({protocolo:'P',hash:'texto',solicitacaoId:1}),/Dados inválidos/);
  assert.equal(transacoes,0);
 });
+
+test('acesso legado já existente bloqueia nova emissão sem inserts',async()=>{
+ let inserts=0;
+ const repositorio=criarRepositorioChavesLegadas({transacionar:async fn=>fn(async sql=>{
+  if(sql.startsWith('INSERT'))inserts++;
+  if(sql.includes('FROM mandato_testes.acessos_protocolo'))return [{solicitacao_id:900004}];
+  return [];
+ })});
+ await assert.rejects(()=>repositorio.persistirHash({protocolo:'LEGADO-TESTE',hash:'a'.repeat(64),solicitacaoId:900004}),/já possui acesso/);
+ assert.equal(inserts,0);
+});
+test('solicitação ausente bloqueia todas as gravações',async()=>{
+ let inserts=0;
+ const repositorio=criarRepositorioChavesLegadas({transacionar:async fn=>fn(async sql=>{
+  if(sql.startsWith('INSERT'))inserts++;
+  return [];
+ })});
+ await assert.rejects(()=>repositorio.persistirHash({protocolo:'LEGADO-TESTE',hash:'a'.repeat(64),solicitacaoId:900004}),/não encontrada/);
+ assert.equal(inserts,0);
+});
