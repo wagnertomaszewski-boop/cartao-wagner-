@@ -710,8 +710,11 @@
         <label for="chaveSolicitacaoId">ID da solicitação</label>
         <input id="chaveSolicitacaoId" type="text" inputmode="numeric" maxlength="16" placeholder="ID da solicitação" autocomplete="off">
         <p id="estadoAutorizacaoChaves" role="status" aria-live="polite">Verificando disponibilidade da integração segura…</p><button type="button" onclick="verificarIntegracaoChaves()" id="btnVerificarIntegracaoChaves">Verificar integração</button>
-        <button type="button" disabled title="Aguardando autorização no servidor">Emitir nova chave</button>
-        <button type="button" disabled title="Aguardando autorização no servidor">Revogar chave</button>
+        <label for="atestadoChaves">Comprovante de identidade assinado</label>
+        <textarea id="atestadoChaves" rows="2" maxlength="4096" placeholder="Cole o comprovante emitido por conferente autorizado" autocomplete="off" spellcheck="false"></textarea>
+        <button type="button" id="btnEmitirChave" disabled onclick="executarOperacaoChave('emitir')">Emitir nova chave</button>
+        <button type="button" id="btnRevogarChave" disabled onclick="executarOperacaoChave('revogar')">Revogar chave</button>
+        <p id="resultadoChaves" role="status" aria-live="polite"></p>
       </section>
       <h2 class="titulo">Mais</h2>
       <div class="atalhos-grid">
@@ -753,6 +756,44 @@ const arquivosPendentesPorSolicitacao = new Map();
 
 // Diagnóstico somente de leitura. Nunca envia chave, protocolo ou sessão para a rota /health.
 const API_CHAVES_HOMOLOGACAO='https://mandato-neon-homologacao.onrender.com';
+let permissoesChaves={emitir:false,revogar:false};
+function atualizarBotoesChaves(){
+ const id=document.getElementById('chaveSolicitacaoId')?.value.trim()||'';
+ const atestado=document.getElementById('atestadoChaves')?.value.trim()||'';
+ const pronto=/^[1-9][0-9]{0,15}$/.test(id)&&atestado.length>=16&&atestado.length<=4096;
+ for(const acao of ['emitir','revogar']){
+  const botao=document.getElementById(acao==='emitir'?'btnEmitirChave':'btnRevogarChave');
+  if(botao)botao.disabled=!(permissoesChaves[acao]&&pronto);
+ }
+}
+async function executarOperacaoChave(acao){
+ if(!['emitir','revogar'].includes(acao))return;
+ const id=document.getElementById('chaveSolicitacaoId')?.value.trim();
+ const atestado=document.getElementById('atestadoChaves')?.value.trim();
+ const resultado=document.getElementById('resultadoChaves');
+ if(!permissoesChaves[acao]||!/^[1-9][0-9]{0,15}$/.test(id||'')||!atestado||atestado.length<16)return;
+ if(!window.confirm(acao==='emitir'?'Emitir uma nova chave e invalidar a anterior?':'Revogar a chave de acompanhamento desta solicitação?'))return;
+ permissoesChaves={emitir:false,revogar:false};atualizarBotoesChaves();
+ if(resultado)resultado.textContent='Executando operação autorizada…';
+ try{
+  const sessao=await obterSessaoValida();
+  if(!sessao?.access_token)throw Error('Sessão expirada');
+  const resposta=await fetch(API_CHAVES_HOMOLOGACAO+'/api/admin/chaves/'+acao,{
+   method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+sessao.access_token},
+   credentials:'omit',cache:'no-store',signal:AbortSignal.timeout(10000),
+   body:JSON.stringify({solicitacaoId:id,atestado})
+  });
+  if(!resposta.ok)throw Error('Operação recusada pelo servidor');
+  const dados=await resposta.json();
+  if(resultado)resultado.textContent=acao==='emitir'&&typeof dados.chave==='string'?
+   'Chave emitida (exibida uma única vez): '+dados.chave:
+   acao==='revogar'&&dados.revogada===true?'Chave revogada com sucesso.':'Resposta inesperada: confirme o estado no servidor.';
+ }catch{if(resultado)resultado.textContent='Operação não confirmada. Verifique o servidor antes de repetir.';}
+ finally{const campo=document.getElementById('atestadoChaves');if(campo)campo.value='';await verificarIntegracaoChaves();}
+}
+document.addEventListener('input',evento=>{
+ if(evento.target?.id==='chaveSolicitacaoId'||evento.target?.id==='atestadoChaves')atualizarBotoesChaves();
+});
 async function verificarIntegracaoChaves(){
  const estado=document.getElementById('estadoAutorizacaoChaves');
  const botao=document.getElementById('btnVerificarIntegracaoChaves');
@@ -762,15 +803,16 @@ async function verificarIntegracaoChaves(){
  try{
   const sessao=await obterSessaoValida();
   if(!sessao?.access_token){estado.textContent='Faça login no Painel para continuar.';return;}
-  const resposta=await fetch(API_CHAVES_HOMOLOGACAO+'/health',{method:'GET',cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(8000)});
+  const resposta=await fetch(API_CHAVES_HOMOLOGACAO+'/api/admin/chaves/estado',{method:'GET',headers:{Authorization:'Bearer '+sessao.access_token},cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(8000)});
   if(!resposta.ok)throw Error('Servidor indisponível');
   const estadoApi=await resposta.json();
-  if(estadoApi?.modo!=='homologacao'||estadoApi?.consultaPrivadaHabilitada!==true)
+  if(estadoApi?.ambiente!=='homologacao')
    throw Error('Consulta privada não habilitada');
-  estado.textContent='Conexão de homologação ativa. Emissão e revogação aguardam autorização e confirmação de identidade pelo servidor.';
+  permissoesChaves={emitir:estadoApi.emissaoHabilitada===true,revogar:estadoApi.revogacaoHabilitada===true};
+  estado.textContent=permissoesChaves.emitir&&permissoesChaves.revogar?'Operações habilitadas pelo servidor; é obrigatório comprovante assinado válido.':'Servidor conectado. Emissão e revogação ainda bloqueadas pelo servidor.';
  }catch{
   estado.textContent='Não foi possível confirmar a integração. As operações continuam bloqueadas.';
- }finally{botao.disabled=false;}
+ }finally{botao.disabled=false;atualizarBotoesChaves();}
 }
 
 function recarregarSemCache(){
