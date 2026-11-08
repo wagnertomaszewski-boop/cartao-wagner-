@@ -2311,6 +2311,7 @@ async function registrarHistoricoFiscalizacaoMandato(id,botao){
     );
     const confirmado=await verificacao.json().catch(()=>null);
     if(!verificacao.ok || !Array.isArray(confirmado) || confirmado.length!==1 ||
+       String(confirmado[0].id)!==String(idRegistro) ||
        Number(confirmado[0].solicitacao_id)!==Number(id) ||
        confirmado[0].tipo!==tipo || confirmado[0].descricao!==descricao ||
        (confirmado[0].protocolo_referencia||null)!==protocolo){
