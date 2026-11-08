@@ -1,0 +1,21 @@
+// Adaptador de armazenamento de HOMOLOGAÇÃO para chaves legadas.
+// Usa transação e bloqueio por protocolo; não contém credenciais nem conecta produção.
+export function criarRepositorioChavesLegadas({transacionar}={}){
+ if(typeof transacionar!=='function')throw Error('Transação obrigatória');
+ return {
+  async persistirHash({protocolo,hash}={}){
+   if(typeof protocolo!=='string'||!protocolo.trim()||protocolo.length>40||!/^[a-f0-9]{64}$/.test(hash||''))
+    throw Error('Dados inválidos');
+   return transacionar(async executar=>{
+    if(typeof executar!=='function')throw Error('Executor transacional obrigatório');
+    // Chave de bloqueio estável no escopo da transação.
+    await executar('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',[protocolo.trim()]);
+    // A tabela de homologação deve ter UNIQUE(protocolo) para reforçar a unicidade.
+    const existente=await executar('SELECT 1 FROM mandato_testes.chaves_legadas WHERE protocolo=$1 LIMIT 1',[protocolo.trim()]);
+    if(existente.length)throw Error('Protocolo já possui chave; recuperação manual necessária');
+    await executar('INSERT INTO mandato_testes.chaves_legadas (protocolo, hash_chave) VALUES ($1,$2)',[protocolo.trim(),hash]);
+    return {gravado:true};
+   });
+  }
+ };
+}
