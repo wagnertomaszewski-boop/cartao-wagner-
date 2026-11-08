@@ -160,7 +160,7 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  if(env.HABILITAR_CONFIRMACAO_CIDADAO_HOMOLOGACAO==='sim'){
   const integracao=integracaoSintetica?.confirmacaoCidadao;
   if(!integracao||typeof integracao.verificacao?.confirmar!=='function'||
-   typeof integracao.registrarConfirmacao!=='function'){
+   integracao.verificacao.persistenciaAtomica!==true){
    await Promise.all([pool.end(),poolEscrita?.end()]);
    throw Error('Confirmação do cidadão exige verificação e persistência privadas');
   }
