@@ -30,7 +30,7 @@ async function iniciar(fn){
  const operacoesChaves=criarOperacoesChavesPainel({
   resolverOperador:async token=>token===TOKEN?ADMIN:null,gestor
  });
- const servidor=criarServidor({verificarAdmin:async token=>token===TOKEN,operacoesChaves,origensPermitidas:['https://wagnertomaszewski-boop.github.io']});
+ const servidor=criarServidor({verificarAdmin:async token=>token===TOKEN,verificarMfaOperacao:async()=>true,operacoesChaves,origensPermitidas:['https://wagnertomaszewski-boop.github.io']});
  await new Promise(resolve=>servidor.listen(0,'127.0.0.1',resolve));
  const url='http://127.0.0.1:'+servidor.address().port;
  try{await fn({url,emitirAtestado,auditoria});}
