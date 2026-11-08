@@ -179,16 +179,31 @@ export async function iniciarHomologacao({env=process.env, carregarPg=()=>import
  }
  let concluirRecuperacao=null;
  if(env.HABILITAR_CONCLUSAO_RECUPERACAO_HOMOLOGACAO==='sim'){
-  if(!poolEscrita||!env.CHAVES_CONFERENTE_PUBLICA_PEM||!env.SUPABASE_ADMIN_UID||!env.SUPABASE_PUBLISHABLE_KEY){
+  try{
+   if(!env.CHAVES_DATABASE_URL||!env.CHAVES_CONFERENTE_PUBLICA_PEM||
+    !env.SUPABASE_ADMIN_UID||!env.SUPABASE_PUBLISHABLE_KEY)
+    throw Error('Conclusão requer assinatura, autenticação e escrita restrita');
+   const urlEscrita=new URL(env.CHAVES_DATABASE_URL);
+   if(urlEscrita.hostname!==host||decodeURIComponent(urlEscrita.username)!=='mandato_chaves_escrita_hml'||
+    !urlEscrita.password||['sslmode','sslcert','sslkey','sslrootcert'].some(k=>urlEscrita.searchParams.has(k)))
+    throw Error('Conta de escrita Neon não autorizada');
+   if(!poolEscrita)poolEscrita=new pg.Pool({connectionString:env.CHAVES_DATABASE_URL,ssl:local?false:{rejectUnauthorized:true},max:2,connectionTimeoutMillis:3000,idleTimeoutMillis:10000});
+   const direitos=await poolEscrita.query(`SELECT
+    has_function_privilege(current_user,'mandato_chaves_homologacao.aplicar_recuperacao_confirmada(text,bigint,uuid,bytea,text,timestamptz)','EXECUTE') AS rpc,
+    has_table_privilege(current_user,'mandato_chaves_homologacao.chaves_acompanhamento','UPDATE') AS update_direto,
+    has_table_privilege(current_user,'mandato_chaves_homologacao.confirmacoes_whatsapp','DELETE') AS delete_direto`);
+   if(direitos.rows?.[0]?.rpc!==true||direitos.rows[0].update_direto!==false||direitos.rows[0].delete_direto!==false)
+    throw Error('Privilégios de recuperação incompatíveis');
+   const [{criarRecuperacaoConfirmada},{criarConclusaoRecuperacaoPainel},{criarResolvedorOperadorAdmin}]=await Promise.all([
+    import('./recuperacao-confirmada-neon.mjs'),import('./conclusao-recuperacao-painel.mjs'),import('./verificar-admin-supabase.mjs')
+   ]);
+   const resolverOperador=criarResolvedorOperadorAdmin({supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',chavePublica:env.SUPABASE_PUBLISHABLE_KEY,idsPermitidos:[env.SUPABASE_ADMIN_UID]});
+   const recuperar=criarRecuperacaoConfirmada({pool:poolEscrita,chavePublicaPem:env.CHAVES_CONFERENTE_PUBLICA_PEM,operadorPermitido:async({operadorId})=>operadorId===env.SUPABASE_ADMIN_UID});
+   concluirRecuperacao=criarConclusaoRecuperacaoPainel({resolverOperador,recuperar});
+  }catch(erro){
    await Promise.all([pool.end(),poolEscrita?.end()]);
-   throw Error('Conclusão requer assinatura, autenticação e escrita restrita');
+   throw erro;
   }
-  const [{criarRecuperacaoConfirmada},{criarConclusaoRecuperacaoPainel},{criarResolvedorOperadorAdmin}]=await Promise.all([
-   import('./recuperacao-confirmada-neon.mjs'),import('./conclusao-recuperacao-painel.mjs'),import('./verificar-admin-supabase.mjs')
-  ]);
-  const resolverOperador=criarResolvedorOperadorAdmin({supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',chavePublica:env.SUPABASE_PUBLISHABLE_KEY,idsPermitidos:[env.SUPABASE_ADMIN_UID]});
-  const recuperar=criarRecuperacaoConfirmada({pool:poolEscrita,chavePublicaPem:env.CHAVES_CONFERENTE_PUBLICA_PEM,operadorPermitido:async({operadorId})=>operadorId===env.SUPABASE_ADMIN_UID});
-  concluirRecuperacao=criarConclusaoRecuperacaoPainel({resolverOperador,recuperar});
  }
  const servidor=criarServidor({operacoes,verificarAdmin,origensPermitidas,registrarDecisaoSintetica,operacoesChaves,confirmacaoCidadao,iniciarRecuperacao,concluirRecuperacao});
  return {servidor,fechar:async()=>{try {if (servidor.listening) await new Promise((resolve,reject)=>servidor.close(erro=>erro?reject(erro):resolve()));} finally {await Promise.all([pool.end(),poolEscrita?.end()]);}}};
