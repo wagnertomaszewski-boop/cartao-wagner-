@@ -45,7 +45,7 @@ export function criarFluxoIsoladoHml({pool,segredo,enviarCodigo=null,telefoneTes
    await audit(c,'recuperacao_concluida_chave_substituida',op,id);return {protocolo:p.protocolo,novaChave:chave};
   });},
   async consultar({protocolo,chave}){
-   if(typeof protocolo!=='string'||!/^[A-Z0-9][A-Za-z0-9-]{2,79}$/.test(protocolo)||typeof chave!=='string'||! /^[A-Za-z0-9_-]{43}$/.test(chave))return {encontrado:false};
+   if(typeof protocolo!=='string'||protocolo.length<1||protocolo.length>80||/[\x00-\x1f\x7f]/.test(protocolo)||typeof chave!=='string'||! /^[A-Za-z0-9_-]{43}$/.test(chave))return {encontrado:false};
    const r=await pool.query('SELECT protocolo,protocolo_publico,chave_hash,versao,dados_solicitacao FROM auth_admin_hml.pedidos WHERE protocolo=$1 OR protocolo_publico=$1',[protocolo]);
    const p=r.rows[0];if(!p||!timingSafeEqual(Buffer.from(p.chave_hash),Buffer.from(hash(p.protocolo,chave))))return {encontrado:false};
    const d=p.dados_solicitacao;

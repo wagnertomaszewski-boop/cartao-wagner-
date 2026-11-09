@@ -28,8 +28,9 @@ export async function montar({env,pool}){
   await autotestarRecuperacaoManual({manual:teste,fluxo,pool});
   await autotestarDestinoPessoal({manual:teste,pool});
   await autotestarConcorrenciaEntrePedidos({manual:teste,pool});
-  const {autotestarModeloReal}=await import('./autoteste-modelo-hml.mjs');
+  const {autotestarModeloReal,autotestarFormatosLegados}=await import('./autoteste-modelo-hml.mjs');
   await autotestarModeloReal({cadastro,manual:teste,fluxo,pool});
+  await autotestarFormatosLegados({cadastro,manual:teste,fluxo,pool});
   console.log('AUTOTESTE_MODELO_REAL_NEON_OK: cadastro, isolamento por chave, recuperação legada e histórico preservado; nenhum envio externo.');
   console.log('AUTOTESTE_MANUAL_NEON_OK: fixture fictícia; consumo concorrente único; chave substituída; auditoria; nenhum WhatsApp enviado.');
  }
@@ -102,7 +103,7 @@ export async function montar({env,pool}){
     const s=await auth.api.getSession({headers:fromNodeHeaders(req.headers)});let mfaRecente=false;
     try{await exigirAdminMfa({auth,pool,headers:fromNodeHeaders(req.headers),adminEmail:env.AUTH_HML_ADMIN_EMAIL});mfaRecente=true;}catch{}
     const r=await pool.query('SELECT consumida FROM auth_admin_hml.instalacao WHERE id=1');
-    const prova=await pool.query("SELECT EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v1_concluido') AS ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v2_destino_concluido') AS destino_ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v3_telas_concluido') AS telas_ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='modelo_autoteste_integrado_concluido') AS modelo_ok");
+    const prova=await pool.query("SELECT EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v1_concluido') AS ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v2_destino_concluido') AS destino_ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v3_telas_concluido') AS telas_ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='modelo_autoteste_integrado_concluido') AND EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='modelo_autoteste_formatos_concluido') AS modelo_ok");
     return json(res,200,{modeloRealValidado:prova.rows[0]?.modelo_ok===true,versaoRecuperacaoManual:3,manualTelasValidadas:prova.rows[0]?.telas_ok===true,manualDestinoValidado:prova.rows[0]?.destino_ok===true,manualNeonValidado:prova.rows[0]?.ok===true,ambiente:'homologacao',instalado:r.rows[0]?.consumida===true,autenticado:!!s,mfaAtivado:s?.user?.twoFactorEnabled===true,mfaRecente,whatsappConfigurado:false,envioManual:true}),true;
    }
    if(path==='/hml/cidadao/cadastrar'&&req.method==='POST')return json(res,200,await cadastro.cadastrar(await corpo(req))),true;

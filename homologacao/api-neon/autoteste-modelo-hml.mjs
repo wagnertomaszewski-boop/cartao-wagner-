@@ -12,3 +12,12 @@ export async function autotestarModeloReal({cadastro,manual,fluxo,pool}){
  assert.deepEqual((await pool.query('SELECT dados_solicitacao FROM auth_admin_hml.pedidos WHERE id=$1',[legado.id])).rows[0].dados_solicitacao,antes);
  await pool.query("INSERT INTO auth_admin_hml.auditoria(evento,usuario_id,pedido_id) VALUES('modelo_autoteste_integrado_concluido',$1,$2)",[op.usuarioId,legado.id]);return {jaExecutado:false};
 }
+export async function autotestarFormatosLegados({cadastro,manual,fluxo,pool}){
+ const feito=await pool.query("SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='modelo_autoteste_formatos_concluido' LIMIT 1");if(feito.rows.length)return {jaExecutado:true};
+ const novo=await cadastro.cadastrar({ficticio:true,origem:'v2',p_nome:'Pessoa fictícia',p_whatsapp:'+5551000000000',p_localidade:'Homologação',p_assunto:'Histórico inicial fictício',p_descricao:'Validação do primeiro evento de acompanhamento.'});
+ assert.equal((await fluxo.consultar({protocolo:novo.protocolo,chave:novo.chaveInicial})).historico[0].status,'Recebida');
+ const p=await cadastro.importarFixture({cenario:'alternativo'});assert.ok(p.protocolo.includes('/'));
+ const r=await manual.solicitar({protocolo:p.protocolo,telefone:'+5551000000000'}),op={usuarioId:'autoteste-formatos-ficticio'},d={decisao:'aprovar',identidadeConferida:true,telefoneConfirmado:'+5551000000000',justificativa:'Conferência fictícia de compatibilidade de protocolo legado.'};
+ await manual.decidir(r.pedidoId,op,d);const e=await manual.emitir(r.pedidoId,op,d),v=await manual.validar({...r,codigo:e.codigo});assert.equal(v.protocolo,p.protocolo);assert.equal((await fluxo.consultar({protocolo:p.protocolo,chave:v.novaChave})).encontrado,true);
+ await pool.query("INSERT INTO auth_admin_hml.auditoria(evento,usuario_id,pedido_id) VALUES('modelo_autoteste_formatos_concluido',$1,$2)",[op.usuarioId,p.id]);return {jaExecutado:false};
+}

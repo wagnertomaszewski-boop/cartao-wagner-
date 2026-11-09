@@ -4,7 +4,7 @@ export function normalizarTelefone(valor){let n=String(valor||'').replace(/[^0-9
 export function criarClienteRecuperacaoManual({origem,buscar=globalThis.fetch}={}){
  if(origem!==ORIGEM_HML)throw Error('Recuperação disponível somente na homologação.');
  async function enviar(path,data,admin=false){const r=await buscar(origem+'/hml'+path,{method:data===undefined?'GET':'POST',credentials:admin?'same-origin':'omit',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(15000),headers:data===undefined?{}:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});let v;try{v=await r.json();}catch{throw Error('Serviço indisponível. Tente novamente.');}if(!r.ok){if(r.status===401||r.status===403)throw Error('Entre e confirme novamente o MFA para esta operação.');if(r.status===429)throw Error('Limite de tentativas atingido. Aguarde antes de tentar novamente.');throw Error('Não foi possível concluir. Confira os dados e tente novamente.');}return v;}
- const protocolo=p=>{if(typeof p!=='string'||!/^[A-Z0-9][A-Za-z0-9-]{2,79}$/.test(p.trim()))throw Error('Informe um protocolo válido.');return p.trim();};
+ const protocolo=p=>{if(typeof p!=='string'||p.trim().length<1||p.trim().length>80||/[\x00-\x1f\x7f]/.test(p))throw Error('Informe um protocolo válido.');return p.trim();};
  const id=p=>{if(!uuid.test(String(p)))throw Error('Pedido inválido.');return p;};
  return {
   cadastrar:d=>enviar('/cidadao/cadastrar',d),catalogo:()=>enviar('/modelo/solicitacoes',undefined,true),fixtureLegada:cenario=>enviar('/modelo/legado',{cenario},true),

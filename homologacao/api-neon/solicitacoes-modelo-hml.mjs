@@ -7,7 +7,7 @@ export function adaptarSolicitacao({solicitacao:s,historico=[],respostas=[],fisc
  if(!s||s.id==null)throw erro('Solicitação de origem inválida');
  const id=String(s.id),pertence=r=>String(r.solicitacao_id)===id;
  const anexos=v=>{if(typeof v==='string'){try{v=JSON.parse(v);}catch{v=[];}}return (Array.isArray(v)?v:[]).slice(0,20).map(a=>({nome:texto(typeof a==='string'?a.split('/').pop():a?.nome,160)||'Anexo privado'}));};
- return {idOrigem:id,protocoloOrigem:texto(s.protocolo,80)||null,assunto:texto(s.assunto,160),descricao:texto(s.descricao),localidade:texto(s.localidade,160),status:texto(s.status,80)||'Recebida',criadoEm:s.criado_em||null,atualizadoEm:s.atualizado_em||null,anexos:anexos(s.anexos),
+ return {solicitante:texto(s.nome||s.solicitante,120),idOrigem:id,protocoloOrigem:texto(s.protocolo,80)||null,assunto:texto(s.assunto,160),descricao:texto(s.descricao),localidade:texto(s.localidade,160),status:texto(s.status,80)||'Recebida',criadoEm:s.criado_em||null,atualizadoEm:s.atualizado_em||null,anexos:anexos(s.anexos),
  historico:historico.filter(pertence).map(h=>({status:texto(h.status,80),criadoEm:h.criado_em||null})),
  respostas:respostas.filter(pertence).map(r=>({mensagem:texto(r.mensagem),criadoEm:r.criado_em||null,anexos:anexos(r.anexos)})),
  // Fiscalização e anotações internas não pertencem ao retorno público.
@@ -28,15 +28,16 @@ export function criarCadastroModeloHml({pool,segredo}){
  return {
  async cadastrar(d){
  if(d.ficticio!==true||!['mandato','v2'].includes(d.origem)||d.p_whatsapp!=='+5551000000000'||!texto(d.p_nome,120)||!texto(d.p_assunto,160)||!texto(d.p_descricao)||!texto(d.p_localidade,160)||Object.hasOwn(d,'protocolo')||Object.hasOwn(d,'chave'))throw erro('Use somente dados fictícios e o telefone de teste indicado.');
- const modelo=adaptarSolicitacao({solicitacao:{id:'novo',assunto:d.p_assunto,descricao:d.p_descricao,localidade:d.p_localidade,status:'Recebida',criado_em:new Date().toISOString(),anexos:[]}});
+ const criadoEm=new Date().toISOString();
+ const modelo=adaptarSolicitacao({solicitacao:{id:'novo',nome:d.p_nome,assunto:d.p_assunto,descricao:d.p_descricao,localidade:d.p_localidade,status:'Recebida',criado_em:criadoEm,anexos:[]},historico:[{solicitacao_id:'novo',status:'Recebida',criado_em:criadoEm}]});
  return registrar({modelo,telefone:d.p_whatsapp,origem:d.origem});
  },
  async importarFixture(d){
  // Somente cenários representativos fixos, não há importação de cidadãos reais.
  if(!['legado','sem-protocolo','alternativo'].includes(d.cenario))throw erro('Cenário fictício inválido');
  const numero=(await pool.query("SELECT nextval('auth_admin_hml.protocolo_modelo_seq')::text AS numero")).rows[0].numero;
- const id='legado-'+numero,protocolo=d.cenario==='sem-protocolo'?null:d.cenario==='alternativo'?'LEGADO-'+numero:'2025-'+numero;
- const modelo=adaptarSolicitacao({solicitacao:{id,protocolo,assunto:'Iluminação fictícia',descricao:'Manutenção de ponto de iluminação de teste.',localidade:'Localidade de homologação',status:'Em andamento',criado_em:'2025-01-01T12:00:00Z',anexos:['privado/foto-teste.jpg']},historico:[{solicitacao_id:id,status:'Recebida',criado_em:'2025-01-01T12:00:00Z'},{solicitacao_id:id,status:'Em andamento',criado_em:'2025-01-02T12:00:00Z'}],respostas:[{solicitacao_id:id,mensagem:'Resposta fictícia preservada.',criado_em:'2025-01-02T12:00:00Z',anexos:[{nome:'Resposta.pdf',url:'https://exemplo.invalid/privado'}]}],fiscalizacao:[{solicitacao_id:id,tipo:'fiscalizacao',descricao:'Anotação interna fictícia.',registrado_em:'2025-01-02T12:00:00Z'}]});
+ const id='legado-'+numero,protocolo=d.cenario==='sem-protocolo'?null:d.cenario==='alternativo'?'LEGADO/2025/'+numero:'2025-'+numero;
+ const modelo=adaptarSolicitacao({solicitacao:{id,nome:'Pessoa fictícia legada',protocolo,assunto:'Iluminação fictícia',descricao:'Manutenção de ponto de iluminação de teste.',localidade:'Localidade de homologação',status:'Em andamento',criado_em:'2025-01-01T12:00:00Z',anexos:['privado/foto-teste.jpg']},historico:[{solicitacao_id:id,status:'Recebida',criado_em:'2025-01-01T12:00:00Z'},{solicitacao_id:id,status:'Em andamento',criado_em:'2025-01-02T12:00:00Z'}],respostas:[{solicitacao_id:id,mensagem:'Resposta fictícia preservada.',criado_em:'2025-01-02T12:00:00Z',anexos:[{nome:'Resposta.pdf',url:'https://exemplo.invalid/privado'}]}],fiscalizacao:[{solicitacao_id:id,tipo:'fiscalizacao',descricao:'Anotação interna fictícia.',registrado_em:'2025-01-02T12:00:00Z'}]});
  return registrar({modelo,telefone:'+5551000000000',origem:'legado',legado:true});
  },
  async listar(){const r=await pool.query("SELECT id,protocolo_publico AS protocolo,dados_solicitacao FROM auth_admin_hml.pedidos WHERE dados_solicitacao IS NOT NULL ORDER BY protocolo_publico DESC LIMIT 50");return {solicitacoes:r.rows.map(r=>({id:r.id,protocolo:r.protocolo,...r.dados_solicitacao}))};}

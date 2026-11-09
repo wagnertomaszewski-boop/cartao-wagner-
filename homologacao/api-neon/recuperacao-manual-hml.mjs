@@ -34,7 +34,7 @@ export function criarRecuperacaoManualHml({pool,segredo,telefoneTeste=null,agora
   async solicitar({protocolo,telefone}={}){
    // Retorno idêntico com recibo opaco mesmo sem correspondência. Não enumera protocolos.
    const id=randomUUID(),recibo=randomBytes(32).toString('base64url');
-   if(typeof protocolo!=='string'||!/^[A-Z0-9][A-Za-z0-9-]{2,79}$/.test(protocolo)||!telefoneValido(telefone))return {pedidoId:id,recibo,recebido:true};
+   if(typeof protocolo!=='string'||protocolo.length<1||protocolo.length>80||/[\x00-\x1f\x7f]/.test(protocolo)||!telefoneValido(telefone))return {pedidoId:id,recibo,recebido:true};
    await tx(async c=>{
     const r=await c.query('SELECT id FROM auth_admin_hml.pedidos WHERE (protocolo=$1 OR protocolo_publico=$1) AND telefone_cadastrado=$2 FOR UPDATE',[protocolo,telefone]);
     if(!r.rows[0])return;
