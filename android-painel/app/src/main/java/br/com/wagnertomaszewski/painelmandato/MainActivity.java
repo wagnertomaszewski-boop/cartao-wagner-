@@ -25,10 +25,10 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 public final class MainActivity extends Activity {
-    private static final String HOME = "https://wagnertomaszewski-boop.github.io/cartao-wagner-/painel/index.html";
-    private static final String AGENDA = "https://wagnertomaszewski-boop.github.io/cartao-wagner-/painel/agenda.html";
+    private static final String HOME = BuildConfig.HOMOLOGACAO ? "https://mandato-neon-homologacao.onrender.com/hml/painel/recuperacoes" : "https://wagnertomaszewski-boop.github.io/cartao-wagner-/painel/index.html";
+    private static final String AGENDA = BuildConfig.HOMOLOGACAO ? HOME : "https://wagnertomaszewski-boop.github.io/cartao-wagner-/painel/agenda.html";
     private static final int REQUEST_NOTIFICACAO = 2005;
-    private static final String ALLOWED_PREFIX = "https://wagnertomaszewski-boop.github.io/cartao-wagner-/";
+    private static final String ALLOWED_PREFIX = BuildConfig.HOMOLOGACAO ? "https://mandato-neon-homologacao.onrender.com/hml/" : "https://wagnertomaszewski-boop.github.io/cartao-wagner-/";
     private static final int REQUEST_FILE = 2011;
     private WebView web;
     private ValueCallback<Uri[]> fileResult;
@@ -66,14 +66,14 @@ public final class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
+        settings.setDomStorageEnabled(!BuildConfig.HOMOLOGACAO);
+        settings.setDatabaseEnabled(!BuildConfig.HOMOLOGACAO);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
         settings.setSupportMultipleWindows(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        settings.setCacheMode(BuildConfig.HOMOLOGACAO ? WebSettings.LOAD_NO_CACHE : WebSettings.LOAD_DEFAULT);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
@@ -88,7 +88,7 @@ public final class MainActivity extends Activity {
                 if (url.startsWith(ALLOWED_PREFIX) && "https".equals(uri.getScheme())) {
                     return false;
                 }
-                openExternal(uri);
+                if (!BuildConfig.HOMOLOGACAO || ("whatsapp".equals(uri.getScheme()) && request.hasGesture())) openExternal(uri);
                 return true;
             }
             @Override public void onPageStarted(WebView view, String url, Bitmap favicon) {
@@ -125,7 +125,7 @@ public final class MainActivity extends Activity {
             }
         });
         web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
-            if (url.startsWith("https://")) openExternal(Uri.parse(url));
+            if (!BuildConfig.HOMOLOGACAO && url.startsWith("https://")) openExternal(Uri.parse(url));
         });
         if (savedInstanceState == null) web.loadUrl(
             getIntent().getBooleanExtra("abrirAgenda", false) ? AGENDA : HOME);

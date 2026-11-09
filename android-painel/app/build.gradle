@@ -7,7 +7,10 @@ def arquivoChave = System.getenv('PAINEL_KEYSTORE_FILE')
 android {
     namespace 'br.com.wagnertomaszewski.painelmandato'
     compileSdk 36
+    buildFeatures { buildConfig true }
     defaultConfig {
+        buildConfigField 'boolean', 'HOMOLOGACAO', 'false'
+        manifestPlaceholders = [appName: 'Painel do Mandato']
         applicationId 'br.com.wagnertomaszewski.painelmandato'
         minSdk 24
         targetSdk 36
@@ -25,6 +28,12 @@ android {
         }
     }
     buildTypes {
+        debug {
+            applicationIdSuffix '.homologacao'
+            versionNameSuffix '-hml'
+            buildConfigField 'boolean', 'HOMOLOGACAO', 'true'
+            manifestPlaceholders = [appName: 'Painel do Mandato Homologação']
+        }
         release {
             minifyEnabled false
             signingConfig signingConfigs.release

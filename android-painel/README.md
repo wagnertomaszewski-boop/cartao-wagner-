@@ -75,3 +75,19 @@ Os lembretes são programados localmente, cerca de 24 horas e 1 hora antes. A ag
 - Reutilize **a mesma chave e os mesmos segredos de upload**. Guarde uma cópia de segurança fora do GitHub.
 - Nunca publique `.jks`, senhas ou Base64 da chave no repositório.
 - Teste autenticação, agenda e notificações num dispositivo real antes de distribuir.
+
+## Compilação isolada de homologação (branch de recuperação manual)
+
+`assembleDebug` agora gera **somente homologação**, com pacote
+`br.com.wagnertomaszewski.painelmandato.homologacao`, nome visível próprio e
+servidor `mandato-neon-homologacao.onrender.com/hml/`. Não atualiza nem substitui
+o aplicativo publicado. O workflow verifica o ID e a marca de depuração no APK.
+A assinatura de debug continua temporária: este não é um pacote de distribuição
+a cidadãos nem um AAB autorizado para Play Store.
+
+O WebView de homologação não habilita armazenamento DOM/banco/cache; navegação
+interna fica no prefixo HTTPS de homologação. Somente o esquema `whatsapp` com
+gesto do usuário pode abrir aplicativo externo nesse modo. Login/MFA, intenções
+WhatsApp/Business e retorno pelo botão Voltar precisam ser conferidos em aparelho
+Android autorizado; compilar não comprova instalação ou funcionamento físico.
+A variante release mantém o destino atual e não foi compilada ou publicada.
