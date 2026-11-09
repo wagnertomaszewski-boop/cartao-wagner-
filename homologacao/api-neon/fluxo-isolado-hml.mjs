@@ -1,4 +1,4 @@
-import {randomUUID,randomBytes,randomInt,createHmac} from 'node:crypto';
+import {randomUUID,randomBytes,randomInt,createHmac,timingSafeEqual} from 'node:crypto';
 const erro=(status,message)=>Object.assign(Error(message),{status});
 export function criarFluxoIsoladoHml({pool,segredo,enviarCodigo=null,telefoneTeste=null}){
  const hash=(id,v)=>createHmac('sha256',segredo).update(id+':'+v).digest('hex');
@@ -45,9 +45,11 @@ export function criarFluxoIsoladoHml({pool,segredo,enviarCodigo=null,telefoneTes
    await audit(c,'recuperacao_concluida_chave_substituida',op,id);return {protocolo:p.protocolo,novaChave:chave};
   });},
   async consultar({protocolo,chave}){
-   if(typeof protocolo!=='string'||!/^HML-[0-9a-f-]{36}$/.test(protocolo)||typeof chave!=='string'||! /^[A-Za-z0-9_-]{43}$/.test(chave))return {encontrado:false};
-   const r=await pool.query('SELECT versao FROM auth_admin_hml.pedidos WHERE protocolo=$1 AND chave_hash=$2',[protocolo,hash(protocolo,chave)]);
-   return r.rows[0]?{encontrado:true,assunto:'Solicitação fictícia de homologação',versao:r.rows[0].versao}:{encontrado:false};
+   if(typeof protocolo!=='string'||!/^[A-Z0-9][A-Za-z0-9-]{2,79}$/.test(protocolo)||typeof chave!=='string'||! /^[A-Za-z0-9_-]{43}$/.test(chave))return {encontrado:false};
+   const r=await pool.query('SELECT protocolo,protocolo_publico,chave_hash,versao,dados_solicitacao FROM auth_admin_hml.pedidos WHERE protocolo=$1 OR protocolo_publico=$1',[protocolo]);
+   const p=r.rows[0];if(!p||!timingSafeEqual(Buffer.from(p.chave_hash),Buffer.from(hash(p.protocolo,chave))))return {encontrado:false};
+   const d=p.dados_solicitacao;
+   return d?{encontrado:true,protocolo:p.protocolo_publico||p.protocolo,versao:p.versao,assunto:d.assunto,descricao:d.descricao,localidade:d.localidade,status:d.status,criadoEm:d.criadoEm,historico:d.historico,respostas:d.respostas,anexos:d.anexos}:{encontrado:true,assunto:'Solicitação fictícia de homologação',versao:p.versao};
   },
   async auditoria(){const r=await pool.query('SELECT evento,pedido_id,criado_em FROM auth_admin_hml.auditoria ORDER BY id DESC LIMIT 30');return r.rows;}
  };

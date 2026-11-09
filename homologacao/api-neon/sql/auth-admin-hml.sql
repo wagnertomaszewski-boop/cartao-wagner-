@@ -16,6 +16,6 @@ CREATE TABLE IF NOT EXISTS auth_admin_hml.instalacao(id integer PRIMARY KEY CHEC
 INSERT INTO auth_admin_hml.instalacao(id) VALUES(1) ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS auth_admin_hml.mfa_sessoes(sessao_id text PRIMARY KEY REFERENCES auth_admin_hml.session(id) ON DELETE CASCADE,usuario_id text NOT NULL,confirmado_em timestamptz NOT NULL DEFAULT now());
 CREATE TABLE IF NOT EXISTS auth_admin_hml.limites(chave text PRIMARY KEY,quantidade integer NOT NULL,inicio timestamptz NOT NULL);
-CREATE TABLE IF NOT EXISTS auth_admin_hml.pedidos(id uuid PRIMARY KEY,protocolo text UNIQUE NOT NULL CHECK(protocolo LIKE 'HML-%'),chave_hash text NOT NULL,versao integer NOT NULL DEFAULT 1,aprovado_por text,aprovado_em timestamptz,desafio_id uuid,codigo_hash text,expira_em timestamptz,tentativas integer NOT NULL DEFAULT 0,confirmado_em timestamptz,consumido_em timestamptz);
+CREATE TABLE IF NOT EXISTS auth_admin_hml.pedidos(id uuid PRIMARY KEY,protocolo_publico text UNIQUE,dados_solicitacao jsonb,protocolo text UNIQUE NOT NULL CHECK(protocolo LIKE 'HML-%'),chave_hash text NOT NULL,versao integer NOT NULL DEFAULT 1,aprovado_por text,aprovado_em timestamptz,desafio_id uuid,codigo_hash text,expira_em timestamptz,tentativas integer NOT NULL DEFAULT 0,confirmado_em timestamptz,consumido_em timestamptz);
 CREATE TABLE IF NOT EXISTS auth_admin_hml.auditoria(id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,evento text NOT NULL,usuario_id text,pedido_id uuid,criado_em timestamptz NOT NULL DEFAULT now());
 COMMIT;

@@ -15,7 +15,7 @@ export function criarRecuperacaoManualHml({pool,segredo,telefoneTeste=null,agora
   // Ordem única de locks: primeiro a solicitação, depois seu pedido de recuperação.
   // Evita deadlock quando o sucesso invalida outros pedidos da mesma solicitação.
   await c.query('SELECT id FROM auth_admin_hml.pedidos WHERE id=$1 FOR UPDATE',[base.rows[0].solicitacao_id]);
-  const r=await c.query('SELECT r.*,p.protocolo,p.telefone_cadastrado,p.telefone_autorizacao_hash,p.telefone_autorizado_por FROM auth_admin_hml.recuperacoes_manuais r JOIN auth_admin_hml.pedidos p ON p.id=r.solicitacao_id WHERE r.id=$1 FOR UPDATE OF r',[id]);
+  const r=await c.query('SELECT r.*,p.protocolo,p.protocolo_publico,p.telefone_cadastrado,p.telefone_autorizacao_hash,p.telefone_autorizado_por FROM auth_admin_hml.recuperacoes_manuais r JOIN auth_admin_hml.pedidos p ON p.id=r.solicitacao_id WHERE r.id=$1 FOR UPDATE OF r',[id]);
   if(!r.rows[0])throw erro(404,'Pedido não encontrado');return r.rows[0];
  }
  const destinoPermitido=p=>(telefoneValido(telefoneTeste)&&p.telefone_cadastrado===telefoneTeste)||(p.telefone_autorizado_por===p.decidido_por&&igual(p.telefone_autorizacao_hash,hash('destino:'+p.solicitacao_id,p.telefone_cadastrado)));
@@ -34,9 +34,9 @@ export function criarRecuperacaoManualHml({pool,segredo,telefoneTeste=null,agora
   async solicitar({protocolo,telefone}={}){
    // Retorno idêntico com recibo opaco mesmo sem correspondência. Não enumera protocolos.
    const id=randomUUID(),recibo=randomBytes(32).toString('base64url');
-   if(typeof protocolo!=='string'||!/^HML-[0-9a-f-]{36}$/.test(protocolo)||!telefoneValido(telefone))return {pedidoId:id,recibo,recebido:true};
+   if(typeof protocolo!=='string'||!/^[A-Z0-9][A-Za-z0-9-]{2,79}$/.test(protocolo)||!telefoneValido(telefone))return {pedidoId:id,recibo,recebido:true};
    await tx(async c=>{
-    const r=await c.query('SELECT id FROM auth_admin_hml.pedidos WHERE protocolo=$1 AND telefone_cadastrado=$2 FOR UPDATE',[protocolo,telefone]);
+    const r=await c.query('SELECT id FROM auth_admin_hml.pedidos WHERE (protocolo=$1 OR protocolo_publico=$1) AND telefone_cadastrado=$2 FOR UPDATE',[protocolo,telefone]);
     if(!r.rows[0])return;
     const solicitacaoId=r.rows[0].id;
     const n=await c.query("SELECT count(*)::int AS n FROM auth_admin_hml.recuperacoes_manuais WHERE solicitacao_id=$1 AND criado_em>now()-interval '1 hour'",[solicitacaoId]);
@@ -45,7 +45,7 @@ export function criarRecuperacaoManualHml({pool,segredo,telefoneTeste=null,agora
     await audit(c,'manual_recuperacao_solicitada',null,id);
    });return {pedidoId:id,recibo,recebido:true};
   },
-  async listar(){const r=await pool.query("SELECT r.id,r.situacao,r.criado_em,r.decidido_em,r.justificativa,r.emissoes,r.expira_em,p.protocolo,p.telefone_cadastrado AS telefone,CASE WHEN r.consumido_em IS NOT NULL THEN 'utilizado' WHEN r.situacao='bloqueado' THEN 'bloqueado' WHEN r.emissoes=0 THEN 'não emitido' WHEN r.expira_em<=now() THEN 'expirado' WHEN r.codigo_hash IS NULL THEN 'indisponível' ELSE 'vigente' END AS codigo_situacao FROM auth_admin_hml.recuperacoes_manuais r JOIN auth_admin_hml.pedidos p ON p.id=r.solicitacao_id ORDER BY r.criado_em DESC LIMIT 50");return {pedidos:r.rows.map(({codigo_situacao,...p})=>({...p,codigoSituacao:codigo_situacao}))};},
+  async listar(){const r=await pool.query("SELECT r.id,r.situacao,r.criado_em,r.decidido_em,r.justificativa,r.emissoes,r.expira_em,COALESCE(p.protocolo_publico,p.protocolo) AS protocolo,p.telefone_cadastrado AS telefone,CASE WHEN r.consumido_em IS NOT NULL THEN 'utilizado' WHEN r.situacao='bloqueado' THEN 'bloqueado' WHEN r.emissoes=0 THEN 'não emitido' WHEN r.expira_em<=now() THEN 'expirado' WHEN r.codigo_hash IS NULL THEN 'indisponível' ELSE 'vigente' END AS codigo_situacao FROM auth_admin_hml.recuperacoes_manuais r JOIN auth_admin_hml.pedidos p ON p.id=r.solicitacao_id ORDER BY r.criado_em DESC LIMIT 50");return {pedidos:r.rows.map(({codigo_situacao,...p})=>({...p,codigoSituacao:codigo_situacao}))};},
   async auditar(id){return tx(async c=>{await obter(c,id);const r=await c.query('SELECT evento,usuario_id,criado_em FROM auth_admin_hml.auditoria WHERE pedido_id=$1 ORDER BY id',[id]);return {eventos:r.rows};});},
   async decidir(id,op,d){return tx(async c=>{
    const p=await obter(c,id);
@@ -94,7 +94,7 @@ export function criarRecuperacaoManualHml({pool,segredo,telefoneTeste=null,agora
     // Uma recuperação substitui todas as outras aprovações pendentes da mesma solicitação.
     await c.query("UPDATE auth_admin_hml.recuperacoes_manuais SET situacao='bloqueado',codigo_hash=NULL WHERE solicitacao_id=$1 AND id<>$2 AND situacao IN ('pendente','aprovado')",[p.solicitacao_id,pedidoId]);
     await audit(c,'manual_codigo_validado',null,pedidoId);await audit(c,'manual_recuperacao_concluida',null,pedidoId);
-    return {confirmado:true,protocolo:p.protocolo,novaChave};
+    return {confirmado:true,protocolo:p.protocolo_publico||p.protocolo,novaChave};
    });
   }
  };

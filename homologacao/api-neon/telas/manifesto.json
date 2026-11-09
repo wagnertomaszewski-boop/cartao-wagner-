@@ -1,8 +1,10 @@
 {
-  "v2/recuperar-acesso.html": "c4b60bc4bb6a235f363d55cc8530d4d4dedc4b7d7374e3cb2b8d0efc23a85862",
+  "v2/solicitar-homologacao.html": "7b103ffcb03c964edd6ab56785ed9bb1a7d2170f307aaadc8c00cfa6a7b42f75",
+  "v2/seguranca/tela-cadastro-hml.mjs": "88d3020384c40fafba6ad98e6755b58d0d8da99975070e74dd9685c2ff743dd5",
+  "v2/recuperar-acesso.html": "6c71bd4c6431ccd5c85e128208806be9b1b0c79be6d0253c887849ed02c631bd",
   "v2/recuperacao.css": "74441f83b95a9a61cc362ce1c3f040917575f496f586951457d6528c74712cdf",
-  "v2/seguranca/cliente-recuperacao-manual.mjs": "ef5dc8632f833375bd84e3a62eae68ea80e278c4c165265c07529b7643bf1926",
-  "v2/seguranca/tela-recuperacao-manual.mjs": "ac74f6f77ed711fa74b751cc8e485c7281a9715c3126f09dc518ccb4ca7e05ce",
-  "painel/recuperacoes.html": "96c6ea1fa65ea668969f24c0f98860801cc3e88a695fd006524bbf8573245c34",
-  "painel/seguranca/recuperacoes.mjs": "07471286d6845277c1ca24f37d98300277840ad252978d7a4d95ba2f795d843b"
+  "v2/seguranca/cliente-recuperacao-manual.mjs": "ca109e49a08a65d3749d8c070f9bd515fe258a78051e20e2d6aa48a06a8a38f1",
+  "v2/seguranca/tela-recuperacao-manual.mjs": "2cbbfe165f4ed70fca3fec3dcf954d878be8e049d7d4df18c9f4f4b13a09c469",
+  "painel/recuperacoes.html": "448408ce5fc9fc07e12aa80b29600a288df065bc0e9d02792f57be3e4d4ad237",
+  "painel/seguranca/recuperacoes.mjs": "e0db27c11b499bd483e2e2e9aa4c7fc56c86dd14d2b8bd825ae000038f91fc50"
 }

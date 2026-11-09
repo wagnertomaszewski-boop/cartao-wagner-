@@ -4,7 +4,7 @@ import {randomBytes} from 'node:crypto';import {readFile} from 'node:fs/promises
 import {createOTP} from '@better-auth/utils/otp';import {base32} from '@better-auth/utils/base32';
 import {montar} from '../servidor-auth-hml.mjs';import {HML_ORIGIN} from '../auth-admin-hml.mjs';
 test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação auditada, CSRF, rotas restritas e logout',async()=>{
- const pg=new PGlite();await pg.exec(await readFile(new URL('../sql/auth-admin-hml.sql',import.meta.url),'utf8'));await pg.exec('CREATE ROLE mandato_auth_hml');await pg.exec(await readFile(new URL('../sql/recuperacao-manual-hml.sql',import.meta.url),'utf8'));await pg.exec('SET search_path=auth_admin_hml');
+ const pg=new PGlite();await pg.exec(await readFile(new URL('../sql/auth-admin-hml.sql',import.meta.url),'utf8'));await pg.exec('CREATE ROLE mandato_auth_hml');await pg.exec(await readFile(new URL('../sql/recuperacao-manual-hml.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../sql/solicitacoes-modelo-hml.sql',import.meta.url),'utf8'));await pg.exec('SET search_path=auth_admin_hml');
  async function query(sql,params){try{const r=await pg.query(sql,params);return {...r,rowCount:r.affectedRows,command:sql.trim().split(' ')[0].toUpperCase()};}catch(e){throw e;}}
  const pool={query,connect:async()=>({query,release(){}}),end:async()=>{}};
  const env={AUTH_HML_ADMIN_EMAIL:'admin-http@example.invalid',AUTH_HML_SECRET:randomBytes(48).toString('hex'),AUTH_HML_BOOTSTRAP_TOKEN:randomBytes(48).toString('hex')};
@@ -15,6 +15,7 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
  async function call(path,data,origin=HML_ORIGIN){const r=await fetch(url+'/hml'+path,{method:data===undefined?'GET':'POST',headers:{Origin:origin,'Content-Type':'application/json',cookie:[...jar].map(([k,v])=>k+'='+v).join('; ')},body:data===undefined?undefined:JSON.stringify(data)});for(const c of r.headers.getSetCookie()){const a=c.split(';')[0],i=a.indexOf('=');jar.set(a.slice(0,i),a.slice(i+1));}return {status:r.status,headers:r.headers,data:await r.json()};}
  try{
   assert.equal((await call('/manual/pedidos')).status,401);
+  assert.equal((await call('/modelo/solicitacoes')).status,401);assert.equal((await call('/modelo/legado',{cenario:'legado'})).status,401);
   assert.equal((await call('/manual/fixture',{})).status,401);
   assert.equal((await call('/manual/fixture-pessoal',{telefone:'+5551999999999',confirmacaoTelefone:'+5551999999999',autorizoMeuNumero:true})).status,401);
   assert.equal((await call('/api/pedidos',{})).status,401);
@@ -27,6 +28,15 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
   const secret=base32.decode(new URL(r.data.totpURI).searchParams.get('secret'));const code=await createOTP(secret,{digits:6,period:30}).totp();
   r=await call('/auth/two-factor/verify-totp',{code,trustDevice:false});assert.equal(r.status,200);assert.equal('token' in r.data,false);
   assert.equal((await call('/api/estado')).data.mfaRecente,true);
+  const novoCadastro={ficticio:true,origem:'mandato',p_nome:'Pessoa fictícia',p_whatsapp:'+5551000000000',p_localidade:'Teste',p_assunto:'Teste de integração',p_descricao:'Descrição fictícia.'};
+  const novo=(await call('/cidadao/cadastrar',novoCadastro)).data;
+  assert.match(novo.chaveInicial,/^[A-Za-z0-9_-]{43}$/);
+  assert.equal((await call('/cidadao/consultar',{protocolo:novo.protocolo})).data.encontrado,false);
+  assert.equal((await call('/cidadao/consultar',{protocolo:novo.protocolo,chave:novo.chaveInicial})).data.status,'Recebida');
+  assert.equal((await call('/cidadao/cadastrar',novoCadastro,'https://origem-invalida.example')).status,403);
+  assert.equal((await call('/modelo/solicitacoes')).data.solicitacoes.length,1);
+  const legado=(await call('/modelo/legado',{cenario:'legado'})).data;assert.equal(legado.chaveInicial,null);
+
   const p=(await call('/api/pedidos',{})).data;assert.ok(p.id);assert.equal((await call('/api/pedidos/'+p.id+'/aprovar',{})).data.aprovado,true);
   assert.equal((await call('/api/pedidos/'+p.id+'/iniciar',{})).status,503);
   assert.ok((await call('/api/auditoria')).data.eventos.some(e=>e.evento==='aprovacao_auditada'));
@@ -61,11 +71,14 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
   await pool.query("UPDATE auth_admin_hml.mfa_sessoes SET confirmado_em=now()-interval '6 minutes'");
   assert.equal((await call('/manual/fixture-pessoal',{telefone:'+5551999999999',confirmacaoTelefone:'+5551999999999',autorizoMeuNumero:true})).status,403);
   assert.equal((await call('/manual/pedidos/'+rp.pedidoId+'/auditoria')).status,403);
+  assert.equal((await call('/modelo/solicitacoes')).status,403);assert.equal((await call('/modelo/legado',{cenario:'legado'})).status,403);
   assert.equal((await call(base+'/decidir',conferir)).status,403);assert.equal((await call(base+'/emitir',conferir)).status,403);
   await call('/auth/sign-out',{});assert.equal((await call('/api/pedidos',{})).status,401);
   r=await call('/auth/sign-in/email',{email:env.AUTH_HML_ADMIN_EMAIL,password});assert.equal(r.data.twoFactorRedirect,true);
   assert.equal((await call('/api/pedidos',{})).status,401);
   r=await call('/auth/two-factor/verify-totp',{code:await createOTP(secret,{digits:6,period:30}).totp(),trustDevice:false});assert.equal(r.status,200);
   assert.equal((await call('/api/estado')).data.mfaRecente,true);
+
+
  }finally{await new Promise(r=>server.close(r));await pg.close();}
 });

@@ -1,0 +1,6 @@
+import {criarClienteRecuperacaoManual} from './cliente-recuperacao-manual.mjs';
+const $=id=>document.getElementById(id);let api,resultado=null,ocupado=false;
+try{api=criarClienteRecuperacaoManual({origem:location.origin});}catch(e){$('mensagem').textContent=e.message;$('enviar').disabled=true;}
+$('cadastro').onsubmit=async e=>{e.preventDefault();if(!api||ocupado)return;ocupado=true;$('enviar').disabled=true;try{const d=Object.fromEntries(new FormData(e.target));resultado=await api.cadastrar({...d,ficticio:d.ficticio==='on',origem:location.pathname.startsWith('/hml/mandato/')?'mandato':'v2'});$('protocolo').textContent=resultado.protocolo;$('chave').value=resultado.chaveInicial;$('resultado').hidden=false;$('cadastro').hidden=true;$('mensagem').textContent='Solicitação fictícia criada com acesso privado.';}catch(e){$('mensagem').textContent=e.message;}finally{ocupado=false;$('enviar').disabled=false;}};
+$('copiar').onclick=async()=>{try{if(!resultado)return;await navigator.clipboard.writeText('Protocolo: '+resultado.protocolo+'\nChave: '+resultado.chaveInicial);$('mensagem').textContent='Protocolo e chave copiados. Guarde em local seguro.';}catch{$('mensagem').textContent='Não foi possível copiar. Guarde os dados exibidos.';}};
+addEventListener('pagehide',()=>{resultado=null;$('chave').value='';});
