@@ -1,3 +1,4 @@
+import {criarClienteRecuperacaoManual} from '../../../v2/seguranca/cliente-recuperacao-manual.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';import http from 'node:http';
 import {randomBytes} from 'node:crypto';import {readFile} from 'node:fs/promises';import {PGlite} from '@electric-sql/pglite';
 import {createOTP} from '@better-auth/utils/otp';import {base32} from '@better-auth/utils/base32';
@@ -46,9 +47,20 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
   assert.equal((await call('/cidadao/consultar',{protocolo:fixture.protocolo,chave:final.novaChave})).data.encontrado,true);
   assert.equal((await call('/cidadao/consultar',{protocolo:fixture.protocolo})).data.encontrado,false);
   assert.equal((await call('/manual/fixture-pessoal',{})).status,400);
+  // Mesmo cliente usado nas telas definitivas, contra HTTP + autenticação TOTP reais.
+  const cliente=criarClienteRecuperacaoManual({origem:HML_ORIGIN,buscar:(endpoint,opcoes)=>fetch(url+new URL(endpoint).pathname,{...opcoes,headers:{...opcoes.headers,Origin:HML_ORIGIN,...(opcoes.credentials==='same-origin'?{cookie:[...jar].map(([k,v])=>k+'='+v).join('; ')}:{})}})});
+  const fp=(await call('/manual/fixture',{})).data;
+  const rp=await cliente.solicitar({protocolo:fp.protocolo,telefone:fp.telefone});
+  const cf={identidadeConferida:true,telefoneConfirmado:fp.telefone,justificativa:'Identidade fictícia conferida para o teste do cliente definitivo.',decisao:'aprovar'};
+  await cliente.decidir(rp.pedidoId,cf);const ec=await cliente.emitir(rp.pedidoId,cf);
+  const vc=await cliente.validar({...rp,codigo:ec.codigo});assert.equal(vc.confirmado,true);assert.equal((await cliente.validar({...rp,codigo:ec.codigo})).confirmado,false);
+  assert.equal((await cliente.consultar({protocolo:fp.protocolo,chave:vc.novaChave})).encontrado,true);
+  assert.equal((await cliente.consultar({protocolo:fp.protocolo,chave:fp.chaveInicial})).encontrado,false);
+  assert.ok((await cliente.auditoria(rp.pedidoId)).eventos.some(e=>e.evento==='manual_codigo_reuso_bloqueado'));
   const pessoal=await call('/manual/fixture-pessoal',{telefone:'+5551999999999',confirmacaoTelefone:'+5551999999999',autorizoMeuNumero:true});assert.equal(pessoal.status,200);assert.equal(pessoal.data.ficticio,true);assert.equal('telefone' in pessoal.data,false);assert.equal('chaveInicial' in pessoal.data,false);assert.ok(pessoal.data.telefoneMascarado.includes('*****'));assert.equal(pessoal.headers.get('cache-control'),'no-store');
   await pool.query("UPDATE auth_admin_hml.mfa_sessoes SET confirmado_em=now()-interval '6 minutes'");
   assert.equal((await call('/manual/fixture-pessoal',{telefone:'+5551999999999',confirmacaoTelefone:'+5551999999999',autorizoMeuNumero:true})).status,403);
+  assert.equal((await call('/manual/pedidos/'+rp.pedidoId+'/auditoria')).status,403);
   assert.equal((await call(base+'/decidir',conferir)).status,403);assert.equal((await call(base+'/emitir',conferir)).status,403);
   await call('/auth/sign-out',{});assert.equal((await call('/api/pedidos',{})).status,401);
   r=await call('/auth/sign-in/email',{email:env.AUTH_HML_ADMIN_EMAIL,password});assert.equal(r.data.twoFactorRedirect,true);

@@ -36,7 +36,7 @@ const scenarios = [
     )(...Object.values(mocks), id, button);
     assert.equal(networkCalls, 0, name);
     assert.equal(button.disabled, false, name);
-    if (name === 'tipo-invalido' || name === 'descricao-curta' || name === 'protocolo-longo')
+    if (name === 'id-zero' || name === 'tipo-invalido' || name === 'descricao-curta' || name === 'protocolo-longo')
       assert.equal(alerts.length, 1, name);
     else assert.equal(alerts.length, 0, name);
   }

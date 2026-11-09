@@ -17,14 +17,14 @@ function elemento(tag){
 async function caso(modo){
  const destino=elemento('div'),botao=elemento('button'),chamadas=[];
  const perigoso='<img src=x onerror=alert(1)>';
- const dados=[{id:1,tipo:'cobranca',descricao:perigoso,protocolo_referencia:'PROTO-001',registrado_em:'2026-11-08T12:00:00Z'}];
+ const dados=[{id:1,solicitacao_id:7,tipo:'cobranca',descricao:perigoso,protocolo_referencia:'PROTO-001',registrado_em:'2026-11-08T12:00:00Z'}];
  const deps={
   document:{getElementById:()=>destino,createElement:elemento},
   obterSessaoValida:async()=>modo==='sessao'?null:{access_token:'fake'},
   SUPABASE_URL:'https://example.invalid',SUPABASE_KEY:'fake',
   requisicao:async(url,options)=>{chamadas.push({url,options});return {
     ok:modo!=='erro',status:modo==='erro'?500:200,
-    json:async()=>modo==='vazio'?[]:modo==='erro'?{message:'Falha simulada'}:dados};},
+    json:async()=>modo==='vazio'?[]:modo==='erro'?{message:'Falha simulada'}:modo==='outra'?dados.map(x=>({...x,solicitacao_id:8})):dados};},
   formatarData:()=> '08/11/2026',mensagemDeErro:e=>e.message
  };
  await new Function(...Object.keys(deps),'botao','id',codigo+';return consultarHistoricoFiscalizacaoMandato(id,botao);')(...Object.values(deps),botao,7);
@@ -42,8 +42,9 @@ async function caso(modo){
   assert.match(destino.children[0].children[0].textContent,/<img src=x onerror=alert\(1\)>/);
   assert.equal(destino.children[0].children[0].innerHTML,undefined,'Sem insercao HTML');
  }else if(modo==='vazio')assert.match(destino.textContent,/Nenhum registro/);
+ else if(modo==='outra'){assert.match(destino.textContent,/outra solicitação/);assert.equal(destino.children.length,0);}
  else if(modo==='erro')assert.match(destino.textContent,/Erro ao consultar histórico/);
  else assert.match(destino.textContent,/Sessão expirada/);
 }
-(async()=>{for(const modo of ['ok','vazio','erro','sessao'])await caso(modo);
- console.log('OK: 4 cenarios de consulta segura do historico');})().catch(e=>{console.error(e);process.exitCode=1});
+(async()=>{for(const modo of ['ok','vazio','erro','sessao','outra'])await caso(modo);
+ console.log('OK: 5 cenarios de consulta segura do historico');})().catch(e=>{console.error(e);process.exitCode=1});

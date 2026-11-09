@@ -5,7 +5,8 @@ const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const begin=html.indexOf('async function salvarEncaminhamentoPrefeitura(');
 const end=html.indexOf('async function registrarHistoricoFiscalizacaoMandato(',begin);
 assert.ok(begin>=0&&end>begin,'Função de encaminhamento não localizada');
-const source=html.slice(begin,end);
+const helper=html.slice(html.indexOf('function diasEntreDatasCivisMandato('),html.indexOf('function diasDesdeEncaminhamentoMandato('));
+const source=helper+html.slice(begin,end);
 async function test(mode){
   const alerts=[],calls=[],button={disabled:false};
   const fields={
@@ -26,7 +27,7 @@ async function test(mode){
   assert.equal(button.disabled,false,'Botão deve permanecer disponível');
   assert.equal(calls.length,mode==='network'?1:0,'Não deve enviar gravação inválida');
   const expected={
-    future:/não pode ser futura/,missingDate:/Informe também a data/,
+    future:/inválida ou futura/,missingDate:/Informe também a data/,
     empty:/Não é permitido apagar/,long:/no máximo 120/,expired:/Sessão expirada/,
     network:/Rede indisponível/
   };

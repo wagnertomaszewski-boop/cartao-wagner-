@@ -704,6 +704,7 @@
     </section>
 
     <section id="viewMais" class="painel-view">
+      <a class="atalho" id="entradaRecuperacoesManuais" href="./recuperacoes.html" hidden style="display:none"><b>🔐</b><strong>Recuperações de acesso</strong><span>Aprovar, rejeitar e enviar código manual pelo WhatsApp</span></a>
       <section aria-labelledby="tituloChavesPrivadas" style="background:#fff;border:1px solid #d9e3ee;border-radius:14px;padding:16px;margin-bottom:16px">
         <h3 id="tituloChavesPrivadas">🔐 Chaves privadas de acompanhamento</h3>
         <p>Emissão e revogação exigem autorização administrativa e comprovação de identidade pelo servidor.</p>
@@ -2398,6 +2399,7 @@ async function registrarHistoricoFiscalizacaoMandato(id,botao){
   botao.disabled=true;
   let envioIniciado=false;
   let respostaRecebida=false;
+  let gravacaoConfirmada=false;
   try{
     const sessao=await obterSessaoValida();
     if(!sessao)throw new Error("Sessão expirada. Entre novamente.");
@@ -2419,6 +2421,7 @@ async function registrarHistoricoFiscalizacaoMandato(id,botao){
       throw new Error("Resposta de gravação inconclusiva. Consulte o histórico antes de tentar novamente para evitar duplicidade.");
     }
     const idRegistro=retorno[0].id;
+    gravacaoConfirmada=true;
     const verificacao=await requisicao(
       SUPABASE_URL+"/rest/v1/solicitacoes_fiscalizacao_historico?id=eq."+encodeURIComponent(idRegistro)+"&select=id,solicitacao_id,tipo,descricao,protocolo_referencia",
       {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Cache-Control":"no-cache"}}
@@ -2436,7 +2439,9 @@ async function registrarHistoricoFiscalizacaoMandato(id,botao){
     if(destino)destino.textContent="Registro confirmado. Use Consultar histórico auditável para visualizar a linha do tempo.";
   }catch(e){
     const erro=mensagemDeErro(e);
-    if(envioIniciado && !respostaRecebida){
+    if(gravacaoConfirmada){
+      alert("Registro enviado. A leitura de confirmação não foi concluída. Consulte o histórico antes de repetir para evitar duplicidade. Detalhes: "+erro);
+    }else if(envioIniciado && !respostaRecebida){
       alert("A conexão falhou durante o envio. A gravação pode ter ocorrido. Consulte o histórico antes de tentar novamente para evitar duplicidade. Detalhes: "+erro);
     }else{
       alert(erro);
@@ -2715,6 +2720,7 @@ document.getElementById("filtroBusca").addEventListener("input", () => {
 
 document.getElementById("btnSair").addEventListener("click", sair);
 
+if(location.origin==='https://mandato-neon-homologacao.onrender.com'&&location.pathname.startsWith('/hml/painel/')){document.getElementById('entradaRecuperacoesManuais').hidden=false;document.getElementById('entradaRecuperacoesManuais').style.display='block';}
 verificarLogin();
 
 // Permite instalar o Painel V17 na tela inicial do celular como aplicativo web.

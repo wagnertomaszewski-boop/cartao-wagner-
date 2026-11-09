@@ -34,3 +34,14 @@ export async function autotestarDestinoPessoal({manual,pool}){
  const evidencia=JSON.stringify((await pool.query('SELECT evento FROM auth_admin_hml.auditoria WHERE pedido_id IN ($1,$2)',[p.id,pedido.pedidoId])).rows);assert.ok(!evidencia.includes(telefone));assert.ok(!evidencia.includes(e.codigo));assert.ok(evidencia.includes('manual_codigo_reuso_bloqueado'));
  await pool.query("INSERT INTO auth_admin_hml.auditoria(evento,usuario_id,pedido_id) VALUES('manual_autoteste_v2_destino_concluido',$1,$2)",[op.usuarioId,pedido.pedidoId]);return {jaExecutado:false};
 }
+export async function autotestarConcorrenciaEntrePedidos({manual,pool}){
+ const feito=await pool.query("SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v3_telas_concluido' LIMIT 1");if(feito.rows.length)return {jaExecutado:true};
+ const op={usuarioId:'autoteste-telas-ficticio-hml'},p=await manual.criarFixture(op),a=await manual.solicitar({protocolo:p.protocolo,telefone:p.telefone}),b=await manual.solicitar({protocolo:p.protocolo,telefone:p.telefone});
+ const d={decisao:'aprovar',identidadeConferida:true,telefoneConfirmado:p.telefone,justificativa:'Conferência de fixtures concorrentes para integração das telas.'};
+ for(const r of [a,b])await manual.decidir(r.pedidoId,op,d);
+ const ea=await manual.emitir(a.pedidoId,op,d),eb=await manual.emitir(b.pedidoId,op,d);
+ const resultados=await Promise.all([manual.validar({...a,codigo:ea.codigo}),manual.validar({...b,codigo:eb.codigo})]);assert.equal(resultados.filter(r=>r.confirmado).length,1);
+ const auditoria=await manual.auditar(a.pedidoId);assert.ok(auditoria.eventos.some(e=>e.evento==='manual_aprovacao'));
+ const prazo=(await pool.query('SELECT extract(epoch FROM (expira_em-emitido_em))::float AS segundos FROM auth_admin_hml.recuperacoes_manuais WHERE id=$1',[a.pedidoId])).rows[0];assert.equal(prazo.segundos,300);
+ await pool.query("INSERT INTO auth_admin_hml.auditoria(evento,usuario_id,pedido_id) VALUES('manual_autoteste_v3_telas_concluido',$1,$2)",[op.usuarioId,a.pedidoId]);return {jaExecutado:false};
+}

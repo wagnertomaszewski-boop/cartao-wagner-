@@ -10,7 +10,12 @@ export function criarRecuperacaoManualHml({pool,segredo,telefoneTeste=null,agora
  async function tx(fn){const c=await pool.connect();try{await c.query('BEGIN');const r=await fn(c);await c.query('COMMIT');return r;}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}}
  const audit=(c,evento,op,id)=>c.query('INSERT INTO auth_admin_hml.auditoria(evento,usuario_id,pedido_id) VALUES($1,$2,$3)',[evento,op?.usuarioId||null,id]);
  async function obter(c,id){if(!uuid(id))throw erro(400,'Pedido inválido');
-  const r=await c.query('SELECT r.*,p.protocolo,p.telefone_cadastrado,p.telefone_autorizacao_hash,p.telefone_autorizado_por FROM auth_admin_hml.recuperacoes_manuais r JOIN auth_admin_hml.pedidos p ON p.id=r.solicitacao_id WHERE r.id=$1 FOR UPDATE OF r,p',[id]);
+  const base=await c.query('SELECT solicitacao_id FROM auth_admin_hml.recuperacoes_manuais WHERE id=$1',[id]);
+  if(!base.rows[0])throw erro(404,'Pedido não encontrado');
+  // Ordem única de locks: primeiro a solicitação, depois seu pedido de recuperação.
+  // Evita deadlock quando o sucesso invalida outros pedidos da mesma solicitação.
+  await c.query('SELECT id FROM auth_admin_hml.pedidos WHERE id=$1 FOR UPDATE',[base.rows[0].solicitacao_id]);
+  const r=await c.query('SELECT r.*,p.protocolo,p.telefone_cadastrado,p.telefone_autorizacao_hash,p.telefone_autorizado_por FROM auth_admin_hml.recuperacoes_manuais r JOIN auth_admin_hml.pedidos p ON p.id=r.solicitacao_id WHERE r.id=$1 FOR UPDATE OF r',[id]);
   if(!r.rows[0])throw erro(404,'Pedido não encontrado');return r.rows[0];
  }
  const destinoPermitido=p=>(telefoneValido(telefoneTeste)&&p.telefone_cadastrado===telefoneTeste)||(p.telefone_autorizado_por===p.decidido_por&&igual(p.telefone_autorizacao_hash,hash('destino:'+p.solicitacao_id,p.telefone_cadastrado)));
@@ -40,7 +45,8 @@ export function criarRecuperacaoManualHml({pool,segredo,telefoneTeste=null,agora
     await audit(c,'manual_recuperacao_solicitada',null,id);
    });return {pedidoId:id,recibo,recebido:true};
   },
-  async listar(){const r=await pool.query('SELECT r.id,r.situacao,r.criado_em,r.decidido_em,r.justificativa,r.emissoes,r.expira_em,p.protocolo,p.telefone_cadastrado AS telefone FROM auth_admin_hml.recuperacoes_manuais r JOIN auth_admin_hml.pedidos p ON p.id=r.solicitacao_id ORDER BY r.criado_em DESC LIMIT 50');return {pedidos:r.rows};},
+  async listar(){const r=await pool.query("SELECT r.id,r.situacao,r.criado_em,r.decidido_em,r.justificativa,r.emissoes,r.expira_em,p.protocolo,p.telefone_cadastrado AS telefone,CASE WHEN r.consumido_em IS NOT NULL THEN 'utilizado' WHEN r.situacao='bloqueado' THEN 'bloqueado' WHEN r.emissoes=0 THEN 'não emitido' WHEN r.expira_em<=now() THEN 'expirado' WHEN r.codigo_hash IS NULL THEN 'indisponível' ELSE 'vigente' END AS codigo_situacao FROM auth_admin_hml.recuperacoes_manuais r JOIN auth_admin_hml.pedidos p ON p.id=r.solicitacao_id ORDER BY r.criado_em DESC LIMIT 50");return {pedidos:r.rows.map(({codigo_situacao,...p})=>({...p,codigoSituacao:codigo_situacao}))};},
+  async auditar(id){return tx(async c=>{await obter(c,id);const r=await c.query('SELECT evento,usuario_id,criado_em FROM auth_admin_hml.auditoria WHERE pedido_id=$1 ORDER BY id',[id]);return {eventos:r.rows};});},
   async decidir(id,op,d){return tx(async c=>{
    const p=await obter(c,id);
    if(p.situacao!=='pendente')throw erro(409,'Pedido já decidido');
@@ -55,9 +61,9 @@ export function criarRecuperacaoManualHml({pool,segredo,telefoneTeste=null,agora
    if(p.situacao!=='aprovado'||p.decidido_por!==op.usuarioId||p.consumido_em)throw erro(403,'Aprovação vinculada necessária');
    if(p.emissoes>=3)throw erro(429,'Limite de emissões atingido');
    if(p.emitido_em&&agora()-new Date(p.emitido_em).getTime()<60000)throw erro(429,'Aguarde um minuto antes de gerar outro código');
-   const codigo=gerarCodigo(),desafioId=randomUUID(),expiraEm=new Date(agora()+300000).toISOString();
+   const emitidoEm=agora(),codigo=gerarCodigo(),desafioId=randomUUID(),expiraEm=new Date(emitidoEm+300000).toISOString();
    if(!/^\d{6}$/.test(codigo))throw Error('Gerador inválido');
-   await c.query('UPDATE auth_admin_hml.recuperacoes_manuais SET desafio_id=$2,codigo_hash=$3,expira_em=$4,emitido_em=$5,emissoes=emissoes+1,tentativas=0 WHERE id=$1',[id,desafioId,hash(desafioId,codigo),expiraEm,new Date(agora()).toISOString()]);
+   await c.query('UPDATE auth_admin_hml.recuperacoes_manuais SET desafio_id=$2,codigo_hash=$3,expira_em=$4,emitido_em=$5,emissoes=emissoes+1,tentativas=0 WHERE id=$1',[id,desafioId,hash(desafioId,codigo),expiraEm,new Date(emitidoEm).toISOString()]);
    await audit(c,'manual_codigo_gerado',op,id);
    return {desafioId,codigo,expiraEm,telefone:p.telefone_cadastrado,envioPermitido:destinoPermitido(p),
     mensagem:'Mandato em Ação — recuperação de acesso. Seu código temporário é '+codigo+'. Válido por 5 minutos e para um único uso. Digite-o somente na tela onde solicitou a recuperação. Se não pediu, ignore.',entregaConfirmada:false};

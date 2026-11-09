@@ -1,4 +1,4 @@
-import {autotestarRecuperacaoManual,autotestarDestinoPessoal} from './autoteste-manual-hml.mjs';
+import {autotestarRecuperacaoManual,autotestarDestinoPessoal,autotestarConcorrenciaEntrePedidos} from './autoteste-manual-hml.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -69,3 +69,8 @@ test('destino pessoal: autorização explícita e repetição; vínculo imutáve
 });
 
 test('autoteste pessoal no banco não envia mensagens e guarda apenas evidência sem número',async()=>{const {pg,pool,f:manual}=await banco();try{assert.equal((await autotestarDestinoPessoal({manual,pool})).jaExecutado,false);assert.equal((await autotestarDestinoPessoal({manual,pool})).jaExecutado,true);}finally{await pg.close();}});
+test('painel expõe situação de validade e auditoria privada sem códigos; prazo exato mesmo com relógio avançando',async()=>{
+ let clock=Date.now();const {pg,pool,f,pedido}=await banco({agora:()=>clock++});try{const p=await pedido();await f.decidir(p.pedidoId,op,conferencia);const e=await f.emitir(p.pedidoId,op,conferencia);const row=(await pool.query('SELECT extract(epoch FROM (expira_em-emitido_em))::float AS segundos FROM auth_admin_hml.recuperacoes_manuais WHERE id=$1',[p.pedidoId])).rows[0];assert.equal(row.segundos,300);await pool.query("UPDATE auth_admin_hml.recuperacoes_manuais SET expira_em=now()-interval '1 second' WHERE id=$1",[p.pedidoId]);const listado=(await f.listar()).pedidos.find(x=>x.id===p.pedidoId);assert.equal(listado.codigoSituacao,'expirado');assert.ok(!JSON.stringify(listado).includes(e.codigo));const a=await f.auditar(p.pedidoId);assert.ok(a.eventos.some(x=>x.evento==='manual_aprovacao'));assert.ok(!JSON.stringify(a).includes(e.codigo));}finally{await pg.close();}
+});
+
+test('autoteste de pedidos concorrentes tem um único vencedor e não repete após sucesso',async()=>{const {pg,pool,f:manual}=await banco();try{assert.equal((await autotestarConcorrenciaEntrePedidos({manual,pool})).jaExecutado,false);assert.equal((await autotestarConcorrenciaEntrePedidos({manual,pool})).jaExecutado,true);}finally{await pg.close();}});

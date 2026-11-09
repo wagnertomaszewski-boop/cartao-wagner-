@@ -5,7 +5,8 @@ const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const start=html.indexOf('async function salvarEncaminhamentoPrefeitura(');
 const end=html.indexOf('async function registrarHistoricoFiscalizacaoMandato(',start);
 assert.ok(start>=0&&end>start,'Função de gravação não encontrada');
-const source=html.slice(start,end);
+const helper=html.slice(html.indexOf('function diasEntreDatasCivisMandato('),html.indexOf('function diasDesdeEncaminhamentoMandato('));
+const source=helper+html.slice(start,end);
 async function scenario(mode){
   const calls=[],alerts=[],button={disabled:false};
   const fields={'encaminhado-prefeitura-7':{value:'2026-11-07'},'protocolo-prefeitura-7':{value:'PREF-TEST-001'}};

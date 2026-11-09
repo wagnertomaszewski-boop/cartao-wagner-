@@ -4,6 +4,8 @@ on:
     branches: [feature/recuperacao-whatsapp-manual]
     paths:
       - 'homologacao/api-neon/**'
+      - 'v2/**'
+      - 'painel/**'
       - '.github/workflows/testes-http-locais-seguros.yml'
   workflow_dispatch:
 permissions:
@@ -23,3 +25,5 @@ jobs:
       - name: Suite completa isolada
         working-directory: homologacao/api-neon
         run: npm test && npm run test:hml
+      - name: Regressão das telas originais V2 e Painel
+        run: node --test v2/seguranca/*.test.mjs painel/tests/*.test.cjs

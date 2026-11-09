@@ -6,7 +6,8 @@ const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const start=html.indexOf('async function salvarEncaminhamentoPrefeitura(');
 const end=html.indexOf('async function registrarHistoricoFiscalizacaoMandato(',start);
 assert.ok(start>=0&&end>start,'Funcao de encaminhamento nao localizada');
-const source=html.slice(start,end);
+const helper=html.slice(html.indexOf('function diasEntreDatasCivisMandato('),html.indexOf('function diasDesdeEncaminhamentoMandato('));
+const source=helper+html.slice(start,end);
 async function scenario(mode){
  const calls=[],alerts=[],button={disabled:false};
  const saved={id:7,encaminhado_prefeitura_em:'2026-11-07',protocolo_prefeitura:'TEST-001'};
