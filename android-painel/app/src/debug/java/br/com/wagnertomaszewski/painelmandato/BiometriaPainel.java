@@ -12,7 +12,7 @@ import android.view.*;
 import android.webkit.*;
 import android.widget.*;
 import org.json.JSONObject;
-import java.net.*;
+import java.net.URL;
 import javax.net.ssl.HttpsURLConnection;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
