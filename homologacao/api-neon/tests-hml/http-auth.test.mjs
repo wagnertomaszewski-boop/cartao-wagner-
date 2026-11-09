@@ -1,10 +1,10 @@
 import {criarClienteRecuperacaoManual} from '../../../v2/seguranca/cliente-recuperacao-manual.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';import http from 'node:http';
-import {randomBytes} from 'node:crypto';import {readFile} from 'node:fs/promises';import {PGlite} from '@electric-sql/pglite';
+import {randomBytes,randomUUID} from 'node:crypto';import {readFile} from 'node:fs/promises';import {PGlite} from '@electric-sql/pglite';
 import {createOTP} from '@better-auth/utils/otp';import {base32} from '@better-auth/utils/base32';
 import {montar} from '../servidor-auth-hml.mjs';import {HML_ORIGIN} from '../auth-admin-hml.mjs';
 test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação auditada, CSRF, rotas restritas e logout',async()=>{
- const pg=new PGlite();await pg.exec(await readFile(new URL('../sql/auth-admin-hml.sql',import.meta.url),'utf8'));await pg.exec('CREATE ROLE mandato_auth_hml');await pg.exec(await readFile(new URL('../sql/recuperacao-manual-hml.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../sql/solicitacoes-modelo-hml.sql',import.meta.url),'utf8'));await pg.exec('SET search_path=auth_admin_hml');
+ const pg=new PGlite();await pg.exec(await readFile(new URL('../sql/auth-admin-hml.sql',import.meta.url),'utf8'));await pg.exec('CREATE ROLE mandato_auth_hml');await pg.exec(await readFile(new URL('../sql/recuperacao-manual-hml.sql',import.meta.url),'utf8'));await pg.exec(await readFile(new URL('../sql/solicitacoes-modelo-hml.sql',import.meta.url),'utf8'));for(const f of ['conteudos-hml.sql','arquivos-hml.sql'])await pg.exec(await readFile(new URL('../sql/'+f,import.meta.url),'utf8'));await pg.exec('SET search_path=auth_admin_hml');
  async function query(sql,params){try{const r=await pg.query(sql,params);return {...r,rowCount:r.affectedRows,command:sql.trim().split(' ')[0].toUpperCase()};}catch(e){throw e;}}
  const pool={query,connect:async()=>({query,release(){}}),end:async()=>{}};
  const env={AUTH_HML_ADMIN_EMAIL:'admin-http@example.invalid',AUTH_HML_SECRET:randomBytes(48).toString('hex'),AUTH_HML_BOOTSTRAP_TOKEN:randomBytes(48).toString('hex')};
@@ -15,6 +15,8 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
  async function call(path,data,origin=HML_ORIGIN){const r=await fetch(url+'/hml'+path,{method:data===undefined?'GET':'POST',headers:{Origin:origin,'Content-Type':'application/json',cookie:[...jar].map(([k,v])=>k+'='+v).join('; ')},body:data===undefined?undefined:JSON.stringify(data)});for(const c of r.headers.getSetCookie()){const a=c.split(';')[0],i=a.indexOf('=');jar.set(a.slice(0,i),a.slice(i+1));}return {status:r.status,headers:r.headers,data:await r.json()};}
  try{
   assert.equal((await call('/manual/pedidos')).status,401);
+  assert.equal((await call('/conteudos',{})).status,401);assert.equal((await call('/modelo/dashboard')).status,401);assert.deepEqual((await call('/publico/conteudos')).data,[]);
+
   assert.equal((await call('/modelo/solicitacoes')).status,401);assert.equal((await call('/modelo/legado',{cenario:'legado'})).status,401);
   assert.equal((await call('/manual/fixture',{})).status,401);
   assert.equal((await call('/manual/fixture-pessoal',{telefone:'+5551999999999',confirmacaoTelefone:'+5551999999999',autorizoMeuNumero:true})).status,401);
@@ -35,6 +37,14 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
   assert.equal((await call('/cidadao/consultar',{protocolo:novo.protocolo,chave:novo.chaveInicial})).data.status,'Recebida');
   assert.equal((await call('/cidadao/cadastrar',novoCadastro,'https://origem-invalida.example')).status,403);
   assert.equal((await call('/modelo/solicitacoes')).data.solicitacoes.length,1);
+  const qr=(await call('/cidadao/qr',{protocolo:novo.protocolo,chave:novo.chaveInicial})).data;assert.equal(qr.exigeChave,true);assert.ok(!qr.destino.includes(novo.chaveInicial));assert.match(qr.qr,/^data:image\/png;base64,/);assert.equal(new URL(qr.destino).search,'');assert.ok(new URL(qr.destino).hash.includes(encodeURIComponent(novo.protocolo)));assert.equal((await call('/cidadao/qr',{protocolo:novo.protocolo})).data.encontrado,false);
+  assert.equal((await call('/cidadao/confirmar-leitura',{protocolo:novo.protocolo,chave:novo.chaveInicial})).data.confirmaEntregaWhatsApp,false);
+  const publicado=(await call('/conteudos',{tipo:'projeto',titulo:'Projeto fictício HTTP',resumo:'Resumo suficiente para publicar somente em homologação.',objetivo:'Detalhe completo publicado pela equipe.',publicado:true,operacaoId:randomUUID()})).data;
+  assert.equal((await call('/publico/projeto',{p_id:publicado.id})).data.objetivo,'Detalhe completo publicado pela equipe.');
+  assert.equal((await call('/modelo/solicitacoes/'+novo.id+'/atualizar',{status:'Em análise',justificativa:'Solicitação fictícia recebida para análise.',responsavel:'Equipe fictícia',revisao:0,operacaoId:randomUUID()})).status,200);
+  assert.equal((await call('/cidadao/consultar',{protocolo:novo.protocolo,chave:novo.chaveInicial})).data.status,'Em análise');
+  const pagina=await fetch(url+'/hml/v2/index.html');assert.equal(pagina.status,200);assert.match(pagina.headers.get('content-security-policy'),/sha256-/);assert.ok(!pagina.headers.get('content-security-policy').includes('unsafe-inline'));
+
   const legado=(await call('/modelo/legado',{cenario:'legado'})).data;assert.equal(legado.chaveInicial,null);
 
   const p=(await call('/api/pedidos',{})).data;assert.ok(p.id);assert.equal((await call('/api/pedidos/'+p.id+'/aprovar',{})).data.aprovado,true);
@@ -71,6 +81,7 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
   await pool.query("UPDATE auth_admin_hml.mfa_sessoes SET confirmado_em=now()-interval '6 minutes'");
   assert.equal((await call('/manual/fixture-pessoal',{telefone:'+5551999999999',confirmacaoTelefone:'+5551999999999',autorizoMeuNumero:true})).status,403);
   assert.equal((await call('/manual/pedidos/'+rp.pedidoId+'/auditoria')).status,403);
+  assert.equal((await call('/conteudos',{})).status,403);
   assert.equal((await call('/modelo/solicitacoes')).status,403);assert.equal((await call('/modelo/legado',{cenario:'legado'})).status,403);
   assert.equal((await call(base+'/decidir',conferir)).status,403);assert.equal((await call(base+'/emitir',conferir)).status,403);
   await call('/auth/sign-out',{});assert.equal((await call('/api/pedidos',{})).status,401);

@@ -1,0 +1,2 @@
+export function normalizarDetalheProjeto(valor,id){let x=valor;for(let i=0;i<8;i++){if(typeof x==='string'){try{x=JSON.parse(x);continue;}catch{return null;}}if(Array.isArray(x)){x=x.find(v=>v&&String(v.id)===String(id))||x[0];continue;}if(x&&typeof x==='object'&&!x.id&&Object.hasOwn(x,'consulta_publica_detalhe_projeto')){x=x.consulta_publica_detalhe_projeto;continue;}break;}return x&&typeof x==='object'&&String(x.id)===String(id)?x:null;}
+export function identificadorProjeto(v){const n=Number(v);if(!Number.isSafeInteger(n)||n<=0)throw Error('Projeto inválido.');return n;}

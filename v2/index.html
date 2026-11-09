@@ -418,7 +418,7 @@ body{background:#e9eff6}
 </div>
 <script>
 const SUPABASE_URL='https://pmmsdjozyyxkbuqlkfpb.supabase.co',SUPABASE_KEY='sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_';
-function go(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));let n=document.getElementById('nav-'+(id==='detalhesProjeto'?'projetos':id==='agendaPublica'?'home':id==='acompanhar'?'solicitar':id));if(n)n.classList.add('active');window.scrollTo(0,0);if(id==='projetos')carregarProjetosPublicos();if(id==='enquetes')carregarEnquetesPublicas();if(id==='agendaPublica')carregarAgendaPublicaV2()}
+function go(id){if(location.origin==='https://mandato-neon-homologacao.onrender.com'&&location.pathname.startsWith('/hml/')){const rotas={solicitar:'/hml/v2/solicitar',acompanhar:'/hml/v2/recuperar',noticias:'/hml/v2/noticias.html',agendaPublica:'/hml/v2/agenda.html'};if(rotas[id]){location.assign(rotas[id]);return;}}document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));let n=document.getElementById('nav-'+(id==='detalhesProjeto'?'projetos':id==='agendaPublica'?'home':id==='acompanhar'?'solicitar':id));if(n)n.classList.add('active');window.scrollTo(0,0);if(id==='projetos')carregarProjetosPublicos();if(id==='enquetes')carregarEnquetesPublicas();if(id==='agendaPublica')carregarAgendaPublicaV2()}
 
 function escAgendaV2(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 async function carregarAgendaPublicaV2(){
@@ -525,7 +525,8 @@ function seguroTxt(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&
 function imagemSegura(v){try{const url=new URL(v);return ['https:','http:'].includes(url.protocol)?url.href:''}catch{return ''}}
 function documentoSeguro(v){try{const url=new URL(v);return url.protocol==='https:'?url.href:''}catch{return ''}}
 function dataProjeto(v){if(!v)return '';let p=String(v).split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:String(v)}
-async function projetoRpc(nome,payload){let r=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+nome,{method:'POST',headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!r.ok)throw new Error('Não foi possível consultar os projetos agora.');return r.json()}
+async function projetoRpc(nome,payload){const hml=location.origin==='https://mandato-neon-homologacao.onrender.com'&&location.pathname.startsWith('/hml/');const destinos={consulta_publica_projetos_acoes:'/hml/publico/projetos',consulta_publica_detalhe_projeto:'/hml/publico/projeto'};if(hml&&!destinos[nome])throw Error('Conteúdo indisponível na homologação.');const r=await fetch(hml?destinos[nome]:SUPABASE_URL+'/rest/v1/rpc/'+nome,{method:'POST',headers:hml?{'Content-Type':'application/json'}:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store',signal:AbortSignal.timeout(12000)});if(!r.ok)throw new Error('Não foi possível consultar os projetos agora.');return r.json()}
+
 async function carregarProjetosPublicos(){
  const el=document.getElementById('projectList');el.innerHTML='<p class="muted">Carregando projetos publicados...</p>';
  try{
@@ -542,12 +543,12 @@ async function carregarProjetosPublicos(){
    a.dataset.type=String(x.tipo||'').trim().toLowerCase()+result;
    a.dataset.ordemOriginal=String(el.childElementCount);
    const imagem=(Number(x.id)===1?CAPA_ALUNO_NOTA_DEZ:Number(x.id)===2?CAPA_MES_DO_ESPORTE_LAZER:Number(x.id)===9?CAPA_COMBATE_AO_ALCOOLISMO:Number(x.id)===10?CAPA_INTERNET_SEGURA:Number(x.id)===12?CAPA_PROMIE:imagemSegura(x.foto_url));
-   a.innerHTML='<span class="tag">'+seguroTxt(tipos[x.tipo]||'AÇÃO')+(x.destaque?' · DESTAQUE':'')+(x.tipo==='sugestivo'&&/transformad|convertid/i.test(x.situacao||'')?' · VIROU LEI':'')+'</span>'+ 
+   a.innerHTML='<span class="tag">'+seguroTxt(tipos[x.tipo]||'AÇÃO')+(x.destaque?' · DESTAQUE':'')+(x.tipo==='sugestivo'&&/transformad|convertid/i.test(x.situacao||'')?' · VIROU LEI':'')+'</span>'+
    '<h3>'+seguroTxt(x.titulo)+'</h3>'+
    (imagem?([4,6,8].includes(Number(x.id))?'<div class="trator-foto-area'+(Number(x.id)===8?' prancha-foto-area':'')+'"><img class="trator-foto-fundo" src="'+seguroTxt(imagem)+'" alt="" aria-hidden="true" loading="lazy"><img class="project-card-photo trator-completo" src="'+seguroTxt(imagem)+'" alt="Fotografia completa do equipamento" loading="lazy"><span class="trator-ampliar-selo">⤢ Ampliar foto</span></div>':'<img class="project-card-photo" src="'+seguroTxt(imagem)+'" alt="Imagem do projeto" loading="lazy">'):'')+
-   '<p>'+seguroTxt(x.resumo)+'</p>'+ 
-   '<div class="project-meta"><span>📄 '+seguroTxt(x.referencia||'')+'</span><span>🏛 '+seguroTxt(x.area||'')+'</span></div>'+ 
-   '<div class="project-meta"><span>🔵 '+seguroTxt(x.situacao||'Em acompanhamento')+'</span></div>'+ 
+   '<p>'+seguroTxt(x.resumo)+'</p>'+
+   '<div class="project-meta"><span>📄 '+seguroTxt(x.referencia||'')+'</span><span>🏛 '+seguroTxt(x.area||'')+'</span></div>'+
+   '<div class="project-meta"><span>🔵 '+seguroTxt(x.situacao||'Em acompanhamento')+'</span></div>'+
    '<span class="project-tap">Toque aqui para ver detalhes ›</span>';
    const img=a.querySelector('.project-card-photo');
    if(img)img.addEventListener('error',()=>{const quadro=img.closest('.trator-foto-area');if(quadro)quadro.remove();else img.remove();});
@@ -558,7 +559,9 @@ async function carregarProjetosPublicos(){
   aplicarFiltroProjetos(filtro?filtro.dataset.pf:'todos');
  }catch(e){el.innerHTML='<div class="project-empty"><b>Não foi possível carregar</b><p>Verifique sua conexão com a internet.</p><button type="button" class="primary" id="retryProjects">Tentar novamente</button></div>';document.getElementById('retryProjects').onclick=carregarProjetosPublicos}
 }
+let sequenciaDetalhesProjeto=0;
 async function abrirDetalhesProjeto(id){
+ const sequencia=++sequenciaDetalhesProjeto;
  const nid=Number(id);
  if(!Number.isSafeInteger(nid)||nid<=0)return;
 
@@ -583,15 +586,11 @@ async function abrirDetalhesProjeto(id){
  }
 
  try{
-  let raw=await projetoRpc('consulta_publica_detalhe_projeto',{p_id:nid});
-  let x=raw;
-
-  // Aceita resposta direta, array de uma linha ou objeto embrulhado pelo nome da função.
-  if(Array.isArray(x)) x=x[0]||null;
-  if(x && !x.id && x.consulta_publica_detalhe_projeto) x=x.consulta_publica_detalhe_projeto;
-  if(typeof x==='string'){try{x=JSON.parse(x)}catch{}}
-
-  if(!x||!x.id) throw new Error('Este projeto não está publicado.');
+  const raw=await projetoRpc('consulta_publica_detalhe_projeto',{p_id:nid});
+  const {normalizarDetalheProjeto}=await import('./conteudos/contrato-projetos.mjs');
+  const x=normalizarDetalheProjeto(raw,nid);
+  if(sequencia!==sequenciaDetalhesProjeto)return;
+  if(!x)throw new Error('Este projeto não está publicado.');
 
   const capa=Number(x.id)===1?CAPA_ALUNO_NOTA_DEZ:Number(x.id)===2?CAPA_MES_DO_ESPORTE_LAZER:Number(x.id)===9?CAPA_COMBATE_AO_ALCOOLISMO:Number(x.id)===10?CAPA_INTERNET_SEGURA:Number(x.id)===12?CAPA_PROMIE:imagemSegura(x.foto_url);
   let html=(capa?'<img class="detail-cover'+([4,6,8].includes(Number(x.id))?' trator-completo':'')+'" src="'+seguroTxt(capa)+'" alt="'+([4,6,8].includes(Number(x.id))?'Fotografia completa do equipamento':'Imagem do projeto')+'">':'')+'<div class="detail-body">';
@@ -645,6 +644,7 @@ async function abrirDetalhesProjeto(id){
   alvo.innerHTML=html;
 
  }catch(e){
+  if(sequencia!==sequenciaDetalhesProjeto)return;
   if(previo){
     const aviso=alvo.querySelector('.muted');
     if(aviso) aviso.textContent='Os dados principais estão disponíveis. Não foi possível carregar informações adicionais agora.';

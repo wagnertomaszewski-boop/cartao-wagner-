@@ -26,7 +26,7 @@
 <div id="projetosLista">
   <section class="feed-card"><p>Carregando projetos e ações...</p></section>
 </div>
-</main>
+<section id="projeto-detalhe" class="feed-card" hidden aria-live="polite"></section></main>
 <nav class="bottom-nav">
 <a class="nav-item " href="./index.html"><b>⌂</b>Início</a>
 <a class="nav-item" href="./solicitacao.html"><b>＋</b>Solicitar</a>
@@ -35,6 +35,7 @@
 </nav>
 </div>
 <script>
+const MODO_CONTEUDO_HML=location.origin==='https://mandato-neon-homologacao.onrender.com'&&location.pathname.startsWith('/hml/');
 const SUPABASE_URL="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
 const SUPABASE_KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 let projetosPublicos=[];
@@ -67,6 +68,7 @@ function renderProjetos(itens){
         ${item.area?'<span>🏛️ '+esc(item.area)+'</span>':""}
         ${item.situacao?'<span>🔵 '+esc(item.situacao)+'</span>':""}
       </div>
+      <button type="button" class="chip" data-abrir-projeto="${esc(item.id)}">Abrir detalhes</button>
     </section>`).join("");
 }
 async function carregarProjetos(filtro="todos"){
@@ -78,7 +80,7 @@ async function carregarProjetos(filtro="todos"){
   const timer=setTimeout(()=>controller.abort(),8000);
 
   try{
-    const resp=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_projetos_acoes",{
+    const resp=await fetch(MODO_CONTEUDO_HML?'/hml/publico/projetos':SUPABASE_URL+"/rest/v1/rpc/consulta_publica_projetos_acoes",{
       method:"POST",
       headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
       body:JSON.stringify({p_tipo:filtroAtual==="todos"?null:filtroAtual}),
@@ -102,6 +104,7 @@ document.querySelectorAll('.chip[data-pf]').forEach(chip=>{
     carregarProjetos(chip.dataset.pf||"todos");
   });
 });
+document.getElementById('projetosLista').addEventListener('click',async e=>{const b=e.target.closest('[data-abrir-projeto]');if(!b)return;const alvo=document.getElementById('projeto-detalhe');alvo.hidden=false;alvo.replaceChildren();const titulo=document.createElement('h2');titulo.textContent='Carregando detalhes…';alvo.append(titulo);let pedido=String(b.dataset.abrirProjeto);alvo.dataset.pedido=pedido;try{const {normalizarDetalheProjeto,identificadorProjeto}=await import('./conteudos/contrato-projetos.mjs');const id=identificadorProjeto(pedido);const r=await fetch(MODO_CONTEUDO_HML?'/hml/publico/projeto':SUPABASE_URL+'/rest/v1/rpc/consulta_publica_detalhe_projeto',{method:'POST',headers:MODO_CONTEUDO_HML?{'Content-Type':'application/json'}:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_id:id}),cache:'no-store',signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error();const item=normalizarDetalheProjeto(await r.json(),id);if(!item)throw Error();if(alvo.dataset.pedido!==pedido)return;alvo.replaceChildren();for(const [label,key] of [['','titulo'],['Resumo','resumo'],['Objetivo','objetivo'],['Situação','situacao'],['Realizado','feito'],['Próximos passos','falta']]){if(!item[key])continue;const h=document.createElement(key==='titulo'?'h2':'h3'),p=document.createElement('p');h.textContent=label||item.titulo;alvo.append(h);if(label){p.textContent=item[key];alvo.append(p);}}alvo.scrollIntoView({block:'start'});}catch{if(alvo.dataset.pedido===pedido)titulo.textContent='Não foi possível carregar os detalhes. Tente novamente.';}const voltar=document.createElement('button');voltar.type='button';voltar.textContent='Voltar à lista';voltar.onclick=()=>{alvo.hidden=true;document.getElementById('projetosLista').scrollIntoView({block:'start'});};if(alvo.dataset.pedido===pedido)alvo.append(voltar);});
 carregarProjetos("todos");
 </script>
 </body>

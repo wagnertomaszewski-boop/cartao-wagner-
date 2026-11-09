@@ -4,6 +4,10 @@ import {criarAuthAdminHml,validarConfigAuthHml,segredoIgual,exigirAdminMfa,HML_O
 import {criarFluxoIsoladoHml} from './fluxo-isolado-hml.mjs';
 import {criarRecuperacaoManualHml} from './recuperacao-manual-hml.mjs';
 import {criarCadastroModeloHml} from './solicitacoes-modelo-hml.mjs';
+import {criarGestaoSolicitacoesHml} from './gestao-solicitacoes-hml.mjs';
+import {criarConteudosHml} from './conteudos-publicos-hml.mjs';
+import {createHash} from 'node:crypto';
+import {criarArquivosHml} from './arquivos-privados-hml.mjs';
 const BASE='/hml';
 export async function criarServidorAuthHml({env=process.env}={}){
  const {default:pg}=await import('pg');
@@ -20,6 +24,9 @@ export async function criarServidorAuthHml({env=process.env}={}){
 export async function montar({env,pool}){
  const auth=criarAuthAdminHml({database:pool,secret:env.AUTH_HML_SECRET,adminEmail:env.AUTH_HML_ADMIN_EMAIL});
  const fluxo=criarFluxoIsoladoHml({pool,segredo:env.AUTH_HML_SECRET});
+ const arquivos=criarArquivosHml({pool,segredo:env.AUTH_HML_SECRET});
+ const conteudos=criarConteudosHml({pool});
+ const gestao=criarGestaoSolicitacoesHml({pool,segredo:env.AUTH_HML_SECRET});
  const cadastro=criarCadastroModeloHml({pool,segredo:env.AUTH_HML_SECRET});
  const manual=criarRecuperacaoManualHml({pool,segredo:env.AUTH_HML_SECRET,telefoneTeste:env.WHATSAPP_HML_DESTINO_TESTE});
  if(env.HML_AUTOTESTE_MANUAL==='sim'){
@@ -31,6 +38,9 @@ export async function montar({env,pool}){
   const {autotestarModeloReal,autotestarFormatosLegados}=await import('./autoteste-modelo-hml.mjs');
   await autotestarModeloReal({cadastro,manual:teste,fluxo,pool});
   await autotestarFormatosLegados({cadastro,manual:teste,fluxo,pool});
+  const {autotestarEcossistema}=await import('./autoteste-ecossistema-hml.mjs');
+  await autotestarEcossistema({pool,cadastro,fluxo,gestao,arquivos,conteudos});
+  console.log('AUTOTESTE_ECOSSISTEMA_NEON_OK: atendimento, anexo privado, resposta, fiscalização e conteúdo publicado fictício; sem mensagens externas.');
   console.log('AUTOTESTE_MODELO_REAL_NEON_OK: cadastro, isolamento por chave, recuperação legada e histórico preservado; nenhum envio externo.');
   console.log('AUTOTESTE_MANUAL_NEON_OK: fixture fictícia; consumo concorrente único; chave substituída; auditoria; nenhum WhatsApp enviado.');
  }
@@ -75,17 +85,17 @@ export async function montar({env,pool}){
   return resposta;
  });
  const json=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8',...seguro});res.end(JSON.stringify(data));};
- const corpo=async req=>{if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']||''))throw Object.assign(Error('Envie JSON'),{status:415});const a=[];let n=0;for await(const b of req){n+=b.length;if(n>4096)throw Object.assign(Error('Requisição grande'),{status:413});a.push(b);}try{const d=JSON.parse(Buffer.concat(a).toString());if(!d||Array.isArray(d)||typeof d!=='object')throw Error();return d;}catch{throw Object.assign(Error('JSON inválido'),{status:400});}};
+ const corpo=async (req,max=4096)=>{if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']||''))throw Object.assign(Error('Envie JSON'),{status:415});const a=[];let n=0;for await(const b of req){n+=b.length;if(n>max)throw Object.assign(Error('Requisição grande'),{status:413});a.push(b);}try{const d=JSON.parse(Buffer.concat(a).toString());if(!d||Array.isArray(d)||typeof d!=='object')throw Error();return d;}catch{throw Object.assign(Error('JSON inválido'),{status:400});}};
  async function handler(req,res){
   const path=req.url?.split('?')[0];if(!path||!(path===BASE||path.startsWith(BASE+'/')))return false;
   try{
    for(const [k,v]of Object.entries(seguro))res.setHeader(k,v);
    if(req.method!=='GET'&&(req.headers.origin!==HML_ORIGIN||req.headers['sec-fetch-site']==='cross-site'))return json(res,403,{erro:'Origem não autorizada'}),true;
    if(req.method==='POST')await limitar(path,path.includes('setup')?5:20);
-   const telasAntigas={'/hml/recuperar':'/hml/v2/recuperar','/hml/painel-recuperacao':'/hml/painel/recuperacoes'};
+   const telasAntigas={'/hml/v2/solicitacao.html':'/hml/v2/solicitar','/hml/v2/acompanhar.html':'/hml/v2/recuperar','/hml/index.html':'/hml/v2/index.html','/hml/recuperar':'/hml/v2/recuperar','/hml/painel-recuperacao':'/hml/painel/recuperacoes'};
    if(req.method==='GET'&&telasAntigas[path]){res.writeHead(302,{Location:telasAntigas[path],...seguro});res.end();return true;}
-   const assets={'/hml/mandato/solicitar':'telas/v2/solicitar-homologacao.html','/hml/v2/solicitar':'telas/v2/solicitar-homologacao.html','/hml/v2/seguranca/tela-cadastro-hml.mjs':'telas/v2/seguranca/tela-cadastro-hml.mjs','/hml/':'hml-admin.html','/hml':'hml-admin.html','/hml/app.js':'hml-admin.js','/hml/style.css':'hml-admin.css','/hml/recuperar':'hml-recuperar.html','/hml/painel-recuperacao':'hml-painel-recuperacao.html','/hml/recuperacao.js':'hml-recuperacao.js','/hml/teste-whatsapp':'hml-teste-whatsapp.html','/hml/teste-whatsapp.js':'hml-teste-whatsapp.js','/hml/v2/recuperar':'telas/v2/recuperar-acesso.html','/hml/v2/recuperar-acesso.html':'telas/v2/recuperar-acesso.html','/hml/v2/recuperacao.css':'telas/v2/recuperacao.css','/hml/v2/seguranca/cliente-recuperacao-manual.mjs':'telas/v2/seguranca/cliente-recuperacao-manual.mjs','/hml/v2/seguranca/tela-recuperacao-manual.mjs':'telas/v2/seguranca/tela-recuperacao-manual.mjs','/hml/painel/recuperacoes':'telas/painel/recuperacoes.html','/hml/painel/recuperacoes.html':'telas/painel/recuperacoes.html','/hml/painel/seguranca/recuperacoes.mjs':'telas/painel/seguranca/recuperacoes.mjs'};
-   if(req.method==='GET'&&assets[path]){const name=assets[path],content=await readFile(new URL('./'+name,import.meta.url));res.writeHead(200,{'Content-Type':name.endsWith('.html')?'text/html; charset=utf-8':(name.endsWith('.js')||name.endsWith('.mjs'))?'application/javascript; charset=utf-8':'text/css; charset=utf-8',...seguro});res.end(content);return true;}
+   const assets={'/hml/v2/index.html':'telas/v2/index.html','/hml/v2/agenda.html':'telas/v2/noticias.html','/hml/v2/projetos.html':'telas/v2/projetos.html','/hml/v2/styles.css':'telas/v2/styles.css','/hml/v2/conteudos/contrato-projetos.mjs':'telas/v2/conteudos/contrato-projetos.mjs','/hml/v2/noticias.html':'telas/v2/noticias.html','/hml/v2/conteudos/tela-noticias.mjs':'telas/v2/conteudos/tela-noticias.mjs','/hml/painel/conteudos':'telas/painel/conteudos.html','/hml/painel/seguranca/conteudos.mjs':'telas/painel/seguranca/conteudos.mjs','/hml/mandato/solicitar':'telas/v2/solicitar-homologacao.html','/hml/v2/solicitar':'telas/v2/solicitar-homologacao.html','/hml/v2/seguranca/tela-cadastro-hml.mjs':'telas/v2/seguranca/tela-cadastro-hml.mjs','/hml/':'hml-admin.html','/hml':'hml-admin.html','/hml/app.js':'hml-admin.js','/hml/style.css':'hml-admin.css','/hml/recuperar':'hml-recuperar.html','/hml/painel-recuperacao':'hml-painel-recuperacao.html','/hml/recuperacao.js':'hml-recuperacao.js','/hml/teste-whatsapp':'hml-teste-whatsapp.html','/hml/teste-whatsapp.js':'hml-teste-whatsapp.js','/hml/v2/recuperar':'telas/v2/recuperar-acesso.html','/hml/v2/recuperar-acesso.html':'telas/v2/recuperar-acesso.html','/hml/v2/recuperacao.css':'telas/v2/recuperacao.css','/hml/v2/seguranca/cliente-recuperacao-manual.mjs':'telas/v2/seguranca/cliente-recuperacao-manual.mjs','/hml/v2/seguranca/tela-recuperacao-manual.mjs':'telas/v2/seguranca/tela-recuperacao-manual.mjs','/hml/painel/recuperacoes':'telas/painel/recuperacoes.html','/hml/painel/recuperacoes.html':'telas/painel/recuperacoes.html','/hml/painel/seguranca/recuperacoes.mjs':'telas/painel/seguranca/recuperacoes.mjs'};
+   if(req.method==='GET'&&assets[path]){const name=assets[path],content=await readFile(new URL('./'+name,import.meta.url));let extras={};if(['telas/v2/projetos.html','telas/v2/index.html'].includes(name)){const html=content.toString(),sha=x=>"'sha256-"+createHash('sha256').update(x).digest('base64')+"'",dec=x=>x.replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&');const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(x=>sha(x[1]));const eventos=[...html.matchAll(/\bon[a-z]+="([^"]*)"/g)].map(x=>sha(dec(x[1])));const estilos=[...html.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/g)].map(x=>sha(x[1])).concat([...html.matchAll(/\bstyle="([^"]*)"/g)].map(x=>sha(dec(x[1]))));extras={'Content-Security-Policy':seguro['Content-Security-Policy'].replace("script-src 'self'","script-src 'self' 'unsafe-hashes' "+[...new Set([...scripts,...eventos,sha("go('projetos')")])].join(' ')).replace("style-src 'self'","style-src 'self' 'unsafe-hashes' "+[...new Set(estilos)].join(' '))};}res.writeHead(200,{'Content-Type':name.endsWith('.html')?'text/html; charset=utf-8':(name.endsWith('.js')||name.endsWith('.mjs'))?'application/javascript; charset=utf-8':'text/css; charset=utf-8',...seguro,...extras});res.end(content);return true;}
    if(path.startsWith('/hml/auth/')){await autenticar(req,res);return true;}
    if(path==='/hml/setup'&&req.method==='POST'){
     const d=await corpo(req);
@@ -103,16 +113,31 @@ export async function montar({env,pool}){
     const s=await auth.api.getSession({headers:fromNodeHeaders(req.headers)});let mfaRecente=false;
     try{await exigirAdminMfa({auth,pool,headers:fromNodeHeaders(req.headers),adminEmail:env.AUTH_HML_ADMIN_EMAIL});mfaRecente=true;}catch{}
     const r=await pool.query('SELECT consumida FROM auth_admin_hml.instalacao WHERE id=1');
-    const prova=await pool.query("SELECT EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v1_concluido') AS ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v2_destino_concluido') AS destino_ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v3_telas_concluido') AS telas_ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='modelo_autoteste_integrado_concluido') AND EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='modelo_autoteste_formatos_concluido') AS modelo_ok");
-    return json(res,200,{modeloRealValidado:prova.rows[0]?.modelo_ok===true,versaoRecuperacaoManual:3,manualTelasValidadas:prova.rows[0]?.telas_ok===true,manualDestinoValidado:prova.rows[0]?.destino_ok===true,manualNeonValidado:prova.rows[0]?.ok===true,ambiente:'homologacao',instalado:r.rows[0]?.consumida===true,autenticado:!!s,mfaAtivado:s?.user?.twoFactorEnabled===true,mfaRecente,whatsappConfigurado:false,envioManual:true}),true;
+    const prova=await pool.query("SELECT EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v1_concluido') AS ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v2_destino_concluido') AS destino_ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v3_telas_concluido') AS telas_ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='modelo_autoteste_integrado_concluido') AND EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='modelo_autoteste_formatos_concluido') AS modelo_ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='ecossistema_autoteste_v1_concluido') AS ecossistema_ok");
+    return json(res,200,{ecossistemaValidado:prova.rows[0]?.ecossistema_ok===true,modeloRealValidado:prova.rows[0]?.modelo_ok===true,versaoRecuperacaoManual:3,manualTelasValidadas:prova.rows[0]?.telas_ok===true,manualDestinoValidado:prova.rows[0]?.destino_ok===true,manualNeonValidado:prova.rows[0]?.ok===true,ambiente:'homologacao',instalado:r.rows[0]?.consumida===true,autenticado:!!s,mfaAtivado:s?.user?.twoFactorEnabled===true,mfaRecente,whatsappConfigurado:false,envioManual:true}),true;
    }
+   if(path==='/hml/publico/conteudos'&&req.method==='GET')return json(res,200,await conteudos.listar(false,new URL(req.url,HML_ORIGIN).searchParams.get('tipo'))),true;
+   if(path==='/hml/publico/projetos'&&req.method==='POST'){const d=await corpo(req);const lista=await conteudos.listar(false,d.p_tipo||null);return json(res,200,lista.filter(x=>!['noticia','agenda'].includes(x.tipo))),true;}
+   if(path==='/hml/publico/projeto'&&req.method==='POST')return json(res,200,await conteudos.detalhe((await corpo(req)).p_id)),true;
+   if(path==='/hml/cidadao/confirmar-leitura'&&req.method==='POST')return json(res,200,await gestao.confirmarLeitura(await corpo(req))),true;
+   if(path==='/hml/cidadao/arquivo/anexar'&&req.method==='POST')return json(res,200,await arquivos.anexar(await corpo(req,1500000))),true;
+   if(path==='/hml/cidadao/arquivo/baixar'&&req.method==='POST')return json(res,200,await arquivos.baixar(await corpo(req))),true;
+   if(path==='/hml/cidadao/qr'&&req.method==='POST'){const d=await corpo(req);if(!(await fluxo.consultar(d)).encontrado)return json(res,200,{encontrado:false}),true;const destino=HML_ORIGIN+'/hml/v2/recuperar#protocolo='+encodeURIComponent(d.protocolo);const {default:QRCode}=await import('qrcode');return json(res,200,{encontrado:true,exigeChave:true,destino,qr:await QRCode.toDataURL(destino)}),true;}
    if(path==='/hml/cidadao/cadastrar'&&req.method==='POST')return json(res,200,await cadastro.cadastrar(await corpo(req))),true;
    if(path==='/hml/cidadao/confirmar'&&req.method==='POST'){return json(res,200,await fluxo.confirmar(await corpo(req))),true;}
    if(path==='/hml/cidadao/consultar'&&req.method==='POST'){return json(res,200,await fluxo.consultar(await corpo(req))),true;}
    if(path==='/hml/manual/solicitar'&&req.method==='POST')return json(res,200,await manual.solicitar(await corpo(req))),true;
    if(path==='/hml/manual/validar'&&req.method==='POST')return json(res,200,await manual.validar(await corpo(req))),true;
    const op=await exigirAdminMfa({auth,pool,headers:fromNodeHeaders(req.headers),adminEmail:env.AUTH_HML_ADMIN_EMAIL});
+   if(path==='/hml/modelo/arquivo/anexar'&&req.method==='POST')return json(res,200,await arquivos.anexar(await corpo(req,1500000),op)),true;
+   if(path==='/hml/modelo/arquivo/baixar'&&req.method==='POST')return json(res,200,await arquivos.baixar(await corpo(req),op)),true;
+   if(path==='/hml/conteudos'&&req.method==='GET')return json(res,200,await conteudos.listar(true)),true;
+   if(path==='/hml/conteudos'&&req.method==='POST')return json(res,200,await conteudos.salvar(op,await corpo(req))),true;
+   if(path==='/hml/modelo/dashboard'&&req.method==='GET')return json(res,200,await gestao.dashboard()),true;
+   const gestaoMatch=/^\/hml\/modelo\/solicitacoes\/([0-9a-f-]{36})\/(atualizar|responder|fiscalizar|acompanhar|auditoria|aviso)$/.exec(path);
+   if(gestaoMatch){if(req.method==='GET'&&gestaoMatch[2]==='auditoria')return json(res,200,await gestao.auditoria(gestaoMatch[1])),true;if(req.method==='POST'&&gestaoMatch[2]!=='auditoria')return json(res,200,await gestao[gestaoMatch[2]](gestaoMatch[1],op,await corpo(req))),true;}
    if(path==='/hml/modelo/solicitacoes'&&req.method==='GET')return json(res,200,await cadastro.listar()),true;
+   if(path==='/hml/modelo/importar-legado-ficticio'&&req.method==='POST')return json(res,200,await cadastro.importarLegadoFicticio(op,await corpo(req))),true;
    if(path==='/hml/modelo/legado'&&req.method==='POST')return json(res,200,await cadastro.importarFixture(await corpo(req))),true;
    if(path==='/hml/manual/pedidos'&&req.method==='GET')return json(res,200,await manual.listar()),true;
    if(path==='/hml/manual/fixture-pessoal'&&req.method==='POST'){const p=await manual.criarFixture(op,{...await corpo(req),testePessoal:true});return json(res,200,{id:p.id,protocolo:p.protocolo,telefoneMascarado:p.telefone.slice(0,5)+'*****'+p.telefone.slice(-4),ficticio:true}),true;}

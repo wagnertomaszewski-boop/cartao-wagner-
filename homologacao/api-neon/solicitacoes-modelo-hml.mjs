@@ -1,4 +1,4 @@
-import {randomUUID,randomBytes,createHmac} from 'node:crypto';
+import {randomUUID,randomBytes,createHmac,createHash} from 'node:crypto';
 const erro=mensagem=>Object.assign(Error(mensagem),{status:400});
 const texto=(v,max=2000)=>typeof v==='string'?v.trim().slice(0,max):'';
 // Contrato extraído dos três clientes e do inventário; não lê produção.
@@ -6,25 +6,26 @@ const texto=(v,max=2000)=>typeof v==='string'?v.trim().slice(0,max):'';
 export function adaptarSolicitacao({solicitacao:s,historico=[],respostas=[],fiscalizacao=[]}){
  if(!s||s.id==null)throw erro('Solicitação de origem inválida');
  const id=String(s.id),pertence=r=>String(r.solicitacao_id)===id;
+ const respostasDaSolicitacao=respostas.filter(pertence);if(typeof s.resposta==='string'&&s.resposta.trim()&&!respostasDaSolicitacao.some(r=>r.mensagem?.trim()===s.resposta.trim()))respostasDaSolicitacao.push({solicitacao_id:s.id,mensagem:s.resposta,criado_em:s.atualizado_em||s.criado_em,anexos:[]});
  const anexos=v=>{if(typeof v==='string'){try{v=JSON.parse(v);}catch{v=[];}}return (Array.isArray(v)?v:[]).slice(0,20).map(a=>({nome:texto(typeof a==='string'?a.split('/').pop():a?.nome,160)||'Anexo privado'}));};
- return {solicitante:texto(s.nome||s.solicitante,120),idOrigem:id,protocoloOrigem:texto(s.protocolo,80)||null,assunto:texto(s.assunto,160),descricao:texto(s.descricao),localidade:texto(s.localidade,160),status:texto(s.status,80)||'Recebida',criadoEm:s.criado_em||null,atualizadoEm:s.atualizado_em||null,anexos:anexos(s.anexos),
- historico:historico.filter(pertence).map(h=>({status:texto(h.status,80),criadoEm:h.criado_em||null})),
- respostas:respostas.filter(pertence).map(r=>({mensagem:texto(r.mensagem),criadoEm:r.criado_em||null,anexos:anexos(r.anexos)})),
+ return {fonteOriginal:{solicitacao:structuredClone(s),historico:structuredClone(historico.filter(pertence)),respostas:structuredClone(respostas.filter(pertence)),fiscalizacao:structuredClone(fiscalizacao.filter(pertence))},anotacaoInterna:texto(s.anotacao_interna,20000),lembrete:s.lembrete_em||null,encaminhadoPrefeituraEm:s.encaminhado_prefeitura_em||null,protocoloPrefeitura:texto(s.protocolo_prefeitura,200),latitude:s.latitude??null,longitude:s.longitude??null,solicitante:texto(s.nome||s.solicitante,120),idOrigem:id,protocoloOrigem:texto(s.protocolo,80)||null,assunto:texto(s.assunto,160),descricao:texto(s.descricao),localidade:texto(s.localidade,160),status:texto(s.status,80)||'Recebida',criadoEm:s.criado_em||null,atualizadoEm:s.atualizado_em||null,anexos:anexos(s.anexos),
+ historico:historico.filter(pertence).map(h=>({idOrigem:h.id==null?null:String(h.id),status:texto(h.status,80),criadoEm:h.criado_em||null})),
+ respostas:respostasDaSolicitacao.map(r=>({mensagem:texto(r.mensagem),criadoEm:r.criado_em||null,anexos:anexos(r.anexos)})),
  // Fiscalização e anotações internas não pertencem ao retorno público.
- fiscalizacao:fiscalizacao.filter(pertence).map(f=>({tipo:texto(f.tipo,80),descricao:texto(f.descricao),registradoEm:f.registrado_em||null}))};
+ fiscalizacao:fiscalizacao.filter(pertence).map(f=>({id:f.id==null?undefined:String(f.id),usuarioId:f.registrado_por||null,protocoloReferencia:texto(f.protocolo_referencia,200),responsavel:texto(f.responsavel,120),tipo:texto(f.tipo,80),descricao:texto(f.descricao),registradoEm:f.registrado_em||null}))};
 }
 export function criarCadastroModeloHml({pool,segredo}){
  const hash=(id,v)=>createHmac('sha256',segredo).update(id+':'+v).digest('hex');
- async function registrar({modelo,telefone,origem,legado=false}){
- const c=await pool.connect();try{await c.query('BEGIN');
+ async function registrar({modelo,telefone,origem,legado=false},cliente=null){
+ const proprio=!cliente,c=cliente||await pool.connect();try{if(proprio)await c.query('BEGIN');
  const seq=(await c.query("SELECT nextval('auth_admin_hml.protocolo_modelo_seq')::text AS numero")).rows[0].numero;
  const id=randomUUID(),interno='HML-'+id,protocolo=modelo.protocoloOrigem|| (legado?interno:new Date().getUTCFullYear()+'-'+seq),chave=legado?null:randomBytes(32).toString('base64url');
  // Legados sem chave recebem hash aleatório inacessível até recuperação aprovada.
  const segredoInicial=chave||randomBytes(32).toString('base64url');
  await c.query('INSERT INTO auth_admin_hml.pedidos(id,protocolo,protocolo_publico,chave_hash,telefone_cadastrado,dados_solicitacao) VALUES($1,$2,$3,$4,$5,$6)',[id,interno,protocolo,hash(interno,segredoInicial),telefone,JSON.stringify({...modelo,idOrigem:legado?modelo.idOrigem:seq,origem,legado})]);
  await c.query('INSERT INTO auth_admin_hml.auditoria(evento,pedido_id) VALUES($1,$2)',[legado?'modelo_legado_associado':'modelo_cadastro_chave_gerada',id]);
- await c.query('COMMIT');return {id,protocolo,chaveInicial:chave,ficticio:true,recuperacaoNecessaria:legado};
- }catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}}
+ if(proprio)await c.query('COMMIT');return {id,protocolo,chaveInicial:chave,ficticio:true,recuperacaoNecessaria:legado};
+ }catch(e){if(proprio)await c.query('ROLLBACK');throw e;}finally{if(proprio)c.release();}}
  return {
  async cadastrar(d){
  if(d.ficticio!==true||!['mandato','v2'].includes(d.origem)||d.p_whatsapp!=='+5551000000000'||!texto(d.p_nome,120)||!texto(d.p_assunto,160)||!texto(d.p_descricao)||!texto(d.p_localidade,160)||Object.hasOwn(d,'protocolo')||Object.hasOwn(d,'chave'))throw erro('Use somente dados fictícios e o telefone de teste indicado.');
@@ -32,6 +33,7 @@ export function criarCadastroModeloHml({pool,segredo}){
  const modelo=adaptarSolicitacao({solicitacao:{id:'novo',nome:d.p_nome,assunto:d.p_assunto,descricao:d.p_descricao,localidade:d.p_localidade,status:'Recebida',criado_em:criadoEm,anexos:[]},historico:[{solicitacao_id:'novo',status:'Recebida',criado_em:criadoEm}]});
  return registrar({modelo,telefone:d.p_whatsapp,origem:d.origem});
  },
+ async importarLegadoFicticio(op,d){if(d.ficticio!==true||d.solicitacao?.whatsapp!=='+5551000000000'||!d.solicitacao?.id||!op?.usuarioId)throw erro('Somente fonte fictícia e telefone reservado são aceitos na homologação.');const modelo=adaptarSolicitacao(d),origem='supabase-legado-ficticio',idOrigem=String(d.solicitacao.id);const canonico=v=>Array.isArray(v)?v.map(canonico):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonico(v[k])])):v;const sha=createHash('sha256').update(JSON.stringify(canonico(modelo.fonteOriginal))).digest('hex');const c=await pool.connect();try{await c.query('BEGIN');await c.query('INSERT INTO auth_admin_hml.importacoes_legadas(origem,id_origem,fonte_hash) VALUES($1,$2,$3) ON CONFLICT(origem,id_origem) DO UPDATE SET origem=EXCLUDED.origem',[origem,idOrigem,sha]);const anterior=(await c.query('SELECT * FROM auth_admin_hml.importacoes_legadas WHERE origem=$1 AND id_origem=$2 FOR UPDATE',[origem,idOrigem])).rows[0];if(anterior.fonte_hash!==sha)throw Object.assign(Error('Fonte alterada: reconciliação necessária; nenhum histórico foi sobrescrito.'),{status:409});if(anterior.solicitacao_id){const p=(await c.query('SELECT protocolo_publico FROM auth_admin_hml.pedidos WHERE id=$1',[anterior.solicitacao_id])).rows[0];await c.query('COMMIT');return {id:anterior.solicitacao_id,protocolo:p.protocolo_publico,chaveInicial:null,ficticio:true,recuperacaoNecessaria:true,repetido:true};}const p=await registrar({modelo,telefone:d.solicitacao.whatsapp,origem,legado:true},c);await c.query('UPDATE auth_admin_hml.importacoes_legadas SET solicitacao_id=$3 WHERE origem=$1 AND id_origem=$2',[origem,idOrigem,p.id]);await c.query("INSERT INTO auth_admin_hml.auditoria(evento,usuario_id,pedido_id) VALUES('modelo_legado_importado',$1,$2)",[op.usuarioId,p.id]);await c.query('COMMIT');return {...p,repetido:false};}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}},
  async importarFixture(d){
  // Somente cenários representativos fixos, não há importação de cidadãos reais.
  if(!['legado','sem-protocolo','alternativo'].includes(d.cenario))throw erro('Cenário fictício inválido');

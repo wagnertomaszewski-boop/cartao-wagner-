@@ -1,0 +1,9 @@
+import {criarClienteRecuperacaoManual} from '../../v2/seguranca/cliente-recuperacao-manual.mjs';
+const $=id=>document.getElementById(id);let api,selecionado=null,operacao=crypto.randomUUID(),ocupado=false;
+try{api=criarClienteRecuperacaoManual({origem:location.origin});}catch(e){$('sessao').textContent=e.message;}
+async function agir(fn){if(!api||ocupado)return;ocupado=true;try{$('mensagem').textContent='';await fn();}catch(e){$('mensagem').textContent=e.message;}finally{ocupado=false;}}
+function editar(item){selecionado=item;operacao=crypto.randomUUID();$('editor').reset();if(item)for(const [k,v]of Object.entries(item)){const campo=$('editor').elements.namedItem(k);if(campo){if(campo.type==='checkbox')campo.checked=v===true;else campo.value=typeof v==='string'?v:'';}}}
+async function listar(){const e=await api.estado();$('sessao').textContent=e.mfaRecente?'MFA recente confirmado.':'Entre e confirme o MFA para gerenciar conteúdos.';$('lista').replaceChildren();if(!e.mfaRecente)return;for(const item of await api.conteudos()){const p=document.createElement('p'),b=document.createElement('button');p.textContent=item.tipo+' · '+item.titulo+' · '+(item.publicado?'Publicado':'Rascunho')+' · versão '+item.versao;b.textContent='Editar conteúdo';b.onclick=()=>editar(item);$('lista').append(p,b);}}
+$('atualizar').onclick=()=>agir(listar);$('novo').onclick=()=>editar(null);
+$('editor').onsubmit=e=>{e.preventDefault();void agir(async()=>{const d=Object.fromEntries(new FormData(e.target));const r=await api.salvarConteudo({...d,publicado:d.publicado==='on',operacaoId:operacao,...(selecionado?{id:selecionado.id,versao:selecionado.versao}:{})});editar(r);await listar();$('mensagem').textContent='Conteúdo salvo, revisão preservada e operação auditada.';});};
+addEventListener('pagehide',()=>{selecionado=null;$('editor').reset();$('lista').replaceChildren();});void agir(listar);

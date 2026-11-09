@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Projetos e ações | Mandato em Ação</title>
+<meta name="theme-color" content="#071a32">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+<a href="./index.html">‹ Voltar ao início</a>
+<h1>Projetos e ações</h1>
+<p>Um espaço para acompanhar iniciativas, pedidos, emendas e resultados do mandato.</p>
+</header>
+<main class="page-content">
+<div class="chips">
+  <span class="chip active" data-pf="todos">Todos</span>
+  <span class="chip" data-pf="projeto">Projetos de lei</span>
+  <span class="chip" data-pf="pedido">Pedidos</span>
+  <span class="chip" data-pf="emenda">Emendas</span>
+  <span class="chip" data-pf="resultado">Resultados</span>
+</div>
+
+<div id="projetosLista">
+  <section class="feed-card"><p>Carregando projetos e ações...</p></section>
+</div>
+<section id="projeto-detalhe" class="feed-card" hidden aria-live="polite"></section></main>
+<nav class="bottom-nav">
+<a class="nav-item " href="./index.html"><b>⌂</b>Início</a>
+<a class="nav-item" href="./solicitacao.html"><b>＋</b>Solicitar</a>
+<a class="nav-item" href="./acompanhar.html"><b>⌕</b>Acompanhar</a>
+<a class="nav-item" href="../index.html"><b>•••</b>Mais</a>
+</nav>
+</div>
+<script>
+const MODO_CONTEUDO_HML=location.origin==='https://mandato-neon-homologacao.onrender.com'&&location.pathname.startsWith('/hml/');
+const SUPABASE_URL="https://pmmsdjozyyxkbuqlkfpb.supabase.co";
+const SUPABASE_KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
+let projetosPublicos=[];
+let filtroAtual="todos";
+
+function esc(v){
+  return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+}
+function tipoNormalizado(v){
+  return String(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+function nomeTipo(t){
+  const n=tipoNormalizado(t);
+  return ({projeto:"Projeto / Lei",pedido:"Pedido de Providência",emenda:"Emenda",resultado:"Resultado"})[n]||t;
+}
+function renderProjetos(itens){
+  const alvo=document.getElementById("projetosLista");
+  if(!Array.isArray(itens)||!itens.length){
+    alvo.innerHTML='<section class="feed-card"><h2>Nenhum conteúdo nesta categoria</h2><p>Novos projetos e ações publicados aparecerão aqui.</p></section>';
+    return;
+  }
+  alvo.innerHTML=itens.map(item=>`
+    <section class="feed-card project-item" data-type="${esc(tipoNormalizado(item.tipo))}">
+      <div class="eyebrow">${esc(nomeTipo(item.tipo))}${item.destaque?' · Destaque':''}</div>
+      <h2>${esc(item.titulo)}</h2>
+      ${item.foto_url?'<img class="project-photo" src="'+esc(item.foto_url)+'" alt="Foto de '+esc(item.titulo)+'">':""}
+      <p>${esc(item.resumo||"")}</p>
+      <div class="meta">
+        ${item.referencia?'<span>📄 '+esc(item.referencia)+'</span>':""}
+        ${item.area?'<span>🏛️ '+esc(item.area)+'</span>':""}
+        ${item.situacao?'<span>🔵 '+esc(item.situacao)+'</span>':""}
+      </div>
+      <button type="button" class="chip" data-abrir-projeto="${esc(item.id)}">Abrir detalhes</button>
+    </section>`).join("");
+}
+async function carregarProjetos(filtro="todos"){
+  filtroAtual=filtro||"todos";
+  const alvo=document.getElementById("projetosLista");
+  alvo.innerHTML='<section class="feed-card"><p>Carregando projetos e ações...</p></section>';
+
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),8000);
+
+  try{
+    const resp=await fetch(MODO_CONTEUDO_HML?'/hml/publico/projetos':SUPABASE_URL+"/rest/v1/rpc/consulta_publica_projetos_acoes",{
+      method:"POST",
+      headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({p_tipo:filtroAtual==="todos"?null:filtroAtual}),
+      cache:"no-store",
+      signal:controller.signal
+    });
+    clearTimeout(timer);
+    const dados=await resp.json();
+    if(!resp.ok) throw new Error("Falha ao carregar");
+    projetosPublicos=Array.isArray(dados)?dados:[];
+    renderProjetos(projetosPublicos);
+  }catch(e){
+    clearTimeout(timer);
+    alvo.innerHTML='<section class="feed-card"><h2>Não foi possível carregar agora</h2><p>Toque novamente na categoria para tentar de novo.</p></section>';
+  }
+}
+document.querySelectorAll('.chip[data-pf]').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    document.querySelectorAll('.chip[data-pf]').forEach(x=>x.classList.remove('active'));
+    chip.classList.add('active');
+    carregarProjetos(chip.dataset.pf||"todos");
+  });
+});
+document.getElementById('projetosLista').addEventListener('click',async e=>{const b=e.target.closest('[data-abrir-projeto]');if(!b)return;const alvo=document.getElementById('projeto-detalhe');alvo.hidden=false;alvo.replaceChildren();const titulo=document.createElement('h2');titulo.textContent='Carregando detalhes…';alvo.append(titulo);let pedido=String(b.dataset.abrirProjeto);alvo.dataset.pedido=pedido;try{const {normalizarDetalheProjeto,identificadorProjeto}=await import('./conteudos/contrato-projetos.mjs');const id=identificadorProjeto(pedido);const r=await fetch(MODO_CONTEUDO_HML?'/hml/publico/projeto':SUPABASE_URL+'/rest/v1/rpc/consulta_publica_detalhe_projeto',{method:'POST',headers:MODO_CONTEUDO_HML?{'Content-Type':'application/json'}:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_id:id}),cache:'no-store',signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error();const item=normalizarDetalheProjeto(await r.json(),id);if(!item)throw Error();if(alvo.dataset.pedido!==pedido)return;alvo.replaceChildren();for(const [label,key] of [['','titulo'],['Resumo','resumo'],['Objetivo','objetivo'],['Situação','situacao'],['Realizado','feito'],['Próximos passos','falta']]){if(!item[key])continue;const h=document.createElement(key==='titulo'?'h2':'h3'),p=document.createElement('p');h.textContent=label||item.titulo;alvo.append(h);if(label){p.textContent=item[key];alvo.append(p);}}alvo.scrollIntoView({block:'start'});}catch{if(alvo.dataset.pedido===pedido)titulo.textContent='Não foi possível carregar os detalhes. Tente novamente.';}const voltar=document.createElement('button');voltar.type='button';voltar.textContent='Voltar à lista';voltar.onclick=()=>{alvo.hidden=true;document.getElementById('projetosLista').scrollIntoView({block:'start'});};if(alvo.dataset.pedido===pedido)alvo.append(voltar);});
+carregarProjetos("todos");
+</script>
+</body>
+</html>

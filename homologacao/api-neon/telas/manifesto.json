@@ -1,10 +1,18 @@
 {
-  "v2/solicitar-homologacao.html": "7b103ffcb03c964edd6ab56785ed9bb1a7d2170f307aaadc8c00cfa6a7b42f75",
-  "v2/seguranca/tela-cadastro-hml.mjs": "88d3020384c40fafba6ad98e6755b58d0d8da99975070e74dd9685c2ff743dd5",
-  "v2/recuperar-acesso.html": "6c71bd4c6431ccd5c85e128208806be9b1b0c79be6d0253c887849ed02c631bd",
-  "v2/recuperacao.css": "74441f83b95a9a61cc362ce1c3f040917575f496f586951457d6528c74712cdf",
-  "v2/seguranca/cliente-recuperacao-manual.mjs": "2a115739765c460d65aeb744f13655436342ac2340bdf5ed7a1a0368ed07ed8d",
-  "v2/seguranca/tela-recuperacao-manual.mjs": "80c9adae54fb4cb5bd22dafabf9eba7608e34cd58f1aac9ae52e2ca5f9f9d0ec",
-  "painel/recuperacoes.html": "448408ce5fc9fc07e12aa80b29600a288df065bc0e9d02792f57be3e4d4ad237",
-  "painel/seguranca/recuperacoes.mjs": "bc286ae117444af1f0407e1ff47b224ef58540444ef0ccb7ad491e519034a41f"
+  "v2/solicitar-homologacao.html": "fbace32ffbcec5e3c4fb9dbaf4fa8f534372a5063cc4b8dfb9bb9c96d27c47f8",
+  "v2/seguranca/tela-cadastro-hml.mjs": "b92a49bc66d866c46f959c966360adbeb1df3957a9f006dc23c15fb9d5c9b218",
+  "v2/recuperar-acesso.html": "a97ec7f020a69daafc9808516ce1dc511e2eb1aeb265947db233ab4ff143c26a",
+  "v2/recuperacao.css": "ca08b5a6bb40a0cec9b74614a51d0f8aaffe1b0322b3223e952821bc4f1af816",
+  "v2/seguranca/cliente-recuperacao-manual.mjs": "ed7de00f7cb7215c67f649e6b8d9c9ba52d284329c5682709311680360a24d45",
+  "v2/seguranca/tela-recuperacao-manual.mjs": "dc0c04dc21be10637aa36e6ebd61fa126b9fb39482154a0e8f4153aed64fc618",
+  "painel/recuperacoes.html": "5900b12913ccd14ab28a0759631dd82c97742075666eb5fa10dbd2c1e1548a2b",
+  "painel/seguranca/recuperacoes.mjs": "dd343619eb8a057cec73a672d7785827f4713d37ee38e19c288719d87a5957d4",
+  "v2/index.html": "4563c01daeff1ed8f9e506c01a10ef1791090503154874b8fda4c761a6288544",
+  "v2/projetos.html": "953f8e9e49c0c57cdc429d99a7ade5edc185ad68b45a6c3522629a529bc51e4b",
+  "v2/noticias.html": "1ea0f4c3a8c12f610755bdbac182a463a5a59c9dda49653010ee03cc4dc10e41",
+  "v2/styles.css": "e8b41371f56ed452bd04e35fca13f4081baf676928c1dd273d7355a4a8a24068",
+  "v2/conteudos/contrato-projetos.mjs": "e45cea9e994c37df53b18d4e335ae7346b4ea74676c4bc2a77588af4c643d1a4",
+  "v2/conteudos/tela-noticias.mjs": "ebf34cbd6c09d233a0ebcd4df88cdb862c2fee9ec178fb06a510a07ddd32f064",
+  "painel/conteudos.html": "0adef4d90583ef4e49f58a04196c29ba269701e8a70af47142d5b3a340b2db2b",
+  "painel/seguranca/conteudos.mjs": "12811706454e6385ea13b18de77a829f67d39660a775b743e08fa30735a929f5"
 }

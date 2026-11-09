@@ -49,7 +49,7 @@ export function criarFluxoIsoladoHml({pool,segredo,enviarCodigo=null,telefoneTes
    const r=await pool.query('SELECT protocolo,protocolo_publico,chave_hash,versao,dados_solicitacao FROM auth_admin_hml.pedidos WHERE protocolo=$1 OR protocolo_publico=$1',[protocolo]);
    const p=r.rows[0];if(!p||!timingSafeEqual(Buffer.from(p.chave_hash),Buffer.from(hash(p.protocolo,chave))))return {encontrado:false};
    const d=p.dados_solicitacao;
-   return d?{encontrado:true,protocolo:p.protocolo_publico||p.protocolo,versao:p.versao,assunto:d.assunto,descricao:d.descricao,localidade:d.localidade,status:d.status,criadoEm:d.criadoEm,historico:d.historico,respostas:d.respostas,anexos:d.anexos}:{encontrado:true,assunto:'Solicitação fictícia de homologação',versao:p.versao};
+   return d?{encontrado:true,protocolo:p.protocolo_publico||p.protocolo,versao:p.versao,assunto:d.assunto,descricao:d.descricao,localidade:d.localidade,status:d.status,criadoEm:d.criadoEm,resultado:d.resultado||null,revisao:d.revisao||0,historico:(d.historico||[]).map(h=>({status:h.status,descricao:h.descricao,criadoEm:h.criadoEm})),respostas:(d.respostas||[]).map(r=>({mensagem:r.mensagem,criadoEm:r.criadoEm,anexos:r.anexos||[]})),anexos:d.anexos}:{encontrado:true,assunto:'Solicitação fictícia de homologação',versao:p.versao};
   },
   async auditoria(){const r=await pool.query('SELECT evento,pedido_id,criado_em FROM auth_admin_hml.auditoria ORDER BY id DESC LIMIT 30');return r.rows;}
  };

@@ -28,7 +28,7 @@ export function criarRecuperacaoManualHml({pool,segredo,telefoneTeste=null,agora
    const telefone=pessoal?d.telefone:(telefoneValido(telefoneTeste)?telefoneTeste:'+5551000000000');
    const id=randomUUID(),protocolo='HML-'+id,chaveInicial=randomBytes(32).toString('base64url');
    await c.query('INSERT INTO auth_admin_hml.pedidos(id,protocolo,chave_hash,telefone_cadastrado) VALUES($1,$2,$3,$4)',[id,protocolo,hash(protocolo,chaveInicial),telefone]);
-   if(pessoal){await c.query('UPDATE auth_admin_hml.pedidos SET telefone_autorizacao_hash=$2,telefone_autorizado_por=$3 WHERE id=$1',[id,hash('destino:'+id,telefone),op.usuarioId]);await audit(c,'manual_destino_pessoal_autorizado',op,id);}
+   if(pessoal){const dados={idOrigem:id,origem:'teste-pessoal-autorizado',legado:false,solicitante:'Pessoa autorizada para teste',assunto:'Solicitação fictícia do teste pessoal',descricao:'Somente homologação com destino pessoal autorizado.',localidade:'Homologação',status:'Recebida',criadoEm:new Date().toISOString(),historico:[{status:'Recebida',criadoEm:new Date().toISOString()}],respostas:[],anexos:[],fiscalizacao:[]};await c.query('UPDATE auth_admin_hml.pedidos SET dados_solicitacao=$2 WHERE id=$1',[id,JSON.stringify(dados)]);await c.query('UPDATE auth_admin_hml.pedidos SET telefone_autorizacao_hash=$2,telefone_autorizado_por=$3 WHERE id=$1',[id,hash('destino:'+id,telefone),op.usuarioId]);await audit(c,'manual_destino_pessoal_autorizado',op,id);}
    await audit(c,'manual_fixture_criada',op,id);return {id,protocolo,telefone,chaveInicial,ficticio:true};
   });},
   async solicitar({protocolo,telefone}={}){
