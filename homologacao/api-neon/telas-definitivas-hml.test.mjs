@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import {createHash} from 'node:crypto';
 import {arquivosTelas} from './preparar-telas-hml.mjs';
-import {criarClienteRecuperacaoManual,normalizarTelefone,uriWhatsappPrivada,ORIGEM_HML} from '../../v2/seguranca/cliente-recuperacao-manual.mjs';
+import {criarClienteRecuperacaoManual,normalizarTelefone,uriWhatsappPrivada,ORIGEM_HML,formatarDataMandato} from '../../v2/seguranca/cliente-recuperacao-manual.mjs';
 test('Render usa exatamente as telas e módulos versionados do V2 e Painel, sem incluir backends de produção',async()=>{
  const hashes=JSON.parse(await readFile(new URL('./telas/manifesto.json',import.meta.url),'utf8'));
  for(const p of arquivosTelas){const original=await readFile(new URL('../../'+p,import.meta.url),'utf8'),pacote=await readFile(new URL('./telas/'+p,import.meta.url),'utf8');assert.equal(pacote,original);assert.equal(hashes[p],createHash('sha256').update(original).digest('hex'));assert.doesNotMatch(pacote,/supabase\.co|consulta_publica_protocolo|localStorage|sessionStorage|console\.(log|error)/);}
@@ -21,3 +21,5 @@ test('chave, recibo e código via POST HTTPS, sem URL/cache/cookies de administr
 test('link privado do WhatsApp exige destino autorizado e código vigente; nunca usa URL pública',()=>{
  const e={telefone:'+5551999999999',codigo:'123456',mensagem:'Código de teste',envioPermitido:true,expiraEm:new Date(600000).toISOString()};assert.match(uriWhatsappPrivada(e,300000),/^whatsapp:\/\/send\?/);assert.throws(()=>uriWhatsappPrivada({...e,envioPermitido:false},300000));assert.throws(()=>uriWhatsappPrivada(e,600000));assert.throws(()=>uriWhatsappPrivada({...e,expiraEm:'invalido'},300000));
 });
+
+test('horários de histórico, validade e auditoria usam o fuso do mandato, inclusive na virada do dia',()=>{assert.match(formatarDataMandato('2026-11-09T04:29:33Z'),/09\/11\/2026.*01:29:33/);assert.equal(formatarDataMandato('2026-11-09T04:34:33Z',true),'01:34:33');assert.equal(formatarDataMandato('invalida'),'Data não informada');});

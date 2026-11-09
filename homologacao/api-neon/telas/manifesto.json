@@ -3,8 +3,8 @@
   "v2/seguranca/tela-cadastro-hml.mjs": "88d3020384c40fafba6ad98e6755b58d0d8da99975070e74dd9685c2ff743dd5",
   "v2/recuperar-acesso.html": "6c71bd4c6431ccd5c85e128208806be9b1b0c79be6d0253c887849ed02c631bd",
   "v2/recuperacao.css": "74441f83b95a9a61cc362ce1c3f040917575f496f586951457d6528c74712cdf",
-  "v2/seguranca/cliente-recuperacao-manual.mjs": "55eb45407b1060d62e41a8b2caf4d0a61e5cf84a9cc797de00b30d06928da9e6",
-  "v2/seguranca/tela-recuperacao-manual.mjs": "2cbbfe165f4ed70fca3fec3dcf954d878be8e049d7d4df18c9f4f4b13a09c469",
+  "v2/seguranca/cliente-recuperacao-manual.mjs": "2a115739765c460d65aeb744f13655436342ac2340bdf5ed7a1a0368ed07ed8d",
+  "v2/seguranca/tela-recuperacao-manual.mjs": "80c9adae54fb4cb5bd22dafabf9eba7608e34cd58f1aac9ae52e2ca5f9f9d0ec",
   "painel/recuperacoes.html": "448408ce5fc9fc07e12aa80b29600a288df065bc0e9d02792f57be3e4d4ad237",
-  "painel/seguranca/recuperacoes.mjs": "699d8012b43fc76646c4f2f8b9099ab18cecf29c8d821e321d7d4e7607facafd"
+  "painel/seguranca/recuperacoes.mjs": "bc286ae117444af1f0407e1ff47b224ef58540444ef0ccb7ad491e519034a41f"
 }

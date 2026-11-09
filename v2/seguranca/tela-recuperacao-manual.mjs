@@ -1,4 +1,4 @@
-import {criarClienteRecuperacaoManual} from './cliente-recuperacao-manual.mjs';
+import {criarClienteRecuperacaoManual,formatarDataMandato} from './cliente-recuperacao-manual.mjs';
 const $=id=>document.getElementById(id);let api,pedido=null,nova=null,ocupado=false;
 try{api=criarClienteRecuperacaoManual({origem:location.origin});}catch(e){$('mensagem').textContent=e.message;document.querySelectorAll('button').forEach(b=>b.disabled=true);}
 async function agir(fn){if(!api||ocupado)return;ocupado=true;try{$('mensagem').textContent='';await fn();}catch(e){$('mensagem').textContent=e.message;}finally{ocupado=false;}}
@@ -7,7 +7,7 @@ addEventListener('pagehide',limpar);
 function render(r){$('andamento').hidden=!r.encontrado;if(!r.encontrado)throw Error('Protocolo ou chave inválidos.');$('assunto').textContent=r.assunto||'Solicitação';$('situacao').textContent=(r.status||'Acompanhamento protegido')+' · versão '+r.versao;
  $('descricao').textContent=r.descricao||'';$('localidade').textContent=r.localidade||'';
  for(const id of ['historico','respostas','anexos'])$(id).replaceChildren();
- for(const h of r.historico||[]){const li=document.createElement('li');li.textContent=(h.criadoEm?new Date(h.criadoEm).toLocaleString('pt-BR')+' · ':'')+h.status;$('historico').append(li);}
+ for(const h of r.historico||[]){const li=document.createElement('li');li.textContent=(h.criadoEm?formatarDataMandato(h.criadoEm)+' · ':'')+h.status;$('historico').append(li);}
  for(const a of r.anexos||[]){const li=document.createElement('li');li.textContent=a.nome+' · arquivo privado';$('anexos').append(li);}
  for(const resposta of r.respostas||[]){const p=document.createElement('p');p.textContent=resposta.mensagem;for(const a of resposta.anexos||[])p.append(document.createTextNode(' · '+a.nome+' (arquivo privado)'));$('respostas').append(p);}
 }

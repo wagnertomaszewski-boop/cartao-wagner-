@@ -22,3 +22,8 @@ export function uriWhatsappPrivada(emissao,agora=Date.now()){
  if(emissao?.envioPermitido!==true||!/^\+55[1-9][0-9]{10}$/.test(emissao.telefone)||!/^\d{6}$/.test(emissao.codigo)||typeof emissao.mensagem!=='string'||!Number.isFinite(Date.parse(emissao.expiraEm))||agora>=Date.parse(emissao.expiraEm))throw Error('Confira o destino autorizado e a validade do código.');
  return 'whatsapp://send?phone='+emissao.telefone.slice(1)+'&text='+encodeURIComponent(emissao.mensagem);
 }
+
+export function formatarDataMandato(valor,somenteHora=false){
+ const d=new Date(valor);if(!valor||!Number.isFinite(d.getTime()))return 'Data não informada';
+ return somenteHora?d.toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo'}):d.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
+}
