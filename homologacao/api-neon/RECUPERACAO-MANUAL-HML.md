@@ -45,3 +45,7 @@ A justificativa fica no pedido privado, junto com autor e data da decisão; cód
 Estas telas são a implementação isolada de homologação dos fluxos cidadão e administrativo. Ainda é necessário validar o toque no WhatsApp/WhatsApp Business instalado com um telefone expressamente autorizado e a sessão administrativa real com TOTP do usuário. O navegador remoto pode não ter o aplicativo de mensagens instalado.
 
 A adaptação visual/contrato para os aplicativos V2/Painel publicados e a migração de solicitações reais são uma etapa separada, exigem autorização própria e não são realizadas neste escopo. Nenhuma porcentagem de conclusão ou envio real é inferida dos testes automatizados.
+
+## Inicialização no plano Free
+
+A suíte completa roda no CI (`testes-http-locais-seguros.yml`), com dependências do lockfile, e não no `npm start`: executar todos os processos de testes durante o boot excedeu os 512 MiB do serviço Free. O start inicia somente o servidor e seu autoteste transacional restrito. `smoke-manual-render.mjs` verifica o serviço publicado, a evidência booleana do autoteste Neon e os bloqueios HTTP. O workflow antigo foi atualizado para essas rotas e deixou de executar emissores/segredos legados de outra configuração Neon.

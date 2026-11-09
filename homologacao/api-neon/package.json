@@ -6,7 +6,7 @@
     "node": ">=22 <23"
   },
   "scripts": {
-    "start": "npm test && node servico-https.mjs",
+    "start": "node servico-https.mjs",
     "test": "node --test *.test.mjs",
     "test:hml": "node --test auth-admin-hml.test.mjs tests-hml/*.test.mjs"
   },

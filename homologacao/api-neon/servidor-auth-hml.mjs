@@ -93,7 +93,8 @@ export async function montar({env,pool}){
     const s=await auth.api.getSession({headers:fromNodeHeaders(req.headers)});let mfaRecente=false;
     try{await exigirAdminMfa({auth,pool,headers:fromNodeHeaders(req.headers),adminEmail:env.AUTH_HML_ADMIN_EMAIL});mfaRecente=true;}catch{}
     const r=await pool.query('SELECT consumida FROM auth_admin_hml.instalacao WHERE id=1');
-    return json(res,200,{ambiente:'homologacao',instalado:r.rows[0]?.consumida===true,autenticado:!!s,mfaAtivado:s?.user?.twoFactorEnabled===true,mfaRecente,whatsappConfigurado:false,envioManual:true}),true;
+    const prova=await pool.query("SELECT EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v1_concluido') AS ok");
+    return json(res,200,{manualNeonValidado:prova.rows[0]?.ok===true,ambiente:'homologacao',instalado:r.rows[0]?.consumida===true,autenticado:!!s,mfaAtivado:s?.user?.twoFactorEnabled===true,mfaRecente,whatsappConfigurado:false,envioManual:true}),true;
    }
    if(path==='/hml/cidadao/confirmar'&&req.method==='POST'){return json(res,200,await fluxo.confirmar(await corpo(req))),true;}
    if(path==='/hml/cidadao/consultar'&&req.method==='POST'){return json(res,200,await fluxo.consultar(await corpo(req))),true;}

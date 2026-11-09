@@ -1,5 +1,5 @@
 name: Homologacao HTTP Neon isolada
-# Reexecutar smoke HTTP-Neon apos configuracao dos secrets de homologacao
+# Não usa segredos legados nem executa SQL fora da branch isolada.
 on:
   workflow_dispatch:
   push:
@@ -15,7 +15,7 @@ permissions:
 jobs:
   integracao:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,96 +25,5 @@ jobs:
         run: node --test homologacao/api-neon/integracao-http-postgres.test.mjs homologacao/api-neon/limite-corpo-http.test.mjs homologacao/api-neon/interface-v2.test.mjs homologacao/api-neon/operacoes-neon-seguranca.test.mjs homologacao/api-neon/fluxo-recuperacao-http.test.mjs homologacao/api-neon/autenticacao-admin-seguranca.test.mjs homologacao/api-neon/bloqueios-implantacao.test.mjs homologacao/api-neon/migracao-legado-v2.test.mjs homologacao/api-neon/cliente-v2-seguranca.test.mjs homologacao/api-neon/acompanhar-legado-seguranca.test.mjs homologacao/api-neon/acompanhar-v2-seguranca.test.mjs homologacao/api-neon/isolamento-protocolo-consulta.test.mjs homologacao/api-neon/recuperacao-neutralidade-http.test.mjs homologacao/api-neon/contrato-tres-telas-seguranca.test.mjs homologacao/api-neon/prontidao-migracao.test.mjs homologacao/api-neon/chaves-legadas-homologacao.test.mjs homologacao/api-neon/emissao-legada-interna.test.mjs homologacao/api-neon/repositorio-chaves-legadas.test.mjs homologacao/api-neon/transacao-postgres.test.mjs homologacao/api-neon/fluxo-legado-http.test.mjs homologacao/api-neon/emissor-legado-postgres.test.mjs homologacao/api-neon/rpc-emissao-restrita.test.mjs homologacao/api-neon/verificar-vinculo-legado.test.mjs homologacao/api-neon/integracao-verificador-emissor.test.mjs homologacao/api-neon/repositorio-chaves-legadas-seguranca.test.mjs homologacao/api-neon/rollback-emissao-legada.test.mjs homologacao/api-neon/verificador-emissao-assistida.test.mjs homologacao/api-neon/emissor-assistido-postgres.test.mjs homologacao/api-neon/buscar-vinculo-supabase.test.mjs homologacao/api-neon/emissor-com-vinculo-legado.test.mjs homologacao/api-neon/auditar-politica-emissao.test.mjs homologacao/api-neon/comprovante-assinado.test.mjs homologacao/api-neon/emissor-com-comprovante-assinado.test.mjs homologacao/api-neon/diagnosticar-emissao-legada.test.mjs homologacao/api-neon/persistencia-rpc-ficticia.test.mjs homologacao/api-neon/emissor-rpc-ficticio.test.mjs homologacao/api-neon/conferencia-privada-assinada.test.mjs homologacao/api-neon/fluxo-privado-emissao-rpc.test.mjs homologacao/api-neon/consulta-privada-supabase-rest.test.mjs homologacao/api-neon/fluxo-privado-com-supabase.test.mjs homologacao/api-neon/autorizar-operador-supabase.test.mjs homologacao/api-neon/fluxo-operador-autenticado.test.mjs homologacao/api-neon/conferidor-manual-auditado.test.mjs homologacao/api-neon/fluxo-com-decisao-manual.test.mjs homologacao/api-neon/fonte-decisao-neon.test.mjs homologacao/api-neon/autorizar-operador-vinculado.test.mjs homologacao/api-neon/registrar-decisao-privada.test.mjs homologacao/api-neon/gravador-decisao-rpc.test.mjs homologacao/api-neon/fonte-evidencia-assinada.test.mjs homologacao/api-neon/registro-com-conferente-independente.test.mjs homologacao/api-neon/registro-decisao-antirreplay.test.mjs homologacao/api-neon/gravador-sintetico-900007.test.mjs homologacao/api-neon/registro-sintetico-assinado-900007.test.mjs homologacao/api-neon/rota-decisao-sintetica.test.mjs homologacao/api-neon/auditar-politica-emissao-negativos.test.mjs homologacao/api-neon/iniciar-homologacao.test.mjs homologacao/api-neon/rota-sintetica-http-integrada.test.mjs homologacao/api-neon/migracao-conferente-independente-900007.test.mjs
       - name: Executar testes adicionais antes omitidos do CI
         run: node --test homologacao/api-neon/autenticacao-negativa.test.mjs homologacao/api-neon/carga.test.mjs homologacao/api-neon/cors.test.mjs homologacao/api-neon/desafio-recuperacao.test.mjs homologacao/api-neon/executores-postgres.test.mjs homologacao/api-neon/executores-seguranca.test.mjs homologacao/api-neon/fluxo-recuperacao-automatico.test.mjs homologacao/api-neon/http-fronteira-regressao.test.mjs homologacao/api-neon/identidade-isolada.test.mjs homologacao/api-neon/identidade-servidor.test.mjs homologacao/api-neon/integracao.test.mjs homologacao/api-neon/isolamento-http.test.mjs homologacao/api-neon/limitador-http.test.mjs homologacao/api-neon/limitador.test.mjs homologacao/api-neon/operacoes-neon-contrato.test.mjs homologacao/api-neon/operacoes-neon.test.mjs homologacao/api-neon/recuperacao-dupla-seguranca.test.mjs homologacao/api-neon/regressao-autorizacao-http.test.mjs homologacao/api-neon/regressao-http-seguranca.test.mjs homologacao/api-neon/rotas-cidadao.test.mjs homologacao/api-neon/seguranca-cors-auth-regressao.test.mjs homologacao/api-neon/seguranca-limites-adicionais.test.mjs homologacao/api-neon/seguranca-negativa.test.mjs homologacao/api-neon/server.test.mjs homologacao/api-neon/verificar-admin-supabase.test.mjs
-      - name: Validar Render publico sem credenciais nem dados reais
-        env:
-          URL_RENDER: https://mandato-neon-homologacao.onrender.com
-        run: |
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          const base=process.env.URL_RENDER;
-          async function consultar(path) {
-            let erro;
-            for(let tentativa=0;tentativa<3;tentativa++){
-              try {return await fetch(base+path,{signal:AbortSignal.timeout(85000)});}
-              catch(e){erro=e;}
-            }
-            throw erro;
-          }
-          const health=await consultar('/health');
-          assert.equal(health.status,200,'Render /health deve responder 200');
-          const estado=await health.json();
-          assert.equal(estado.status,'ok');
-          assert.equal(estado.modo,'homologacao');
-          assert.equal(estado.rotasCidadaoHabilitadas,false,'Render publico deve manter rotas de cidadao desligadas');
-          const raiz=await consultar('/');
-          assert.equal(raiz.status,404,'Rota raiz sem pagina e esperada');
-          const admin=await consultar('/api/admin/recuperacoes');
-          assert.equal(admin.status,401,'Administracao deve exigir autenticacao');
-          console.log('PASS: Render publico /health 200, raiz 404, admin 401 e rotas de cidadao desligadas');
-          NODE
-      - name: Verificar segredos de homologacao
-        id: secrets
-        env:
-          URL_TESTE: ${{ secrets.NEON_HOMOLOGACAO_DATABASE_URL }}
-          HOST_TESTE: ${{ secrets.NEON_HOMOLOGACAO_HOST }}
-        run: |
-          if [ -n "$URL_TESTE" ] && [ -n "$HOST_TESTE" ]; then
-            echo "habilitado=sim" >> "$GITHUB_OUTPUT"
-          else
-            echo "::error::HTTP-Neon real NAO EXECUTADO: configure os dois segredos de homologacao."
-            exit 1
-          fi
-      - name: Diagnosticar destino Neon sem revelar segredos
-        env:
-          URL_TESTE: ${{ secrets.NEON_HOMOLOGACAO_DATABASE_URL }}
-          HOST_TESTE: ${{ secrets.NEON_HOMOLOGACAO_HOST }}
-        run: |
-          node --input-type=module <<'NODE'
-          const url = new URL(process.env.URL_TESTE);
-          const real = url.hostname.toLowerCase();
-          const esperado = (process.env.HOST_TESTE || '').trim().toLowerCase();
-          const usuario = decodeURIComponent(url.username);
-          const valido = real.endsWith('.neon.tech') && real !== 'neon.tech';
-          const igual = real === esperado;
-          const credenciais = Boolean(usuario && url.password);
-          const papel = usuario === 'mandato_api_homologacao';
-          const sslLivre = !['sslmode','sslcert','sslkey','sslrootcert'].some(k=>url.searchParams.has(k));
-          console.log('Diagnostico seguro: dominio Neon='+valido+', host exato='+igual+', credenciais presentes='+credenciais+', usuario de servico='+papel+', sem parametros SSL extras='+sslLivre);
-          if (!igual) {
-            console.error('::error::O secret NEON_HOMOLOGACAO_HOST nao corresponde ao hostname de NEON_HOMOLOGACAO_DATABASE_URL. Use somente o hostname exato da URL, sem https://, porta, caminho ou espacos; verifique tambem a variante -pooler.');
-          }
-          if (!valido || !igual || !credenciais || !papel || !sslLivre) process.exitCode=1;
-          NODE
-      - name: Instalar driver PostgreSQL isolado
-        working-directory: homologacao/api-neon
-        run: npm install --no-save --no-package-lock --ignore-scripts pg@8
-      - name: Executar HTTP-Neon real
-        working-directory: homologacao/api-neon
-        env:
-          MANDATO_AMBIENTE: homologacao
-          HABILITAR_API_NEON: sim
-          HABILITAR_ROTAS_CIDADAO_TESTES: sim
-          NEON_USUARIO_SERVICO_HOMOLOGACAO: mandato_api_homologacao
-          NEON_HOST_HOMOLOGACAO: ${{ secrets.NEON_HOMOLOGACAO_HOST }}
-          DATABASE_URL: ${{ secrets.NEON_HOMOLOGACAO_DATABASE_URL }}
-        run: node smoke-http-neon-real.mjs
-
-      - name: Emitir chave ficticia no Neon real isolado
-        working-directory: homologacao/api-neon
-        env:
-          MANDATO_AMBIENTE: homologacao
-          HABILITAR_API_NEON: sim
-          NEON_HOST_HOMOLOGACAO: ${{ secrets.NEON_HOMOLOGACAO_HOST }}
-          DATABASE_URL: ${{ secrets.NEON_HOMOLOGACAO_DATABASE_URL }}
-        run: node smoke-emissao-legada-neon-real.mjs
-
-
-
-      - name: Auditar emissao ficticia 900006 sem novas gravacoes
-        working-directory: homologacao/api-neon
-        env:
-          MANDATO_AMBIENTE: homologacao
-          HABILITAR_API_NEON: sim
-          NEON_HOST_HOMOLOGACAO: ${{ secrets.NEON_HOMOLOGACAO_HOST }}
-          DATABASE_URL: ${{ secrets.NEON_HOMOLOGACAO_DATABASE_URL }}
-        run: node smoke-emissao-900006-pos-teste.mjs
+      - name: Validar recuperação manual no Render e prova Neon isolada
+        run: node homologacao/api-neon/smoke-manual-render.mjs
