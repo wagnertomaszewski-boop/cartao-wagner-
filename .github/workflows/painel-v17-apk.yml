@@ -49,8 +49,7 @@ jobs:
           assert "package: name='br.com.wagnertomaszewski.painelmandato.homologacao'" in texto
           assert 'application-debuggable' in texto
           assert 'android.permission.ACCESS_FINE_LOCATION' in texto
-          import subprocess
-          manifests = [Path(p) for p in subprocess.check_output(['rg','--files','android-painel/app/build/intermediates','-g','AndroidManifest.xml'],text=True).splitlines() if '/release/' in p]
+          manifests = [p for p in Path('android-painel/app/build/intermediates').rglob('AndroidManifest.xml') if 'release' in p.parts]
           assert manifests, 'Manifesto release não foi processado para conferência'
           assert all('ACCESS_FINE_LOCATION' not in p.read_text() and 'ACCESS_COARSE_LOCATION' not in p.read_text() for p in manifests), 'Permissão de teste não pode entrar em release'
           print('APK isolado de homologação confirmado; nenhum app publicado foi alterado.')
