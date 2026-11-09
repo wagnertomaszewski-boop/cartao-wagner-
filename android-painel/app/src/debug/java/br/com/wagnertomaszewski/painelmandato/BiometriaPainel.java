@@ -154,7 +154,7 @@ final class BiometriaPainel {
             });
         });
     }
-    private void loginCompleto(String motivo){++sequencia;retomadaBiometrica=false;avisoOperacao.set(false);removerProtecao();politica.bloquear();limparNavegador(()->{ocultarBloqueio();web.loadUrl(LOGIN);informar(motivo);});}
+    private void loginCompleto(String motivo){++sequencia;if(cancelamento!=null)cancelamento.cancel();cancelamento=null;emPrompt=false;retomadaBiometrica=false;avisoOperacao.set(false);removerProtecao();politica.bloquear();limparNavegador(()->{ocultarBloqueio();web.loadUrl(LOGIN);informar(motivo);});}
     private void removerProtecao(){ativa=false;prefs.edit().remove(REGISTRO).commit();try{KeyStore k=chaves();if(k.containsAlias(ALIAS))k.deleteEntry(ALIAS);}catch(Exception ignored){}}
     private void limparNavegador(Runnable depois){web.stopLoading();web.loadUrl("about:blank");web.clearHistory();web.clearCache(true);CookieManager.getInstance().removeAllCookies(ok->{CookieManager.getInstance().flush();if(depois!=null&&!encerrada)depois.run();});}
     private void mostrarBloqueio(String texto){
@@ -187,6 +187,6 @@ final class BiometriaPainel {
     }
     void pausar(){segundoPlano=true;if(ativa||emPrompt)web.setVisibility(View.INVISIBLE);}
     void retomar(){segundoPlano=false;if(!bloqueada())web.setVisibility(View.VISIBLE);}
-    void parar(){if(ativa||emPrompt||bloqueada()){++sequencia;if(cancelamento!=null)cancelamento.cancel();mostrarBloqueio("Painel bloqueado ao sair do aplicativo.");limparNavegador(null);}}
+    void parar(){if(ativa||emPrompt||bloqueada()){++sequencia;if(cancelamento!=null)cancelamento.cancel();cancelamento=null;emPrompt=false;mostrarBloqueio("Painel bloqueado ao sair do aplicativo.");limparNavegador(null);}}
     void fechar(){encerrada=true;++sequencia;if(cancelamento!=null)cancelamento.cancel();trabalho.shutdownNow();}
 }
