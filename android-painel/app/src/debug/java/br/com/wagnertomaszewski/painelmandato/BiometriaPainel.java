@@ -107,7 +107,7 @@ final class BiometriaPainel {
             @Override public void onAuthenticationFailed(){politica.canceladaOuFalhou();texto("Biometria não reconhecida. Tente novamente ou use senha e MFA.");}
             @Override public void onAuthenticationError(int codigo,CharSequence detalhe){emPrompt=false;cancelamento=null;cancelar(ativacao);}
             @Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult resultado){
-                emPrompt=false;cancelamento=null;final int tarefa=++sequencia;texto("Validando a sessão protegida com o servidor…");
+                emPrompt=false;cancelamento=null;if(segundoPlano||encerrada){politica.bloquear();return;}final int tarefa=++sequencia;texto("Validando a sessão protegida com o servidor…");
                 trabalho.execute(()->{byte[] bytes=null;try{
                     Cipher autenticado=resultado.getCryptoObject()==null?null:resultado.getCryptoObject().getCipher();if(autenticado==null)throw new GeneralSecurityException();
                     bytes=EnvelopeSessao.abrir(EnvelopeSessao.ler(envelope),autenticado);
@@ -145,8 +145,10 @@ final class BiometriaPainel {
     private KeyStore chaves() throws GeneralSecurityException,IOException {KeyStore k=KeyStore.getInstance("AndroidKeyStore");try{k.load(null);}catch(java.security.cert.CertificateException e){throw new GeneralSecurityException(e);}return k;}
     private void restaurarCookie(String cookie){
         CookieManager cm=CookieManager.getInstance();cm.removeAllCookies(ok->{
+            if(encerrada||segundoPlano)return;
             // Cookie de sessão em memória; o único checkpoint persistente próprio é cifrado no Keystore.
             cm.setCookie(ORIGEM,cookie+"; Path=/; Secure; HttpOnly; SameSite=Strict",feito->{
+                if(encerrada||segundoPlano){cm.removeAllCookies(null);cm.flush();return;}
                 if(!Boolean.TRUE.equals(feito)){loginCompleto("Entre novamente para continuar.");return;}
                 ocultarBloqueio();web.loadUrl(HOME);
             });
