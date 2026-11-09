@@ -21,9 +21,10 @@ export async function montar({env,pool}){
  const fluxo=criarFluxoIsoladoHml({pool,segredo:env.AUTH_HML_SECRET});
  const manual=criarRecuperacaoManualHml({pool,segredo:env.AUTH_HML_SECRET,telefoneTeste:env.WHATSAPP_HML_DESTINO_TESTE});
  if(env.HML_AUTOTESTE_MANUAL==='sim'){
-  const {autotestarRecuperacaoManual}=await import('./autoteste-manual-hml.mjs');
+  const {autotestarRecuperacaoManual,autotestarDestinoPessoal}=await import('./autoteste-manual-hml.mjs');
   const teste=criarRecuperacaoManualHml({pool,segredo:env.AUTH_HML_SECRET});
   await autotestarRecuperacaoManual({manual:teste,fluxo,pool});
+  await autotestarDestinoPessoal({manual:teste,pool});
   console.log('AUTOTESTE_MANUAL_NEON_OK: fixture fictícia; consumo concorrente único; chave substituída; auditoria; nenhum WhatsApp enviado.');
  }
  const seguro={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer',
@@ -74,7 +75,7 @@ export async function montar({env,pool}){
    for(const [k,v]of Object.entries(seguro))res.setHeader(k,v);
    if(req.method!=='GET'&&(req.headers.origin!==HML_ORIGIN||req.headers['sec-fetch-site']==='cross-site'))return json(res,403,{erro:'Origem não autorizada'}),true;
    if(req.method==='POST')await limitar(path,path.includes('setup')?5:20);
-   const assets={'/hml/':'hml-admin.html','/hml':'hml-admin.html','/hml/app.js':'hml-admin.js','/hml/style.css':'hml-admin.css','/hml/recuperar':'hml-recuperar.html','/hml/painel-recuperacao':'hml-painel-recuperacao.html','/hml/recuperacao.js':'hml-recuperacao.js'};
+   const assets={'/hml/':'hml-admin.html','/hml':'hml-admin.html','/hml/app.js':'hml-admin.js','/hml/style.css':'hml-admin.css','/hml/recuperar':'hml-recuperar.html','/hml/painel-recuperacao':'hml-painel-recuperacao.html','/hml/recuperacao.js':'hml-recuperacao.js','/hml/teste-whatsapp':'hml-teste-whatsapp.html','/hml/teste-whatsapp.js':'hml-teste-whatsapp.js','/hml/v2/recuperar':'hml-recuperar.html','/hml/painel/recuperacoes':'hml-painel-recuperacao.html'};
    if(req.method==='GET'&&assets[path]){const name=assets[path],content=await readFile(new URL('./'+name,import.meta.url));res.writeHead(200,{'Content-Type':name.endsWith('.html')?'text/html; charset=utf-8':name.endsWith('.js')?'application/javascript; charset=utf-8':'text/css; charset=utf-8',...seguro});res.end(content);return true;}
    if(path.startsWith('/hml/auth/')){await autenticar(req,res);return true;}
    if(path==='/hml/setup'&&req.method==='POST'){
@@ -93,8 +94,8 @@ export async function montar({env,pool}){
     const s=await auth.api.getSession({headers:fromNodeHeaders(req.headers)});let mfaRecente=false;
     try{await exigirAdminMfa({auth,pool,headers:fromNodeHeaders(req.headers),adminEmail:env.AUTH_HML_ADMIN_EMAIL});mfaRecente=true;}catch{}
     const r=await pool.query('SELECT consumida FROM auth_admin_hml.instalacao WHERE id=1');
-    const prova=await pool.query("SELECT EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v1_concluido') AS ok");
-    return json(res,200,{manualNeonValidado:prova.rows[0]?.ok===true,ambiente:'homologacao',instalado:r.rows[0]?.consumida===true,autenticado:!!s,mfaAtivado:s?.user?.twoFactorEnabled===true,mfaRecente,whatsappConfigurado:false,envioManual:true}),true;
+    const prova=await pool.query("SELECT EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v1_concluido') AS ok, EXISTS(SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v2_destino_concluido') AS destino_ok");
+    return json(res,200,{versaoRecuperacaoManual:2,manualDestinoValidado:prova.rows[0]?.destino_ok===true,manualNeonValidado:prova.rows[0]?.ok===true,ambiente:'homologacao',instalado:r.rows[0]?.consumida===true,autenticado:!!s,mfaAtivado:s?.user?.twoFactorEnabled===true,mfaRecente,whatsappConfigurado:false,envioManual:true}),true;
    }
    if(path==='/hml/cidadao/confirmar'&&req.method==='POST'){return json(res,200,await fluxo.confirmar(await corpo(req))),true;}
    if(path==='/hml/cidadao/consultar'&&req.method==='POST'){return json(res,200,await fluxo.consultar(await corpo(req))),true;}
@@ -102,6 +103,7 @@ export async function montar({env,pool}){
    if(path==='/hml/manual/validar'&&req.method==='POST')return json(res,200,await manual.validar(await corpo(req))),true;
    const op=await exigirAdminMfa({auth,pool,headers:fromNodeHeaders(req.headers),adminEmail:env.AUTH_HML_ADMIN_EMAIL});
    if(path==='/hml/manual/pedidos'&&req.method==='GET')return json(res,200,await manual.listar()),true;
+   if(path==='/hml/manual/fixture-pessoal'&&req.method==='POST'){const p=await manual.criarFixture(op,{...await corpo(req),testePessoal:true});return json(res,200,{id:p.id,protocolo:p.protocolo,telefoneMascarado:p.telefone.slice(0,5)+'*****'+p.telefone.slice(-4),ficticio:true}),true;}
    if(path==='/hml/manual/fixture'&&req.method==='POST'){await corpo(req);return json(res,200,await manual.criarFixture(op)),true;}
    const manualMatch=/^\/hml\/manual\/pedidos\/([0-9a-f-]{36})\/(decidir|emitir|abrir)$/.exec(path);
    if(manualMatch&&req.method==='POST'){const d=await corpo(req);const acao=manualMatch[2]==='abrir'?'registrarAbertura':manualMatch[2];return json(res,200,await manual[acao](manualMatch[1],op,d)),true;}

@@ -10,16 +10,20 @@ export function criarRecuperacaoManualHml({pool,segredo,telefoneTeste=null,agora
  async function tx(fn){const c=await pool.connect();try{await c.query('BEGIN');const r=await fn(c);await c.query('COMMIT');return r;}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}}
  const audit=(c,evento,op,id)=>c.query('INSERT INTO auth_admin_hml.auditoria(evento,usuario_id,pedido_id) VALUES($1,$2,$3)',[evento,op?.usuarioId||null,id]);
  async function obter(c,id){if(!uuid(id))throw erro(400,'Pedido inválido');
-  const r=await c.query('SELECT r.*,p.protocolo,p.telefone_cadastrado FROM auth_admin_hml.recuperacoes_manuais r JOIN auth_admin_hml.pedidos p ON p.id=r.solicitacao_id WHERE r.id=$1 FOR UPDATE OF r,p',[id]);
+  const r=await c.query('SELECT r.*,p.protocolo,p.telefone_cadastrado,p.telefone_autorizacao_hash,p.telefone_autorizado_por FROM auth_admin_hml.recuperacoes_manuais r JOIN auth_admin_hml.pedidos p ON p.id=r.solicitacao_id WHERE r.id=$1 FOR UPDATE OF r,p',[id]);
   if(!r.rows[0])throw erro(404,'Pedido não encontrado');return r.rows[0];
  }
+ const destinoPermitido=p=>(telefoneValido(telefoneTeste)&&p.telefone_cadastrado===telefoneTeste)||(p.telefone_autorizado_por===p.decidido_por&&igual(p.telefone_autorizacao_hash,hash('destino:'+p.solicitacao_id,p.telefone_cadastrado)));
  function conferir(p,d){if(d.identidadeConferida!==true||!telefoneValido(p.telefone_cadastrado)||d.telefoneConfirmado!==p.telefone_cadastrado)throw erro(403,'Confira a identidade e o telefone cadastrado');}
  return {
-  async criarFixture(op){return tx(async c=>{
-   // Destino inexistente por padrão; nunca permite entrada livre de telefone no painel.
-   const telefone=telefoneValido(telefoneTeste)?telefoneTeste:'+5551000000000';
+  async criarFixture(op,d={}){return tx(async c=>{
+   const pessoal=Object.keys(d).length>0;
+   if(pessoal&&(!telefoneValido(d.telefone)||d.telefone!==d.confirmacaoTelefone||d.autorizoMeuNumero!==true||d.telefone==='+5551000000000'))throw erro(400,'Confirme seu próprio número e a autorização para este teste');
+   // O destino pessoal somente pode ser cadastrado nesta fixture administrativa autorizada.
+   const telefone=pessoal?d.telefone:(telefoneValido(telefoneTeste)?telefoneTeste:'+5551000000000');
    const id=randomUUID(),protocolo='HML-'+id,chaveInicial=randomBytes(32).toString('base64url');
    await c.query('INSERT INTO auth_admin_hml.pedidos(id,protocolo,chave_hash,telefone_cadastrado) VALUES($1,$2,$3,$4)',[id,protocolo,hash(protocolo,chaveInicial),telefone]);
+   if(pessoal){await c.query('UPDATE auth_admin_hml.pedidos SET telefone_autorizacao_hash=$2,telefone_autorizado_por=$3 WHERE id=$1',[id,hash('destino:'+id,telefone),op.usuarioId]);await audit(c,'manual_destino_pessoal_autorizado',op,id);}
    await audit(c,'manual_fixture_criada',op,id);return {id,protocolo,telefone,chaveInicial,ficticio:true};
   });},
   async solicitar({protocolo,telefone}={}){
@@ -55,12 +59,12 @@ export function criarRecuperacaoManualHml({pool,segredo,telefoneTeste=null,agora
    if(!/^\d{6}$/.test(codigo))throw Error('Gerador inválido');
    await c.query('UPDATE auth_admin_hml.recuperacoes_manuais SET desafio_id=$2,codigo_hash=$3,expira_em=$4,emitido_em=$5,emissoes=emissoes+1,tentativas=0 WHERE id=$1',[id,desafioId,hash(desafioId,codigo),expiraEm,new Date(agora()).toISOString()]);
    await audit(c,'manual_codigo_gerado',op,id);
-   return {desafioId,codigo,expiraEm,telefone:p.telefone_cadastrado,envioPermitido:telefoneValido(telefoneTeste)&&p.telefone_cadastrado===telefoneTeste,
+   return {desafioId,codigo,expiraEm,telefone:p.telefone_cadastrado,envioPermitido:destinoPermitido(p),
     mensagem:'Mandato em Ação — recuperação de acesso. Seu código temporário é '+codigo+'. Válido por 5 minutos e para um único uso. Digite-o somente na tela onde solicitou a recuperação. Se não pediu, ignore.',entregaConfirmada:false};
   });},
   async registrarAbertura(id,op,d){return tx(async c=>{
    const p=await obter(c,id);conferir(p,d);
-   if(!telefoneValido(telefoneTeste)||p.telefone_cadastrado!==telefoneTeste||p.decidido_por!==op.usuarioId||p.situacao!=='aprovado'||d.desafioId!==p.desafio_id||!p.codigo_hash||new Date(p.expira_em).getTime()<=agora())throw erro(403,'Destino não autorizado ou código inválido');
+   if(!destinoPermitido(p)||p.decidido_por!==op.usuarioId||p.situacao!=='aprovado'||d.desafioId!==p.desafio_id||!p.codigo_hash||new Date(p.expira_em).getTime()<=agora())throw erro(403,'Destino não autorizado ou código inválido');
    await audit(c,'manual_abertura_whatsapp_solicitada',op,id);return {entregaConfirmada:false};
   });},
   async validar({pedidoId,recibo,codigo}={}){
@@ -70,7 +74,8 @@ export function criarRecuperacaoManualHml({pool,segredo,telefoneTeste=null,agora
     // Usa a mesma resposta para pedido inexistente, recibo incorreto e código inválido.
     let p;try{p=await obter(c,pedidoId);}catch(e){if(e.status===404)return negado;throw e;}
     if(!igual(p.recibo_hash,hash(pedidoId,recibo)))return negado;
-    if(p.situacao!=='aprovado'||!p.codigo_hash||p.consumido_em||p.tentativas>=5)return negado;
+    if(p.consumido_em){await audit(c,'manual_codigo_reuso_bloqueado',null,pedidoId);return negado;}
+    if(p.situacao!=='aprovado'||!p.codigo_hash||p.tentativas>=5)return negado;
     if(new Date(p.expira_em).getTime()<=agora()){
      await c.query('UPDATE auth_admin_hml.recuperacoes_manuais SET codigo_hash=NULL WHERE id=$1',[pedidoId]);
      await audit(c,'manual_codigo_expirado',null,pedidoId);return negado;

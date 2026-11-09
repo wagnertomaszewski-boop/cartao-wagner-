@@ -1,4 +1,4 @@
-import {autotestarRecuperacaoManual} from './autoteste-manual-hml.mjs';
+import {autotestarRecuperacaoManual,autotestarDestinoPessoal} from './autoteste-manual-hml.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -51,3 +51,21 @@ test('manual: resposta neutra, limite de pedidos, abertura autorizada sem prova 
 });
 
 test('autoteste não envia WhatsApp e não repete após evidência persistente',async()=>{const {pg,pool,f:manual,consulta:fluxo}=await banco();try{assert.equal((await autotestarRecuperacaoManual({manual,fluxo,pool})).jaExecutado,false);assert.equal((await autotestarRecuperacaoManual({manual,fluxo,pool})).jaExecutado,true);}finally{await pg.close();}});
+test('destino pessoal: autorização explícita e repetição; vínculo imutável à fixture; auditoria sem número',async()=>{
+ const {pg,pool,f}=await banco();const pessoal='+5551999999999';const d={telefone:pessoal,confirmacaoTelefone:pessoal,autorizoMeuNumero:true};
+ try{
+  await assert.rejects(f.criarFixture(op,{...d,autorizoMeuNumero:false}),{status:400});
+  await assert.rejects(f.criarFixture(op,{...d,confirmacaoTelefone:'+5551999999998'}),{status:400});
+  await assert.rejects(f.criarFixture(op,{...d,telefone:'123',confirmacaoTelefone:'123'}),{status:400});
+  const p=await f.criarFixture(op,d),r=await f.solicitar({protocolo:p.protocolo,telefone:pessoal});
+  const conferir={...conferencia,telefoneConfirmado:pessoal};await f.decidir(r.pedidoId,op,conferir);
+  const e=await f.emitir(r.pedidoId,op,conferir);assert.equal(e.envioPermitido,true);
+  assert.equal((await f.registrarAbertura(r.pedidoId,op,{...conferir,desafioId:e.desafioId})).entregaConfirmada,false);
+  const rows=JSON.stringify((await pool.query('SELECT evento,usuario_id,pedido_id FROM auth_admin_hml.auditoria')).rows);assert.ok(rows.includes('manual_destino_pessoal_autorizado'));assert.ok(!rows.includes(pessoal));assert.ok(!rows.includes(e.codigo));
+  // Alterar o telefone invalida sua autorização assinada, sem redirecionar mensagens.
+  await pool.query('UPDATE auth_admin_hml.pedidos SET telefone_cadastrado=$2 WHERE id=$1',[p.id,'+5551999999998']);
+  await assert.rejects(f.registrarAbertura(r.pedidoId,op,{...conferir,telefoneConfirmado:'+5551999999998',desafioId:e.desafioId}),{status:403});
+ }finally{await pg.close();}
+});
+
+test('autoteste pessoal no banco não envia mensagens e guarda apenas evidência sem número',async()=>{const {pg,pool,f:manual}=await banco();try{assert.equal((await autotestarDestinoPessoal({manual,pool})).jaExecutado,false);assert.equal((await autotestarDestinoPessoal({manual,pool})).jaExecutado,true);}finally{await pg.close();}});

@@ -15,6 +15,7 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
  try{
   assert.equal((await call('/manual/pedidos')).status,401);
   assert.equal((await call('/manual/fixture',{})).status,401);
+  assert.equal((await call('/manual/fixture-pessoal',{telefone:'+5551999999999',confirmacaoTelefone:'+5551999999999',autorizoMeuNumero:true})).status,401);
   assert.equal((await call('/api/pedidos',{})).status,401);
   assert.equal((await call('/auth/get-session')).data,null);
   assert.equal((await call('/auth/sign-up/email',{email:'intruso@example.invalid',password,name:'Intruso'})).status,404);
@@ -44,7 +45,10 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
   assert.equal((await call('/cidadao/consultar',{protocolo:fixture.protocolo,chave:fixture.chaveInicial})).data.encontrado,false);
   assert.equal((await call('/cidadao/consultar',{protocolo:fixture.protocolo,chave:final.novaChave})).data.encontrado,true);
   assert.equal((await call('/cidadao/consultar',{protocolo:fixture.protocolo})).data.encontrado,false);
+  assert.equal((await call('/manual/fixture-pessoal',{})).status,400);
+  const pessoal=await call('/manual/fixture-pessoal',{telefone:'+5551999999999',confirmacaoTelefone:'+5551999999999',autorizoMeuNumero:true});assert.equal(pessoal.status,200);assert.equal(pessoal.data.ficticio,true);assert.equal('telefone' in pessoal.data,false);assert.equal('chaveInicial' in pessoal.data,false);assert.ok(pessoal.data.telefoneMascarado.includes('*****'));assert.equal(pessoal.headers.get('cache-control'),'no-store');
   await pool.query("UPDATE auth_admin_hml.mfa_sessoes SET confirmado_em=now()-interval '6 minutes'");
+  assert.equal((await call('/manual/fixture-pessoal',{telefone:'+5551999999999',confirmacaoTelefone:'+5551999999999',autorizoMeuNumero:true})).status,403);
   assert.equal((await call(base+'/decidir',conferir)).status,403);assert.equal((await call(base+'/emitir',conferir)).status,403);
   await call('/auth/sign-out',{});assert.equal((await call('/api/pedidos',{})).status,401);
   r=await call('/auth/sign-in/email',{email:env.AUTH_HML_ADMIN_EMAIL,password});assert.equal(r.data.twoFactorRedirect,true);

@@ -22,3 +22,15 @@ export async function autotestarRecuperacaoManual({manual,fluxo,pool}){
  await pool.query("INSERT INTO auth_admin_hml.auditoria(evento,usuario_id,pedido_id) VALUES('manual_autoteste_v1_concluido',$1,$2)",[op.usuarioId,pedido.pedidoId]);
  return {jaExecutado:false};
 }
+export async function autotestarDestinoPessoal({manual,pool}){
+ const r=await pool.query("SELECT 1 FROM auth_admin_hml.auditoria WHERE evento='manual_autoteste_v2_destino_concluido' LIMIT 1");if(r.rows.length)return {jaExecutado:true};
+ // Número deliberadamente fictício. Nenhum aplicativo ou provedor é acionado.
+ const op={usuarioId:'autoteste-destino-ficticio-hml'},telefone='+5551000000001';
+ const p=await manual.criarFixture(op,{telefone,confirmacaoTelefone:telefone,autorizoMeuNumero:true});
+ const pedido=await manual.solicitar({protocolo:p.protocolo,telefone});
+ const d={decisao:'aprovar',identidadeConferida:true,telefoneConfirmado:telefone,justificativa:'Conferência de fixture do autoteste de autorização pessoal.'};
+ await manual.decidir(pedido.pedidoId,op,d);const e=await manual.emitir(pedido.pedidoId,op,d);assert.equal(e.envioPermitido,true);assert.equal(e.entregaConfirmada,false);
+ assert.equal((await manual.validar({...pedido,codigo:e.codigo})).confirmado,true);assert.equal((await manual.validar({...pedido,codigo:e.codigo})).confirmado,false);
+ const evidencia=JSON.stringify((await pool.query('SELECT evento FROM auth_admin_hml.auditoria WHERE pedido_id IN ($1,$2)',[p.id,pedido.pedidoId])).rows);assert.ok(!evidencia.includes(telefone));assert.ok(!evidencia.includes(e.codigo));assert.ok(evidencia.includes('manual_codigo_reuso_bloqueado'));
+ await pool.query("INSERT INTO auth_admin_hml.auditoria(evento,usuario_id,pedido_id) VALUES('manual_autoteste_v2_destino_concluido',$1,$2)",[op.usuarioId,pedido.pedidoId]);return {jaExecutado:false};
+}

@@ -1,6 +1,8 @@
 -- Aditiva; exclusivamente auth_admin_hml na branch Neon de homologação.
 BEGIN;
 ALTER TABLE auth_admin_hml.pedidos ADD COLUMN IF NOT EXISTS telefone_cadastrado text;
+ALTER TABLE auth_admin_hml.pedidos ADD COLUMN IF NOT EXISTS telefone_autorizacao_hash text;
+ALTER TABLE auth_admin_hml.pedidos ADD COLUMN IF NOT EXISTS telefone_autorizado_por text;
 CREATE TABLE IF NOT EXISTS auth_admin_hml.recuperacoes_manuais (
  id uuid PRIMARY KEY,
  solicitacao_id uuid NOT NULL REFERENCES auth_admin_hml.pedidos(id),

@@ -49,3 +49,17 @@ A adaptação visual/contrato para os aplicativos V2/Painel publicados e a migra
 ## Inicialização no plano Free
 
 A suíte completa roda no CI (`testes-http-locais-seguros.yml`), com dependências do lockfile, e não no `npm start`: executar todos os processos de testes durante o boot excedeu os 512 MiB do serviço Free. O start inicia somente o servidor e seu autoteste transacional restrito. `smoke-manual-render.mjs` verifica o serviço publicado, a evidência booleana do autoteste Neon e os bloqueios HTTP. O workflow antigo foi atualizado para essas rotas e deixou de executar emissores/segredos legados de outra configuração Neon.
+
+## Teste pessoal com número digitado em ambiente seguro
+
+`/hml/teste-whatsapp` é o roteiro guiado no aparelho com WhatsApp instalado. Exige login/MFA recente para criar a fixture pessoal, aprovar, emitir e preparar a abertura. O titular digita seu número duas vezes e declara a autorização no formulário HTTPS, sem enviar o número pelo chat. O servidor guarda o telefone somente na fixture privada de homologação e vincula a autorização ao ID, telefone e administrador usando HMAC. Uma alteração posterior no telefone invalida a autorização. A resposta do cadastro retorna apenas protocolo e telefone mascarado, sem chave ou número completo. O evento de autorização não contém o telefone.
+
+A página faz o papel de cidadão no pedido fictício, mantendo recibo, mensagem e código somente na memória da aba. Após aprovação explícita, o operador gera o código, confirma o destino e toca no link privado `whatsapp://send` para abrir o WhatsApp instalado; ele próprio confirma o contato e toca em Enviar. O navegador remoto do agente não controla o aplicativo instalado no tablet do titular. A tela não afirma entrega.
+
+Ao digitar o código recebido, o roteiro valida a recuperação, testa a nova chave no servidor e repete a validação do mesmo código para conferir o uso único. A repetição recusada gera `manual_codigo_reuso_bloqueado`, sem código na auditoria. Não mostra nem envia a chave para relatórios/chat.
+
+O botão “Preparar novo ciclo para testar expiração” cria outro pedido da mesma fixture. Exige nova aprovação e emissão; o login/MFA pode ser renovado em **nova aba**, sem recarregar a página do teste. Depois da emissão, o roteiro aguarda os cinco minutos e tenta validar o código após o prazo. A aba deve permanecer aberta; a recusa deve corresponder ao evento `manual_codigo_expirado` na auditoria. Não há agendamento ou envio automático de WhatsApp.
+
+As telas de recuperação estão integradas à navegação de homologação em `/hml/v2/recuperar` e `/hml/painel/recuperacoes`, reaproveitando o mesmo servidor e as proteções já testadas. As páginas publicadas em produção continuam intocadas.
+
+A migração aditiva acrescentou `telefone_autorizacao_hash` e `telefone_autorizado_por` somente na branch Neon de homologação. O autoteste v2 usa um telefone inexistente, não chama WhatsApp e registra `manual_autoteste_v2_destino_concluido`. O smoke publicado verifica a versão 2 e essa evidência antes de testar as novas páginas; não lê contatos, códigos, chaves ou dados privados.
