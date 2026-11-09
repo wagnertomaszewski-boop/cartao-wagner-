@@ -30,7 +30,7 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix '.homologacao'
-            versionNameSuffix '-hml'
+            versionNameSuffix '-hml-bio1'
             buildConfigField 'boolean', 'HOMOLOGACAO', 'true'
             manifestPlaceholders = [appName: 'Painel do Mandato Homologação']
         }
@@ -44,3 +44,6 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 }
+
+// Ensaios locais da variante isolada; nenhuma dependência extra no APK.
+dependencies { testImplementation 'junit:junit:4.13.2' }

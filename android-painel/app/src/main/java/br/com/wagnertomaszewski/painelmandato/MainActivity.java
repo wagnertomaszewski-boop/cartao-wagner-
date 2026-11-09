@@ -40,6 +40,7 @@ public final class MainActivity extends Activity {
     private GeolocationPermissions.Callback geoPendente;
     private String geoOrigem;
     private byte[] arquivoPendente;
+    private BiometriaPainel biometria;
     private WebView web;
     private ValueCallback<Uri[]> fileResult;
     private FrameLayout root;
@@ -93,6 +94,9 @@ public final class MainActivity extends Activity {
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
 
         web.setWebViewClient(new WebViewClient() {
+            @Override public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return biometria == null ? null : biometria.protegerOperacao(request);
+            }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 String url = uri.toString();
@@ -151,7 +155,10 @@ public final class MainActivity extends Activity {
         web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
             if (!BuildConfig.HOMOLOGACAO && url.startsWith("https://")) openExternal(Uri.parse(url));
         });
-        if (savedInstanceState == null) web.loadUrl(
+        biometria = new BiometriaPainel(this, web, root);
+        boolean protegido = biometria.iniciar();
+        if (protegido) return;
+        if (savedInstanceState == null || BuildConfig.HOMOLOGACAO) web.loadUrl(
             getIntent().getBooleanExtra("abrirAgenda", false) ? AGENDA : HOME);
         else web.restoreState(savedInstanceState);
     }
@@ -237,7 +244,7 @@ public final class MainActivity extends Activity {
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        if (web != null && intent.getBooleanExtra("abrirAgenda", false)) web.loadUrl(AGENDA);
+        if (web != null && !biometria.bloqueada() && intent.getBooleanExtra("abrirAgenda", false)) web.loadUrl(AGENDA);
     }
 
     private void openExternal(Uri uri) {
@@ -269,12 +276,18 @@ public final class MainActivity extends Activity {
         super.onSaveInstanceState(outState);
     }
 
+    @Override protected void onPause() { if (biometria != null) biometria.pausar(); super.onPause(); }
+    @Override protected void onResume() { super.onResume(); if (biometria != null) biometria.retomar(); }
+    @Override protected void onStop() { if (biometria != null) biometria.parar(); super.onStop(); }
+
     @Override public void onBackPressed() {
+        if (biometria != null && biometria.bloqueada()) return;
         if (web != null && web.canGoBack()) web.goBack();
         else super.onBackPressed();
     }
 
     @Override protected void onDestroy() {
+        if (biometria != null) biometria.fechar();
         finalizarLocalizacao(false); arquivoPendente = null;
         if (web != null) {
             root.removeView(web);
