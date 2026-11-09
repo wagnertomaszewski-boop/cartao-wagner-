@@ -15,7 +15,7 @@
 1. Registrar versão/commit implantados do app cidadão, V2 público, Painel e API, domínios, responsáveis, flags e configurações (sem copiar segredos).
 2. Identificar bancos e schemas efetivamente usados, tabelas de solicitações, protocolos, histórico, respostas, anexos, chaves e recuperação; conferir FKs, índices, triggers, políticas RLS e permissões. Levantar onde ficam os arquivos e respectivas regras de acesso.
 3. Registrar contagens por entidade, intervalo de datas, duplicações de protocolos, referências órfãs e integridade das ligações. Guardar apenas resultados agregados e identificadores sintéticos no relatório.
-4. Documentar rotas atuais de consulta, abertura de solicitação, acompanhamento e administração; preservar funcionamento anterior até o aceite.
+4. Documentar rotas atuais de consulta, abertura de solicitação, acompanhamento e administração; preservar operações administrativas até o aceite. O caminho público de consulta somente por protocolo não pode permanecer acessível durante a ativação do fluxo privado.
 5. Verificar versão de schema, migrações existentes, janela de retenção e restauração do backup com a equipe responsável.
 
 ## 3. Backup e ensaio de restauração (bloqueante)
@@ -51,7 +51,7 @@
 
 ## 7. Reversão segura (rollback)
 1. **Congelar a expansão** e desabilitar o roteamento para o novo serviço; manter a infraestrutura antiga disponível. Preservar evidências e logs com controle de acesso.
-2. Se a mudança for apenas de roteamento/feature flag e o sistema antigo permanecer íntegro, restaurar a rota anterior e confirmar consultas/abertura de solicitações.
+2. Se a mudança for apenas de roteamento/feature flag e o sistema antigo permanecer íntegro, restaurar somente rotas que continuem exigindo protocolo e chave. **Nunca reabrir consulta pública apenas por protocolo**, nem restaurar chaves revogadas por recuperação. Se a versão antiga não atender a isso, suspender temporariamente a consulta/recuperação afetada com mensagem de manutenção e preservar as demais operações seguras.
 3. Se houve gravações no sistema novo, **não restaurar backup antigo por cima da produção**: isso apagaria registros posteriores. Primeiro bloquear novas escritas no destino afetado, inventariar diferenças desde o checkpoint e definir reconciliação supervisionada.
 4. Reverter migrações de schema somente com SQL de rollback previamente revisado, após verificar dependências e integridade; preferir deixar colunas aditivas inativas em vez de fazer DROP sob pressão.
 5. Se houver corrupção comprovada, usar restauração pontual/isolada do backup e plano de recuperação de dados posterior ao snapshot; exigir aprovação do responsável e comunicação aos afetados conforme necessidade.
