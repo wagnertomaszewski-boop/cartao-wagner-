@@ -1,11 +1,11 @@
 {
-  "v2/seguranca/biometria-cidadao.mjs": "ef42a3da7f0eea7d11690f60c40cb12205a4eb263b97959a6d385a962e1c6cd1",
+  "v2/seguranca/biometria-cidadao.mjs": "875bca86c2dae656e82ee2c5d496273068b5bbe23ca58fdf7f53b6d02d08ffd4",
   "v2/solicitar-homologacao.html": "b350123eb7928af5473edaa672764981ab2e303fd3d33c6e39100d8b9063e85e",
   "v2/seguranca/tela-cadastro-hml.mjs": "61dfaa5df8116fd36c08b0e180a7c494541a290c0b40161e841ff1e6cd999a07",
   "v2/recuperar-acesso.html": "53bfe1869428be5e364867e30a395541616947d07ca6f743576b4cc19a90eb90",
   "v2/recuperacao.css": "ca08b5a6bb40a0cec9b74614a51d0f8aaffe1b0322b3223e952821bc4f1af816",
   "v2/seguranca/cliente-recuperacao-manual.mjs": "d3ee657fe64dba0ed7baccc5631079bdc0bac445d60e9f958247caa12ab138e8",
-  "v2/seguranca/tela-recuperacao-manual.mjs": "df844a925d755711a3c1d37dcfa4e798f7d7dccb60f88f2619d3b3b7923f72e8",
+  "v2/seguranca/tela-recuperacao-manual.mjs": "4e642f5ed5598baaa6a9e40bf3f2856adf9f13fc0d0b7088a5c641645d8bbee0",
   "painel/recuperacoes.html": "12c03c58a6ccff2e2c12ec5bd5a2c9ee1296cc6fe23467d58e934f3af9951969",
   "painel/seguranca/recuperacoes.mjs": "57d76c27b525981ad2f2d7a892c3d7a6a736ba77e4002b0bcf018a7f44dbc209",
   "painel/seguranca/relatorio-solicitacoes.mjs": "54216be4325f13a49a2cc88f05319e9374d439d84fb3da9f8cd53d7774804f05",

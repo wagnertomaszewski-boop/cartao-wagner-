@@ -8,3 +8,15 @@ export function criarClienteBiometriaCidadao(ponte){
   operar(acao,arquivo=''){if(!['qr','leitura','baixar'].includes(acao)||acao==='baixar'&&!/^[0-9a-f-]{36}$/.test(arquivo))throw Error('Operação biométrica inválida.');ponte.operar(acao,arquivo);}
  };
 }
+
+// Descarta inclusive JSON que termina de chegar depois de sair/voltar à página privada.
+export function criarBuscaPrivada(buscar,geracao){
+ return async(...args)=>{
+  const inicio=geracao(),r=await buscar(...args);
+  return {ok:r.ok,status:r.status,json:async()=>{
+   const dados=await r.json();
+   if(inicio!==geracao())throw Error('A página mudou. Consulte novamente.');
+   return dados;
+  }};
+ };
+}

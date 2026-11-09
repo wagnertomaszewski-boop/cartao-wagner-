@@ -1,11 +1,11 @@
-import {criarClienteBiometriaCidadao} from './biometria-cidadao.mjs';
+import {criarClienteBiometriaCidadao,criarBuscaPrivada} from './biometria-cidadao.mjs';
 import {criarClienteRecuperacaoManual,formatarDataMandato,salvarArquivoLocal} from './cliente-recuperacao-manual.mjs';
-const $=id=>document.getElementById(id);let api,pedido=null,nova=null,acesso=null,ocupado=false;
+const $=id=>document.getElementById(id);let api,pedido=null,nova=null,acesso=null,ocupado=false,cicloDaTela=0;
 const biometria=criarClienteBiometriaCidadao(globalThis.MandatoCidadaoBiometria);
 const atualizarBiometria=()=>{$('ativar-biometria-cidadao').disabled=!acesso||acesso.biometrico===true;};
-try{api=criarClienteRecuperacaoManual({origem:location.origin});}catch(e){$('mensagem').textContent=e.message;document.querySelectorAll('button').forEach(b=>b.disabled=true);}
+try{api=criarClienteRecuperacaoManual({origem:location.origin,buscar:criarBuscaPrivada((...args)=>fetch(...args),()=>cicloDaTela)});}catch(e){$('mensagem').textContent=e.message;document.querySelectorAll('button').forEach(b=>b.disabled=true);}
 async function agir(fn){if(!api||ocupado)return;ocupado=true;try{$('mensagem').textContent='';await fn();}catch(e){$('mensagem').textContent=e.message;}finally{ocupado=false;}}
-function limpar(){$('andamento').hidden=true;for(const id of ['assunto','situacao','descricao','localidade','historico','respostas','anexos'])$(id).replaceChildren();pedido=null;nova=null;acesso=null;$('qr-acompanhamento').removeAttribute('src');$('qr-acompanhamento').hidden=true;for(const id of ['chave','codigo','nova-chave','telefone'])$(id).value='';}
+function limpar(){cicloDaTela++;$('andamento').hidden=true;for(const id of ['assunto','situacao','descricao','localidade','historico','respostas','anexos'])$(id).replaceChildren();pedido=null;nova=null;acesso=null;$('qr-acompanhamento').removeAttribute('src');$('qr-acompanhamento').hidden=true;for(const id of ['chave','codigo','nova-chave','telefone'])$(id).value='';}
 addEventListener('pagehide',limpar);
 function render(r){$('qr-acompanhamento').hidden=true;$('qr-acompanhamento').removeAttribute('src');$('andamento').hidden=!r.encontrado;if(!r.encontrado)throw Error('Protocolo ou chave inválidos.');$('assunto').textContent=r.assunto||'Solicitação';$('situacao').textContent=(r.status||'Acompanhamento protegido')+' · versão '+r.versao;
  $('descricao').textContent=(r.descricao||'')+(r.resultado?' · Resultado: '+r.resultado:'');$('localidade').textContent=r.localidade||'';

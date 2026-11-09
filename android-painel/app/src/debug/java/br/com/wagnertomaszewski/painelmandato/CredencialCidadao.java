@@ -7,7 +7,7 @@ final class CredencialCidadao {
     static final long VALIDADE_MS=24L*60*60*1000;
     final String protocolo,chave; final long criadaEm,expiraEm;
     private CredencialCidadao(String p,String c,long criada,long expira)throws IOException{
-        if(p==null||p.trim().isEmpty()||p.length()>80||p.matches(".*[\\p{Cntrl}].*")||c==null||!c.matches("[A-Za-z0-9_-]{43}")||criada<0||expira-criada!=VALIDADE_MS)throw new IOException("Credencial inválida");
+        if(p==null||p.trim().isEmpty()||p.length()>80||java.util.regex.Pattern.compile("[\\p{Cntrl}]").matcher(p).find()||c==null||!c.matches("[A-Za-z0-9_-]{43}")||criada<0||expira-criada!=VALIDADE_MS)throw new IOException("Credencial inválida");
         protocolo=p.trim();chave=c;criadaEm=criada;expiraEm=expira;
     }
     static CredencialCidadao nova(String p,String c,long agora)throws IOException{return new CredencialCidadao(p,c,agora,Math.addExact(agora,VALIDADE_MS));}
