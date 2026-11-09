@@ -97,17 +97,17 @@ final class BiometriaPainel {
         }catch(Exception e){politica.chaveInvalidada();loginCompleto("Proteção biométrica alterada ou inválida. Entre com senha e MFA e ative novamente.");}
     }
     private void autenticar(byte[] envelope,Cipher cifra,boolean ativacao){
-        if(Build.VERSION.SDK_INT<28)return;emPrompt=true;
+        if(Build.VERSION.SDK_INT<28)return;emPrompt=true;final int tentativa=++sequencia;
         BiometricPrompt.Builder builder=new BiometricPrompt.Builder(activity).setTitle(ativacao?"Ativar biometria de teste":"Desbloquear Painel de teste")
             .setSubtitle("Sessão de homologação protegida pelo Android Keystore")
-            .setNegativeButton("Cancelar",activity.getMainExecutor(),(d,w)->cancelar(ativacao));
+            .setNegativeButton("Cancelar",activity.getMainExecutor(),(d,w)->{if(tentativa==sequencia)cancelar(ativacao);});
         if(Build.VERSION.SDK_INT>=30)builder.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG);
         cancelamento=new CancellationSignal();
-        builder.build().authenticate(new BiometricPrompt.CryptoObject(cifra),cancelamento,activity.getMainExecutor(),new BiometricPrompt.AuthenticationCallback(){
-            @Override public void onAuthenticationFailed(){politica.canceladaOuFalhou();texto("Biometria não reconhecida. Tente novamente ou use senha e MFA.");}
-            @Override public void onAuthenticationError(int codigo,CharSequence detalhe){emPrompt=false;cancelamento=null;cancelar(ativacao);}
+        try { builder.build().authenticate(new BiometricPrompt.CryptoObject(cifra),cancelamento,activity.getMainExecutor(),new BiometricPrompt.AuthenticationCallback(){
+            @Override public void onAuthenticationFailed(){if(tentativa!=sequencia||!emPrompt)return;politica.canceladaOuFalhou();texto("Biometria não reconhecida. Tente novamente ou use senha e MFA.");}
+            @Override public void onAuthenticationError(int codigo,CharSequence detalhe){if(tentativa!=sequencia)return;emPrompt=false;cancelamento=null;cancelar(ativacao);}
             @Override public void onAuthenticationSucceeded(BiometricPrompt.AuthenticationResult resultado){
-                emPrompt=false;cancelamento=null;if(segundoPlano||encerrada){politica.bloquear();return;}final int tarefa=++sequencia;texto("Validando a sessão protegida com o servidor…");
+                if(tentativa!=sequencia||!emPrompt)return;emPrompt=false;cancelamento=null;if(segundoPlano||encerrada){politica.bloquear();return;}final int tarefa=++sequencia;texto("Validando a sessão protegida com o servidor…");
                 trabalho.execute(()->{byte[] bytes=null;try{
                     Cipher autenticado=resultado.getCryptoObject()==null?null:resultado.getCryptoObject().getCipher();if(autenticado==null)throw new GeneralSecurityException();
                     bytes=EnvelopeSessao.abrir(EnvelopeSessao.ler(envelope),autenticado);
@@ -117,17 +117,17 @@ final class BiometriaPainel {
                         if(!politica.validarServidor(estado[0],estado[1],estado[2])){loginCompleto("Sessão expirada, revogada ou MFA sem validade recente. Faça login completo novamente.");return;}
                         if(ativacao){if(!prefs.edit().putString(REGISTRO,Base64.encodeToString(envelope,Base64.NO_WRAP)).commit()){loginCompleto("Não foi possível guardar a sessão protegida.");return;}ativa=true;}
                         retomadaBiometrica=!ativacao;
-                        restaurarCookie(cookie);informar(ativacao?"Biometria ativada. Senha e MFA continuam obrigatórios quando exigidos.":"Sessão válida desbloqueada. A biometria não renovou o MFA.");
+                        restaurarCookie(cookie,tarefa);informar(ativacao?"Biometria ativada. Senha e MFA continuam obrigatórios quando exigidos.":"Sessão válida desbloqueada. A biometria não renovou o MFA.");
                     });
                 }catch(IOException e){naTela(tarefa,()->texto("Sem confirmação do servidor. O painel permanece bloqueado. Verifique a conexão ou use senha e MFA."));}
                  catch(Exception e){naTela(tarefa,()->loginCompleto("Não foi possível abrir a sessão protegida. Faça login completo e ative novamente."));}
                  finally{if(bytes!=null)Arrays.fill(bytes,(byte)0);}
                 });
             }
-        });
+        }); } catch(RuntimeException e) {cancelamento=null;cancelar(ativacao);informar("Biometria indisponível. Use senha e MFA.");}
     }
     private void cancelar(boolean ativacao){
-        politica.canceladaOuFalhou();emPrompt=false;
+        ++sequencia;politica.canceladaOuFalhou();emPrompt=false;
         if(ativacao){removerProtecao();if(segundoPlano){mostrarBloqueio("Ativação interrompida. Entre novamente com senha e MFA.");limparNavegador(null);}else{ocultarBloqueio();informar("Ativação cancelada. O login tradicional foi mantido.");}}
         else texto("Desbloqueio cancelado. O painel continua bloqueado; você pode tentar novamente ou usar senha e MFA.");
     }
@@ -143,18 +143,18 @@ final class BiometriaPainel {
         }catch(org.json.JSONException e){throw new IOException("Resposta inválida");}finally{c.disconnect();}
     }
     private KeyStore chaves() throws GeneralSecurityException,IOException {KeyStore k=KeyStore.getInstance("AndroidKeyStore");try{k.load(null);}catch(java.security.cert.CertificateException e){throw new GeneralSecurityException(e);}return k;}
-    private void restaurarCookie(String cookie){
+    private void restaurarCookie(String cookie,int tarefa){
         CookieManager cm=CookieManager.getInstance();cm.removeAllCookies(ok->{
-            if(encerrada||segundoPlano)return;
+            if(encerrada||segundoPlano||tarefa!=sequencia)return;
             // Cookie de sessão em memória; o único checkpoint persistente próprio é cifrado no Keystore.
             cm.setCookie(ORIGEM,cookie+"; Path=/; Secure; HttpOnly; SameSite=Strict",feito->{
-                if(encerrada||segundoPlano){cm.removeAllCookies(null);cm.flush();return;}
+                if(encerrada||segundoPlano||tarefa!=sequencia){cm.removeAllCookies(null);cm.flush();return;}
                 if(!Boolean.TRUE.equals(feito)){loginCompleto("Entre novamente para continuar.");return;}
                 ocultarBloqueio();web.loadUrl(HOME);
             });
         });
     }
-    private void loginCompleto(String motivo){retomadaBiometrica=false;avisoOperacao.set(false);removerProtecao();politica.bloquear();limparNavegador(()->{ocultarBloqueio();web.loadUrl(LOGIN);informar(motivo);});}
+    private void loginCompleto(String motivo){++sequencia;retomadaBiometrica=false;avisoOperacao.set(false);removerProtecao();politica.bloquear();limparNavegador(()->{ocultarBloqueio();web.loadUrl(LOGIN);informar(motivo);});}
     private void removerProtecao(){ativa=false;prefs.edit().remove(REGISTRO).commit();try{KeyStore k=chaves();if(k.containsAlias(ALIAS))k.deleteEntry(ALIAS);}catch(Exception ignored){}}
     private void limparNavegador(Runnable depois){web.stopLoading();web.loadUrl("about:blank");web.clearHistory();web.clearCache(true);CookieManager.getInstance().removeAllCookies(ok->{CookieManager.getInstance().flush();if(depois!=null&&!encerrada)depois.run();});}
     private void mostrarBloqueio(String texto){
