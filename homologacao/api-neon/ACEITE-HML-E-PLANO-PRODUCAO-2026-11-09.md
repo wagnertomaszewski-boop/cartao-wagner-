@@ -1,5 +1,7 @@
 # Verificação consolidada de homologação e plano de produção
 
+> Rodada mais recente: [conclusão técnica e pendências](CONCLUSAO-TECNICA-HML-2026-11-09.md). Este documento preserva a verificação anterior a essa implementação.
+
 Verificado em 09/11/2026, aproximadamente 03:57 UTC. Somente a branch
 `feature/recuperacao-whatsapp-manual`, Render `mandato-neon-homologacao` e Neon
 `proud-firefly-64745516`, branch `br-lively-snow-bev5ecau`, banco `neondb`.
