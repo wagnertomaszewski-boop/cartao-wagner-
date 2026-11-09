@@ -10,6 +10,7 @@ android {
     buildFeatures { buildConfig true }
     defaultConfig {
         buildConfigField 'boolean', 'HOMOLOGACAO', 'false'
+        buildConfigField 'boolean', 'CIDADAO_HML', 'false'
         manifestPlaceholders = [appName: 'Painel do Mandato']
         applicationId 'br.com.wagnertomaszewski.painelmandato'
         minSdk 24
@@ -34,9 +35,23 @@ android {
             buildConfigField 'boolean', 'HOMOLOGACAO', 'true'
             manifestPlaceholders = [appName: 'Painel do Mandato Homologação']
         }
+        cidadaoHml {
+            initWith debug
+            applicationIdSuffix '.cidadao.homologacao'
+            versionNameSuffix '-cidadao-hml-bio1'
+            buildConfigField 'boolean', 'CIDADAO_HML', 'true'
+            manifestPlaceholders = [appName: 'Mandato em Ação Homologação']
+            matchingFallbacks = ['debug']
+        }
         release {
             minifyEnabled false
             signingConfig signingConfigs.release
+        }
+    }
+    sourceSets {
+        cidadaoHml {
+            java.srcDirs += 'src/debug/java'
+            manifest.srcFile 'src/debug/AndroidManifest.xml'
         }
     }
     compileOptions {

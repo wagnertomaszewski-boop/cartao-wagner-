@@ -30,7 +30,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 public final class MainActivity extends Activity {
-    private static final String HOME = BuildConfig.HOMOLOGACAO ? "https://mandato-neon-homologacao.onrender.com/hml/painel/recuperacoes" : "https://wagnertomaszewski-boop.github.io/cartao-wagner-/painel/index.html";
+    private static final String HOME = BuildConfig.CIDADAO_HML ? "https://mandato-neon-homologacao.onrender.com/hml/v2/index.html" : BuildConfig.HOMOLOGACAO ? "https://mandato-neon-homologacao.onrender.com/hml/painel/recuperacoes" : "https://wagnertomaszewski-boop.github.io/cartao-wagner-/painel/index.html";
     private static final String AGENDA = BuildConfig.HOMOLOGACAO ? HOME : "https://wagnertomaszewski-boop.github.io/cartao-wagner-/painel/agenda.html";
     private static final int REQUEST_NOTIFICACAO = 2005;
     private static final String ALLOWED_PREFIX = BuildConfig.HOMOLOGACAO ? "https://mandato-neon-homologacao.onrender.com/hml/" : "https://wagnertomaszewski-boop.github.io/cartao-wagner-/";
@@ -40,7 +40,7 @@ public final class MainActivity extends Activity {
     private GeolocationPermissions.Callback geoPendente;
     private String geoOrigem;
     private byte[] arquivoPendente;
-    private BiometriaPainel biometria;
+    private ProtecaoLocal biometria;
     private WebView web;
     private ValueCallback<Uri[]> fileResult;
     private FrameLayout root;
@@ -69,7 +69,7 @@ public final class MainActivity extends Activity {
         root.addView(web, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         status = new TextView(this);
-        status.setText("Carregando Painel do Mandato…");
+        status.setText(BuildConfig.CIDADAO_HML ? "Carregando Mandato em Ação…" : "Carregando Painel do Mandato…");
         status.setTextColor(Color.WHITE);
         status.setTextSize(16);
         status.setGravity(android.view.Gravity.CENTER);
@@ -88,9 +88,9 @@ public final class MainActivity extends Activity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
-        web.addJavascriptInterface(new PonteLembretes(), "MandatoLembretes");
+        if (!BuildConfig.CIDADAO_HML) web.addJavascriptInterface(new PonteLembretes(), "MandatoLembretes");
         if (BuildConfig.HOMOLOGACAO) web.addJavascriptInterface(new PonteArquivosHml(), "MandatoArquivos");
-        CookieManager.getInstance().setAcceptCookie(true);
+        CookieManager.getInstance().setAcceptCookie(!BuildConfig.CIDADAO_HML);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
 
         web.setWebViewClient(new WebViewClient() {
@@ -100,7 +100,7 @@ public final class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 String url = uri.toString();
-                if (url.startsWith(ALLOWED_PREFIX) && "https".equals(uri.getScheme())) {
+                if (url.startsWith(ALLOWED_PREFIX) && "https".equals(uri.getScheme()) && (!BuildConfig.CIDADAO_HML || url.startsWith(ALLOWED_PREFIX+"v2/") || url.equals(ALLOWED_PREFIX+"mandato/solicitar"))) {
                     return false;
                 }
                 if (!BuildConfig.HOMOLOGACAO || ("whatsapp".equals(uri.getScheme()) && request.hasGesture())) openExternal(uri);
@@ -108,6 +108,7 @@ public final class MainActivity extends Activity {
             }
             @Override public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 status.setVisibility(View.VISIBLE);
+                if (biometria != null) biometria.navegacao(url);
             }
             @Override public void onPageFinished(WebView view, String url) {
                 status.setVisibility(View.GONE);
@@ -115,10 +116,10 @@ public final class MainActivity extends Activity {
             @Override public void onReceivedError(WebView view,
                 WebResourceRequest request, android.webkit.WebResourceError error) {
                 if (request.isForMainFrame()) {
-                    status.setText("Não foi possível conectar ao Painel do Mandato.\nVerifique sua internet e tente novamente.");
+                    status.setText(BuildConfig.CIDADAO_HML ? "Não foi possível conectar ao Mandato em Ação.\nVerifique sua internet e tente novamente." : "Não foi possível conectar ao Painel do Mandato.\nVerifique sua internet e tente novamente.");
                     status.setVisibility(View.VISIBLE);
                     status.setOnClickListener(v -> {
-                        status.setText("Carregando Painel do Mandato…");
+                        status.setText(BuildConfig.CIDADAO_HML ? "Carregando Mandato em Ação…" : "Carregando Painel do Mandato…");
                         web.reload();
                     });
                 }
@@ -155,7 +156,7 @@ public final class MainActivity extends Activity {
         web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
             if (!BuildConfig.HOMOLOGACAO && url.startsWith("https://")) openExternal(Uri.parse(url));
         });
-        biometria = new BiometriaPainel(this, web, root);
+        biometria = FabricaBiometria.criar(this, web, root);
         boolean protegido = biometria.iniciar();
         if (protegido) return;
         if (savedInstanceState == null || BuildConfig.HOMOLOGACAO) web.loadUrl(
@@ -167,6 +168,8 @@ public final class MainActivity extends Activity {
         if (geoPendente != null) geoPendente.invoke(geoOrigem, autorizado, false);
         geoPendente = null; geoOrigem = null;
     }
+
+    void salvarArquivoHml(String nome,String mime,String base64) { new PonteArquivosHml().salvar(nome,mime,base64); }
 
     private final class PonteArquivosHml {
         @JavascriptInterface public void salvar(String nome, String mime, String base64) {

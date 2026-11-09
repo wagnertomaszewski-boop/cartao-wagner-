@@ -36,13 +36,16 @@ jobs:
           gradle-version: "8.11.1"
       - name: Compilar APK Android
         working-directory: android-painel
-        run: gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:assembleDebug :app:compileReleaseJavaWithJavac :app:processReleaseMainManifest
+        run: gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:testCidadaoHmlUnitTest :app:assembleDebug :app:assembleCidadaoHml :app:compileReleaseJavaWithJavac :app:processReleaseMainManifest
       - name: Renomear APK
-        run: cp android-painel/app/build/outputs/apk/debug/app-debug.apk Painel_do_Mandato_Homologacao_Debug.apk
+        run: |
+          cp android-painel/app/build/outputs/apk/debug/app-debug.apk Painel_do_Mandato_Homologacao_Debug.apk
+          cp android-painel/app/build/outputs/apk/cidadaoHml/app-cidadaoHml.apk Mandato_em_Acao_Cidadao_Homologacao.apk
       - name: Conferir identidade isolada do APK
         run: |
           SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
           "$SDK/build-tools/35.0.0/aapt" dump badging Painel_do_Mandato_Homologacao_Debug.apk > /tmp/apk-hml-badging.txt
+          "$SDK/build-tools/35.0.0/aapt" dump badging Mandato_em_Acao_Cidadao_Homologacao.apk > /tmp/apk-cidadao-hml-badging.txt
           python - <<'PYCODE'
           from pathlib import Path
           texto = Path('/tmp/apk-hml-badging.txt').read_text()
@@ -50,6 +53,9 @@ jobs:
           assert 'application-debuggable' in texto
           assert 'android.permission.ACCESS_FINE_LOCATION' in texto
           assert 'android.permission.USE_BIOMETRIC' in texto
+          cidadao = Path('/tmp/apk-cidadao-hml-badging.txt').read_text()
+          assert "package: name='br.com.wagnertomaszewski.painelmandato.cidadao.homologacao'" in cidadao
+          assert 'application-debuggable' in cidadao and 'android.permission.USE_BIOMETRIC' in cidadao
           manifests = [p for p in Path('android-painel/app/build/intermediates').rglob('AndroidManifest.xml') if 'release' in p.parts]
           assert manifests, 'Manifesto release não foi processado para conferência'
           assert all('ACCESS_FINE_LOCATION' not in p.read_text() and 'ACCESS_COARSE_LOCATION' not in p.read_text() and 'USE_BIOMETRIC' not in p.read_text() and 'USE_FINGERPRINT' not in p.read_text() for p in manifests), 'Permissão de teste não pode entrar em release'
@@ -60,11 +66,20 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Testes-Biometria-Homologacao
-          path: android-painel/app/build/test-results/testDebugUnitTest/
+          path: |
+            android-painel/app/build/test-results/testDebugUnitTest/
+            android-painel/app/build/test-results/testCidadaoHmlUnitTest/
           retention-days: 30
       - name: Disponibilizar APK
         uses: actions/upload-artifact@v4
         with:
           name: Painel-Homologacao-DEBUG-NAO-PUBLICAR
           path: Painel_do_Mandato_Homologacao_Debug.apk
+          retention-days: 30
+
+      - name: Disponibilizar APK cidadão isolado
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mandato-Cidadao-Homologacao-NAO-PUBLICAR
+          path: Mandato_em_Acao_Cidadao_Homologacao.apk
           retention-days: 30

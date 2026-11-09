@@ -24,7 +24,7 @@ import javax.crypto.Cipher;
 
 /** Controle nativo exclusivo de homologação. Nenhuma senha ou biometria é recebida por esta classe. */
 @SuppressWarnings("deprecation")
-final class BiometriaPainel {
+final class BiometriaPainel extends ProtecaoLocal {
     private static final String ORIGEM="https://mandato-neon-homologacao.onrender.com";
     private static final String LOGIN=ORIGEM+"/hml/", HOME=ORIGEM+"/hml/painel/recuperacoes";
     private static final String ALIAS="mandato_hml_biometria_v1", REGISTRO="sessao_cifrada_v1";
