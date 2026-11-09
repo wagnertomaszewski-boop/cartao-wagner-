@@ -36,7 +36,7 @@ jobs:
           gradle-version: "8.11.1"
       - name: Compilar APK Android
         working-directory: android-painel
-        run: gradle --no-daemon --stacktrace :app:assembleDebug
+        run: gradle --no-daemon --stacktrace :app:assembleDebug :app:processReleaseMainManifest
       - name: Renomear APK
         run: cp android-painel/app/build/outputs/apk/debug/app-debug.apk Painel_do_Mandato_Homologacao_Debug.apk
       - name: Conferir identidade isolada do APK
@@ -48,6 +48,11 @@ jobs:
           texto = Path('/tmp/apk-hml-badging.txt').read_text()
           assert "package: name='br.com.wagnertomaszewski.painelmandato.homologacao'" in texto
           assert 'application-debuggable' in texto
+          assert 'android.permission.ACCESS_FINE_LOCATION' in texto
+          import subprocess
+          manifests = [Path(p) for p in subprocess.check_output(['rg','--files','android-painel/app/build/intermediates','-g','AndroidManifest.xml'],text=True).splitlines() if '/release/' in p]
+          assert manifests, 'Manifesto release não foi processado para conferência'
+          assert all('ACCESS_FINE_LOCATION' not in p.read_text() and 'ACCESS_COARSE_LOCATION' not in p.read_text() for p in manifests), 'Permissão de teste não pode entrar em release'
           print('APK isolado de homologação confirmado; nenhum app publicado foi alterado.')
           PYCODE
       - name: Disponibilizar APK

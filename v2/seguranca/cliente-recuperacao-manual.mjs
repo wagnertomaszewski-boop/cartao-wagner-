@@ -9,9 +9,10 @@ export function criarClienteRecuperacaoManual({origem,buscar=globalThis.fetch}={
  return {
   confirmarLeitura:d=>enviar('/cidadao/confirmar-leitura',d),
   gerarQr:d=>enviar('/cidadao/qr',d),anexar:d=>enviar('/cidadao/arquivo/anexar',d),baixar:d=>enviar('/cidadao/arquivo/baixar',d),anexarInterno:d=>enviar('/modelo/arquivo/anexar',d,true),baixarInterno:d=>enviar('/modelo/arquivo/baixar',d,true),
+  anexarConteudo:d=>enviar('/conteudos/arquivo',d,true),
   conteudos:()=>enviar('/conteudos',undefined,true),salvarConteudo:d=>enviar('/conteudos',d,true),
   dashboard:()=>enviar('/modelo/dashboard',undefined,true),gerir:(pedido,acao,d)=>{if(!['atualizar','responder','fiscalizar','acompanhar','aviso'].includes(acao))throw Error('Ação inválida.');return enviar('/modelo/solicitacoes/'+id(pedido)+'/'+acao,d,true);},auditarSolicitacao:pedido=>enviar('/modelo/solicitacoes/'+id(pedido)+'/auditoria',undefined,true),
-  cadastrar:d=>enviar('/cidadao/cadastrar',d),catalogo:()=>enviar('/modelo/solicitacoes',undefined,true),fixtureLegada:cenario=>enviar('/modelo/legado',{cenario},true),
+  cadastrar:d=>enviar('/cidadao/cadastrar',d),catalogo:d=>enviar('/modelo/solicitacoes',d,true),fixtureLegada:cenario=>enviar('/modelo/legado',{cenario},true),
   estado:()=>enviar('/api/estado',undefined,true),listar:()=>enviar('/manual/pedidos',undefined,true),
   consultar:({protocolo:p,chave})=>{const proto=protocolo(p);if(typeof chave!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(chave))throw Error('Informe a chave de acompanhamento. O protocolo sozinho não permite consultar.');return enviar('/cidadao/consultar',{protocolo:proto,chave});},
   solicitar:({protocolo:p,telefone})=>enviar('/manual/solicitar',{protocolo:protocolo(p),telefone:normalizarTelefone(telefone)}),
@@ -31,4 +32,10 @@ export function formatarDataMandato(valor,somenteHora=false){
  if(typeof valor==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(valor)){const [a,m,d]=valor.split('-').map(Number),t=new Date(Date.UTC(a,m-1,d));return t.getUTCFullYear()===a&&t.getUTCMonth()===m-1&&t.getUTCDate()===d?String(d).padStart(2,'0')+'/'+String(m).padStart(2,'0')+'/'+a:'Data não informada';}
  const d=new Date(valor);if(!valor||!Number.isFinite(d.getTime()))return 'Data não informada';
  return somenteHora?d.toLocaleTimeString('pt-BR',{timeZone:'America/Sao_Paulo'}):d.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'});
+}
+
+export function salvarArquivoLocal(arquivo){
+ if(!arquivo||!['image/png','image/jpeg','application/pdf','text/csv'].includes(arquivo.mime)||typeof arquivo.nome!=='string'||typeof arquivo.base64!=='string')throw Error('Arquivo inválido.');
+ if(globalThis.MandatoArquivos&&typeof globalThis.MandatoArquivos.salvar==='function'){globalThis.MandatoArquivos.salvar(arquivo.nome,arquivo.mime,arquivo.base64);return;}
+ const bytes=Uint8Array.from(atob(arquivo.base64),x=>x.charCodeAt(0)),url=URL.createObjectURL(new Blob([bytes],{type:arquivo.mime})),link=document.createElement('a');link.href=url;link.download=arquivo.nome;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }

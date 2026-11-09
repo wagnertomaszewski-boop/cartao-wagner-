@@ -91,3 +91,15 @@ gesto do usuário pode abrir aplicativo externo nesse modo. Login/MFA, intençõ
 WhatsApp/Business e retorno pelo botão Voltar precisam ser conferidos em aparelho
 Android autorizado; compilar não comprova instalação ou funcionamento físico.
 A variante release mantém o destino atual e não foi compilada ou publicada.
+
+## Complementos do APK de homologação — 09/11/2026
+
+O APK de teste agora solicita localização com confirmação dentro do aplicativo
+e permissão do Android, somente para a origem HTTPS de homologação. As permissões
+GPS estão em `src/debug/AndroidManifest.xml`; o CI processa o manifesto release
+para comprovar que elas não foram acrescentadas à variante publicada.
+
+Anexos privados e relatórios usam o diálogo de salvar documento do Android,
+com destino escolhido pelo proprietário. O aplicativo não solicita acesso
+geral ao armazenamento. Cancelar o diálogo descarta os bytes pendentes.
+Nenhuma dessas verificações de compilação equivale a teste físico.

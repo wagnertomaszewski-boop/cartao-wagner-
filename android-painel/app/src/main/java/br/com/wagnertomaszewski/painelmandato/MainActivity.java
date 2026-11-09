@@ -1,6 +1,11 @@
 package br.com.wagnertomaszewski.painelmandato;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.webkit.GeolocationPermissions;
+import android.util.Base64;
+import java.io.OutputStream;
+import android.widget.Toast;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Color;
@@ -30,6 +35,11 @@ public final class MainActivity extends Activity {
     private static final int REQUEST_NOTIFICACAO = 2005;
     private static final String ALLOWED_PREFIX = BuildConfig.HOMOLOGACAO ? "https://mandato-neon-homologacao.onrender.com/hml/" : "https://wagnertomaszewski-boop.github.io/cartao-wagner-/";
     private static final int REQUEST_FILE = 2011;
+    private static final int REQUEST_LOCALIZACAO_HML = 2013;
+    private static final int REQUEST_SALVAR_HML = 2014;
+    private GeolocationPermissions.Callback geoPendente;
+    private String geoOrigem;
+    private byte[] arquivoPendente;
     private WebView web;
     private ValueCallback<Uri[]> fileResult;
     private FrameLayout root;
@@ -78,6 +88,7 @@ public final class MainActivity extends Activity {
         settings.setDisplayZoomControls(false);
         settings.setMediaPlaybackRequiresUserGesture(true);
         web.addJavascriptInterface(new PonteLembretes(), "MandatoLembretes");
+        if (BuildConfig.HOMOLOGACAO) web.addJavascriptInterface(new PonteArquivosHml(), "MandatoArquivos");
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, false);
 
@@ -110,6 +121,19 @@ public final class MainActivity extends Activity {
             }
         });
         web.setWebChromeClient(new WebChromeClient() {
+            @Override public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                if (!BuildConfig.HOMOLOGACAO || !("https://mandato-neon-homologacao.onrender.com".equals(origin) || "https://mandato-neon-homologacao.onrender.com/".equals(origin)) || geoPendente != null) {
+                    callback.invoke(origin, false, false); return;
+                }
+                geoPendente = callback; geoOrigem = origin;
+                new AlertDialog.Builder(MainActivity.this).setTitle("Localização no teste")
+                    .setMessage("Permitir a localização somente para esta solicitação no ambiente de homologação?")
+                    .setNegativeButton("Não permitir", (d,w) -> finalizarLocalizacao(false))
+                    .setPositiveButton("Permitir", (d,w) -> {
+                        if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED || checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) finalizarLocalizacao(true);
+                        else requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCALIZACAO_HML);
+                    }).setOnCancelListener(d -> finalizarLocalizacao(false)).show();
+            }
             @Override public boolean onShowFileChooser(WebView webView,
                  ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
                 if (fileResult != null) fileResult.onReceiveValue(null);
@@ -130,6 +154,31 @@ public final class MainActivity extends Activity {
         if (savedInstanceState == null) web.loadUrl(
             getIntent().getBooleanExtra("abrirAgenda", false) ? AGENDA : HOME);
         else web.restoreState(savedInstanceState);
+    }
+
+    private void finalizarLocalizacao(boolean autorizado) {
+        if (geoPendente != null) geoPendente.invoke(geoOrigem, autorizado, false);
+        geoPendente = null; geoOrigem = null;
+    }
+
+    private final class PonteArquivosHml {
+        @JavascriptInterface public void salvar(String nome, String mime, String base64) {
+            if (!BuildConfig.HOMOLOGACAO || nome == null || nome.length() > 150 || base64 == null || base64.length() > 1400000) return;
+            if (!("image/png".equals(mime) || "image/jpeg".equals(mime) || "application/pdf".equals(mime) || "text/csv".equals(mime))) return;
+            if (nome.contains("/") || nome.contains("\\") || java.util.regex.Pattern.compile("[\\x00-\\x1f\\x7f]").matcher(nome).find()) return;
+            String minusculo = nome.toLowerCase(java.util.Locale.ROOT);
+            if (("image/png".equals(mime) && !minusculo.endsWith(".png")) || ("image/jpeg".equals(mime) && !(minusculo.endsWith(".jpg") || minusculo.endsWith(".jpeg"))) || ("application/pdf".equals(mime) && !minusculo.endsWith(".pdf")) || ("text/csv".equals(mime) && !minusculo.endsWith(".csv"))) return;
+            final byte[] bytes;
+            try { bytes = Base64.decode(base64, Base64.DEFAULT); } catch (IllegalArgumentException e) { return; }
+            if (bytes.length < 8 || bytes.length > 1048576) return;
+            runOnUiThread(() -> {
+                if (web == null || web.getUrl() == null || !web.getUrl().startsWith("https://mandato-neon-homologacao.onrender.com/hml/") || arquivoPendente != null) return;
+                arquivoPendente = bytes;
+                Intent criar = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(mime).putExtra(Intent.EXTRA_TITLE, nome);
+                try { startActivityForResult(criar, REQUEST_SALVAR_HML); }
+                catch (ActivityNotFoundException e) { arquivoPendente = null; Toast.makeText(MainActivity.this, "Não foi possível abrir o diálogo de arquivo.", Toast.LENGTH_LONG).show(); }
+            });
+        }
     }
 
     private final class PonteLembretes {
@@ -174,6 +223,11 @@ public final class MainActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_LOCALIZACAO_HML) {
+            boolean autorizado = false;
+            for (int resultado : grantResults) autorizado |= resultado == PackageManager.PERMISSION_GRANTED;
+            finalizarLocalizacao(autorizado);
+        }
         if (requestCode == REQUEST_NOTIFICACAO) {
             if (Lembretes.permissao(this)) Lembretes.reagendar(this);
             atualizarEstadoNaPagina();
@@ -193,6 +247,16 @@ public final class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_SALVAR_HML) {
+            byte[] bytes = arquivoPendente; arquivoPendente = null;
+            if (resultCode == RESULT_OK && data != null && data.getData() != null && bytes != null) {
+                try (OutputStream destino = getContentResolver().openOutputStream(data.getData())) {
+                    if (destino == null) throw new java.io.IOException();
+                    destino.write(bytes);
+                    Toast.makeText(this, "Arquivo salvo no destino escolhido.", Toast.LENGTH_LONG).show();
+                } catch (Exception e) { Toast.makeText(this, "Não foi possível salvar o arquivo.", Toast.LENGTH_LONG).show(); }
+            }
+        }
         if (requestCode == REQUEST_FILE && fileResult != null) {
             Uri[] result = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
             fileResult.onReceiveValue(result);
@@ -211,6 +275,7 @@ public final class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        finalizarLocalizacao(false); arquivoPendente = null;
         if (web != null) {
             root.removeView(web);
             web.destroy();

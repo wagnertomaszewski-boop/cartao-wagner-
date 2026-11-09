@@ -1,4 +1,4 @@
-import {criarClienteRecuperacaoManual,formatarDataMandato} from './cliente-recuperacao-manual.mjs';
+import {criarClienteRecuperacaoManual,formatarDataMandato,salvarArquivoLocal} from './cliente-recuperacao-manual.mjs';
 const $=id=>document.getElementById(id);let api,pedido=null,nova=null,acesso=null,ocupado=false;
 try{api=criarClienteRecuperacaoManual({origem:location.origin});}catch(e){$('mensagem').textContent=e.message;document.querySelectorAll('button').forEach(b=>b.disabled=true);}
 async function agir(fn){if(!api||ocupado)return;ocupado=true;try{$('mensagem').textContent='';await fn();}catch(e){$('mensagem').textContent=e.message;}finally{ocupado=false;}}
@@ -8,7 +8,7 @@ function render(r){$('andamento').hidden=!r.encontrado;if(!r.encontrado)throw Er
  $('descricao').textContent=(r.descricao||'')+(r.resultado?' · Resultado: '+r.resultado:'');$('localidade').textContent=r.localidade||'';
  for(const id of ['historico','respostas','anexos'])$(id).replaceChildren();
  for(const h of r.historico||[]){const li=document.createElement('li');li.textContent=(h.criadoEm?formatarDataMandato(h.criadoEm)+' · ':'')+h.status;$('historico').append(li);}
- for(const a of r.anexos||[]){const li=document.createElement('li');li.textContent=a.nome+' · arquivo privado';if(a.id){const b=document.createElement('button');b.textContent='Baixar documento';b.onclick=()=>agir(async()=>{if(!acesso)throw Error('Consulte novamente com sua chave.');const arquivo=await api.baixar({...acesso,arquivoId:a.id});const bytes=Uint8Array.from(atob(arquivo.base64),x=>x.charCodeAt(0)),url=URL.createObjectURL(new Blob([bytes],{type:arquivo.mime})),link=document.createElement('a');link.href=url;link.download=arquivo.nome;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});li.append(b);}$('anexos').append(li);}
+ for(const a of r.anexos||[]){const li=document.createElement('li');li.textContent=a.nome+' · arquivo privado';if(a.id){const b=document.createElement('button');b.textContent='Baixar documento';b.onclick=()=>agir(async()=>{if(!acesso)throw Error('Consulte novamente com sua chave.');const arquivo=await api.baixar({...acesso,arquivoId:a.id});salvarArquivoLocal(arquivo);});li.append(b);}$('anexos').append(li);}
  for(const resposta of r.respostas||[]){const p=document.createElement('p');p.textContent=resposta.mensagem;for(const a of resposta.anexos||[])p.append(document.createTextNode(' · '+a.nome+' (arquivo privado)'));$('respostas').append(p);}
 }
 $('consulta').onsubmit=e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.target));$('chave').value='';$('andamento').hidden=true;void agir(async()=>{const r=await api.consultar(d);if(r.encontrado)acesso=d;else acesso=null;render(r);});};

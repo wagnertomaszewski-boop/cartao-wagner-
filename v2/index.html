@@ -244,10 +244,11 @@ body{background:#e9eff6}
   .home-grid .tile .tile-copy strong{font-size:15px;margin:9px 0 6px}
   .home-grid .tile .tile-copy span{font-size:11.5px;line-height:1.33;padding-right:9px}
 }
+.hml-aviso{background:#fff3cd;color:#4b3900;padding:10px;text-align:center;font-weight:700}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
-<body>
+<body><aside id="aviso-hml" class="hml-aviso" hidden>HOMOLOGAÇÃO · Dados fictícios · Aplicativos publicados preservados</aside>
 <div id="mandatoV2Splash" role="status" aria-label="Abrindo Mandato em Ação">
   <div class="splash-conteudo">
     <img src="./icon-v2-512.png" alt="">
@@ -418,6 +419,7 @@ body{background:#e9eff6}
 </div>
 <script>
 const SUPABASE_URL='https://pmmsdjozyyxkbuqlkfpb.supabase.co',SUPABASE_KEY='sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_';
+if(location.origin==='https://mandato-neon-homologacao.onrender.com'&&location.pathname.startsWith('/hml/'))document.getElementById('aviso-hml').hidden=false;
 function go(id){if(location.origin==='https://mandato-neon-homologacao.onrender.com'&&location.pathname.startsWith('/hml/')){const rotas={solicitar:'/hml/v2/solicitar',acompanhar:'/hml/v2/recuperar',noticias:'/hml/v2/noticias.html',agendaPublica:'/hml/v2/agenda.html'};if(rotas[id]){location.assign(rotas[id]);return;}}document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));let n=document.getElementById('nav-'+(id==='detalhesProjeto'?'projetos':id==='agendaPublica'?'home':id==='acompanhar'?'solicitar':id));if(n)n.classList.add('active');window.scrollTo(0,0);if(id==='projetos')carregarProjetosPublicos();if(id==='enquetes')carregarEnquetesPublicas();if(id==='agendaPublica')carregarAgendaPublicaV2()}
 
 function escAgendaV2(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
