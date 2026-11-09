@@ -17,6 +17,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Instalar dependências fixadas
+        working-directory: homologacao/api-neon
+        run: npm ci --ignore-scripts
       - name: Suite completa isolada
         working-directory: homologacao/api-neon
-        run: npm test
+        run: npm test && npm run test:hml

@@ -2,7 +2,7 @@ import {readFile} from 'node:fs/promises';
 import {toNodeHandler,fromNodeHeaders} from 'better-auth/node';
 import {criarAuthAdminHml,validarConfigAuthHml,segredoIgual,exigirAdminMfa,HML_ORIGIN} from './auth-admin-hml.mjs';
 import {criarFluxoIsoladoHml} from './fluxo-isolado-hml.mjs';
-import {criarEnvioWhatsappCloud} from './enviar-whatsapp-cloud.mjs';
+import {criarRecuperacaoManualHml} from './recuperacao-manual-hml.mjs';
 const BASE='/hml';
 export async function criarServidorAuthHml({env=process.env}={}){
  const {default:pg}=await import('pg');
@@ -18,11 +18,14 @@ export async function criarServidorAuthHml({env=process.env}={}){
 }
 export async function montar({env,pool}){
  const auth=criarAuthAdminHml({database:pool,secret:env.AUTH_HML_SECRET,adminEmail:env.AUTH_HML_ADMIN_EMAIL});
- let enviarCodigo=null;
- if(env.WHATSAPP_HML_TOKEN&&env.WHATSAPP_HML_PHONE_NUMBER_ID&&env.WHATSAPP_HML_TEMPLATE){
-  enviarCodigo=criarEnvioWhatsappCloud({token:env.WHATSAPP_HML_TOKEN,phoneNumberId:env.WHATSAPP_HML_PHONE_NUMBER_ID,templateName:env.WHATSAPP_HML_TEMPLATE});
+ const fluxo=criarFluxoIsoladoHml({pool,segredo:env.AUTH_HML_SECRET});
+ const manual=criarRecuperacaoManualHml({pool,segredo:env.AUTH_HML_SECRET,telefoneTeste:env.WHATSAPP_HML_DESTINO_TESTE});
+ if(env.HML_AUTOTESTE_MANUAL==='sim'){
+  const {autotestarRecuperacaoManual}=await import('./autoteste-manual-hml.mjs');
+  const teste=criarRecuperacaoManualHml({pool,segredo:env.AUTH_HML_SECRET});
+  await autotestarRecuperacaoManual({manual:teste,fluxo,pool});
+  console.log('AUTOTESTE_MANUAL_NEON_OK: fixture fictícia; consumo concorrente único; chave substituída; auditoria; nenhum WhatsApp enviado.');
  }
- const fluxo=criarFluxoIsoladoHml({pool,segredo:env.AUTH_HML_SECRET,enviarCodigo,telefoneTeste:env.WHATSAPP_HML_DESTINO_TESTE});
  const seguro={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer',
   'Content-Security-Policy':"default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"};
  async function limitar(chave,max=20){
@@ -71,7 +74,7 @@ export async function montar({env,pool}){
    for(const [k,v]of Object.entries(seguro))res.setHeader(k,v);
    if(req.method!=='GET'&&(req.headers.origin!==HML_ORIGIN||req.headers['sec-fetch-site']==='cross-site'))return json(res,403,{erro:'Origem não autorizada'}),true;
    if(req.method==='POST')await limitar(path,path.includes('setup')?5:20);
-   const assets={'/hml/':'hml-admin.html','/hml':'hml-admin.html','/hml/app.js':'hml-admin.js','/hml/style.css':'hml-admin.css'};
+   const assets={'/hml/':'hml-admin.html','/hml':'hml-admin.html','/hml/app.js':'hml-admin.js','/hml/style.css':'hml-admin.css','/hml/recuperar':'hml-recuperar.html','/hml/painel-recuperacao':'hml-painel-recuperacao.html','/hml/recuperacao.js':'hml-recuperacao.js'};
    if(req.method==='GET'&&assets[path]){const name=assets[path],content=await readFile(new URL('./'+name,import.meta.url));res.writeHead(200,{'Content-Type':name.endsWith('.html')?'text/html; charset=utf-8':name.endsWith('.js')?'application/javascript; charset=utf-8':'text/css; charset=utf-8',...seguro});res.end(content);return true;}
    if(path.startsWith('/hml/auth/')){await autenticar(req,res);return true;}
    if(path==='/hml/setup'&&req.method==='POST'){
@@ -90,11 +93,17 @@ export async function montar({env,pool}){
     const s=await auth.api.getSession({headers:fromNodeHeaders(req.headers)});let mfaRecente=false;
     try{await exigirAdminMfa({auth,pool,headers:fromNodeHeaders(req.headers),adminEmail:env.AUTH_HML_ADMIN_EMAIL});mfaRecente=true;}catch{}
     const r=await pool.query('SELECT consumida FROM auth_admin_hml.instalacao WHERE id=1');
-    return json(res,200,{ambiente:'homologacao',instalado:r.rows[0]?.consumida===true,autenticado:!!s,mfaAtivado:s?.user?.twoFactorEnabled===true,mfaRecente,whatsappConfigurado:fluxo.transporteDisponivel}),true;
+    return json(res,200,{ambiente:'homologacao',instalado:r.rows[0]?.consumida===true,autenticado:!!s,mfaAtivado:s?.user?.twoFactorEnabled===true,mfaRecente,whatsappConfigurado:false,envioManual:true}),true;
    }
    if(path==='/hml/cidadao/confirmar'&&req.method==='POST'){return json(res,200,await fluxo.confirmar(await corpo(req))),true;}
    if(path==='/hml/cidadao/consultar'&&req.method==='POST'){return json(res,200,await fluxo.consultar(await corpo(req))),true;}
+   if(path==='/hml/manual/solicitar'&&req.method==='POST')return json(res,200,await manual.solicitar(await corpo(req))),true;
+   if(path==='/hml/manual/validar'&&req.method==='POST')return json(res,200,await manual.validar(await corpo(req))),true;
    const op=await exigirAdminMfa({auth,pool,headers:fromNodeHeaders(req.headers),adminEmail:env.AUTH_HML_ADMIN_EMAIL});
+   if(path==='/hml/manual/pedidos'&&req.method==='GET')return json(res,200,await manual.listar()),true;
+   if(path==='/hml/manual/fixture'&&req.method==='POST'){await corpo(req);return json(res,200,await manual.criarFixture(op)),true;}
+   const manualMatch=/^\/hml\/manual\/pedidos\/([0-9a-f-]{36})\/(decidir|emitir|abrir)$/.exec(path);
+   if(manualMatch&&req.method==='POST'){const d=await corpo(req);const acao=manualMatch[2]==='abrir'?'registrarAbertura':manualMatch[2];return json(res,200,await manual[acao](manualMatch[1],op,d)),true;}
    if(path==='/hml/api/auditoria'&&req.method==='GET')return json(res,200,{eventos:await fluxo.auditoria()}),true;
    if(path==='/hml/api/pedidos'&&req.method==='POST')return json(res,200,await fluxo.criar(op)),true;
    const match=/^\/hml\/api\/pedidos\/([0-9a-f-]{36})\/(aprovar|iniciar|concluir)$/.exec(path);
@@ -102,5 +111,5 @@ export async function montar({env,pool}){
    json(res,404,{erro:'Rota não encontrada'});return true;
   }catch(e){if(!res.headersSent)json(res,e.status||503,{erro:e.status?e.message:'Operação indisponível'});else res.end();return true;}
  }
- return {handler,fechar:()=>pool.end(),auth,fluxo};
+ return {handler,fechar:()=>pool.end(),auth,fluxo,manual};
 }

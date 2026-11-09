@@ -3,7 +3,7 @@ import {randomBytes} from 'node:crypto';import {readFile} from 'node:fs/promises
 import {createOTP} from '@better-auth/utils/otp';import {base32} from '@better-auth/utils/base32';
 import {montar} from '../servidor-auth-hml.mjs';import {HML_ORIGIN} from '../auth-admin-hml.mjs';
 test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação auditada, CSRF, rotas restritas e logout',async()=>{
- const pg=new PGlite();await pg.exec(await readFile(new URL('../sql/auth-admin-hml.sql',import.meta.url),'utf8'));await pg.exec('SET search_path=auth_admin_hml');
+ const pg=new PGlite();await pg.exec(await readFile(new URL('../sql/auth-admin-hml.sql',import.meta.url),'utf8'));await pg.exec('CREATE ROLE mandato_auth_hml');await pg.exec(await readFile(new URL('../sql/recuperacao-manual-hml.sql',import.meta.url),'utf8'));await pg.exec('SET search_path=auth_admin_hml');
  async function query(sql,params){try{const r=await pg.query(sql,params);return {...r,rowCount:r.affectedRows,command:sql.trim().split(' ')[0].toUpperCase()};}catch(e){throw e;}}
  const pool={query,connect:async()=>({query,release(){}}),end:async()=>{}};
  const env={AUTH_HML_ADMIN_EMAIL:'admin-http@example.invalid',AUTH_HML_SECRET:randomBytes(48).toString('hex'),AUTH_HML_BOOTSTRAP_TOKEN:randomBytes(48).toString('hex')};
@@ -13,6 +13,8 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
  const jar=new Map(),url='http://127.0.0.1:'+server.address().port;
  async function call(path,data,origin=HML_ORIGIN){const r=await fetch(url+'/hml'+path,{method:data===undefined?'GET':'POST',headers:{Origin:origin,'Content-Type':'application/json',cookie:[...jar].map(([k,v])=>k+'='+v).join('; ')},body:data===undefined?undefined:JSON.stringify(data)});for(const c of r.headers.getSetCookie()){const a=c.split(';')[0],i=a.indexOf('=');jar.set(a.slice(0,i),a.slice(i+1));}return {status:r.status,headers:r.headers,data:await r.json()};}
  try{
+  assert.equal((await call('/manual/pedidos')).status,401);
+  assert.equal((await call('/manual/fixture',{})).status,401);
   assert.equal((await call('/api/pedidos',{})).status,401);
   assert.equal((await call('/auth/get-session')).data,null);
   assert.equal((await call('/auth/sign-up/email',{email:'intruso@example.invalid',password,name:'Intruso'})).status,404);
@@ -26,6 +28,24 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
   const p=(await call('/api/pedidos',{})).data;assert.ok(p.id);assert.equal((await call('/api/pedidos/'+p.id+'/aprovar',{})).data.aprovado,true);
   assert.equal((await call('/api/pedidos/'+p.id+'/iniciar',{})).status,503);
   assert.ok((await call('/api/auditoria')).data.eventos.some(e=>e.evento==='aprovacao_auditada'));
+  const fixture=(await call('/manual/fixture',{})).data;
+  const pedido=(await call('/manual/solicitar',{protocolo:fixture.protocolo,telefone:fixture.telefone})).data;
+  assert.ok(pedido.recibo);assert.equal((await call('/manual/pedidos')).data.pedidos.length,1);
+  const base='/manual/pedidos/'+pedido.pedidoId;
+  const conferir={identidadeConferida:true,telefoneConfirmado:fixture.telefone,justificativa:'Conferência independente de identidade fictícia.',decisao:'aprovar'};
+  assert.equal((await call(base+'/emitir',conferir)).status,403);
+  assert.equal((await call(base+'/decidir',{...conferir,identidadeConferida:false})).status,403);
+  assert.equal((await call(base+'/decidir',conferir)).status,200);
+  let emitido=await call(base+'/emitir',conferir);assert.equal(emitido.status,200);assert.equal(emitido.headers.get('cache-control'),'no-store');assert.equal(emitido.data.entregaConfirmada,false);
+  assert.equal((await call(base+'/abrir',{...conferir,desafioId:emitido.data.desafioId})).status,403); // telefone fictício sem autorização para abrir WhatsApp
+  assert.equal((await call('/manual/validar',{...pedido,codigo:emitido.data.codigo},'https://site-nao-autorizado.invalid')).status,403);
+  const final=(await call('/manual/validar',{...pedido,codigo:emitido.data.codigo})).data;assert.equal(final.confirmado,true);assert.ok(final.novaChave);
+  assert.equal((await call('/manual/validar',{...pedido,codigo:emitido.data.codigo})).data.confirmado,false);
+  assert.equal((await call('/cidadao/consultar',{protocolo:fixture.protocolo,chave:fixture.chaveInicial})).data.encontrado,false);
+  assert.equal((await call('/cidadao/consultar',{protocolo:fixture.protocolo,chave:final.novaChave})).data.encontrado,true);
+  assert.equal((await call('/cidadao/consultar',{protocolo:fixture.protocolo})).data.encontrado,false);
+  await pool.query("UPDATE auth_admin_hml.mfa_sessoes SET confirmado_em=now()-interval '6 minutes'");
+  assert.equal((await call(base+'/decidir',conferir)).status,403);assert.equal((await call(base+'/emitir',conferir)).status,403);
   await call('/auth/sign-out',{});assert.equal((await call('/api/pedidos',{})).status,401);
   r=await call('/auth/sign-in/email',{email:env.AUTH_HML_ADMIN_EMAIL,password});assert.equal(r.data.twoFactorRedirect,true);
   assert.equal((await call('/api/pedidos',{})).status,401);
