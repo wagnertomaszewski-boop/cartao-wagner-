@@ -147,3 +147,23 @@ compatível ou manutenção do acompanhamento. Preservar novas gravações/audit
 não restaurar por cima do banco vivo. Restaurar em destino isolado, reconciliar
 alterações posteriores e obter autorização para qualquer substituição. Nunca
 reativar consultas somente por protocolo, nem retornar documento a bucket público.
+
+## Evidência final desta preparação
+
+Implementação: f4530bec61543fc4530ce02bb368e8e788569751.
+Correção do seletor CI: 397aa0321d00227831161b907ae10911b249f1e3.
+CI 42866057186 / job 130004567339: **13 aprovados, 0 falhas, 0 ignorados**;
+entrada Edge passou no deno check; suíte antiga foi corretamente ignorada.
+Na primeira execução (42865742390), o seletor tinha caminho relativo incorreto e
+acionou a suíte antiga. Isso foi corrigido, e essa rodada não é contada como nova
+cobertura. Nenhum teste Android foi reexecutado nesta etapa web.
+
+HTML público comparado byte a byte ao commit Pages dc1c244: correspondência confirmada.
+A candidata preservou cinco imagens embutidas por hash. Scripts inline de V2/Painel
+analisados sintaticamente. Revisão visual da candidata local **bloqueada**:
+Cloud Browser recebeu ERR_CONNECTION_REFUSED no servidor local; alternativa
+Chromium local encontrou provedor AT-SPI indisponível. Não equivale a aceite visual.
+
+A sessão do Supabase Dashboard exibiu Sign in ao tentar abrir o Storage. É necessário
+login interativo para concluir a exportação privada dos arquivos. Não foi solicitado
+que credenciais, chaves ou códigos fossem enviados ao chat.
