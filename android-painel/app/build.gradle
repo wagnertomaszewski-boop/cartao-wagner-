@@ -3,6 +3,10 @@ plugins { id 'com.android.application' }
 // A chave de assinatura nunca fica no repositório. O workflow fornece os
 // dados da chave permanente por variáveis de ambiente protegidas.
 def arquivoChave = System.getenv('PAINEL_KEYSTORE_FILE')
+// Homologação usa SOMENTE uma chave existente validada pelo workflow.
+// Ausência de chave mantém a variante sem assinatura; nunca cai no debug.keystore temporário.
+def chaveHml = System.getenv('PAINEL_HML_KEYSTORE_FILE')
+def assinaturaHmlCompleta = ['PAINEL_HML_KEYSTORE_FILE','PAINEL_HML_KEYSTORE_PASSWORD','PAINEL_HML_KEY_ALIAS','PAINEL_HML_KEY_PASSWORD'].every { System.getenv(it) }
 
 android {
     namespace 'br.com.wagnertomaszewski.painelmandato'
@@ -19,6 +23,14 @@ android {
         versionName '1.1.1'
     }
     signingConfigs {
+        hmlExistente {
+            if (assinaturaHmlCompleta) {
+                storeFile file(chaveHml)
+                storePassword System.getenv('PAINEL_HML_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('PAINEL_HML_KEY_ALIAS')
+                keyPassword System.getenv('PAINEL_HML_KEY_PASSWORD')
+            }
+        }
         release {
             if (arquivoChave) {
                 storeFile file(arquivoChave)
@@ -30,6 +42,7 @@ android {
     }
     buildTypes {
         debug {
+            signingConfig assinaturaHmlCompleta ? signingConfigs.hmlExistente : null
             applicationIdSuffix '.homologacao'
             versionNameSuffix '-hml-bio1'
             buildConfigField 'boolean', 'HOMOLOGACAO', 'true'

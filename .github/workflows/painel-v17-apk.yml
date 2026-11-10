@@ -1,4 +1,4 @@
-name: Painel Homologacao - APK DEBUG (nao publicar)
+name: Painel Homologacao - verificacao e APK compativel
 
 on:
   push:
@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   gerar-apk:
+    if: github.ref == 'refs/heads/feature/recuperacao-whatsapp-manual'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -25,43 +26,89 @@ jobs:
       - name: Android SDK disponivel no runner
         run: |
           SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          echo "SDK no runner: $SDK"
           SDKMANAGER="$(find "$SDK/cmdline-tools" -type f -name sdkmanager | head -n 1)"
           test -x "$SDKMANAGER"
-          "$SDKMANAGER" --version
           "$SDKMANAGER" --install "platforms;android-36" "build-tools;35.0.0"
       - name: Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.11.1"
-      - name: Compilar APK Android
+      - name: Testar bloqueios de assinatura sem credenciais reais
+        run: python3 -m unittest discover -s android-painel/tests -p 'test_assinatura_hml.py'
+      - name: Compilar e testar sem gerar identidade de assinatura
         working-directory: android-painel
-        run: gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:testCidadaoHmlUnitTest :app:assembleDebug :app:assembleCidadaoHml :app:compileReleaseJavaWithJavac :app:processReleaseMainManifest
-      - name: Renomear APK
+        run: gradle --no-daemon :app:testDebugUnitTest :app:testCidadaoHmlUnitTest :app:compileDebugJavaWithJavac :app:processDebugMainManifest :app:compileReleaseJavaWithJavac :app:processReleaseMainManifest
+      - name: Conferir isolamento das permissoes nativas
         run: |
-          cp android-painel/app/build/outputs/apk/debug/app-debug.apk Painel_do_Mandato_Homologacao_Debug.apk
-          cp android-painel/app/build/outputs/apk/cidadaoHml/app-cidadaoHml.apk Mandato_em_Acao_Cidadao_Homologacao.apk
-      - name: Conferir identidade isolada do APK
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('android-painel/app/build/intermediates')
+          release=[p for p in root.rglob('AndroidManifest.xml') if 'release' in p.parts]
+          debug=[p for p in root.rglob('AndroidManifest.xml') if 'debug' in p.parts]
+          assert release and debug, 'Manifestos não encontrados'
+          proibidas=['ACCESS_FINE_LOCATION','ACCESS_COARSE_LOCATION','USE_BIOMETRIC','USE_FINGERPRINT']
+          assert all(not any(x in p.read_text() for x in proibidas) for p in release), 'Permissão HML em release'
+          assert any('USE_BIOMETRIC' in p.read_text() and 'ACCESS_FINE_LOCATION' in p.read_text() for p in debug), 'Permissões HML ausentes'
+          print('Permissões HML preservadas e isoladas da variante release.')
+          PY
+      - name: Conferir chave HML existente sem expor seus dados
+        id: assinatura
+        env:
+          HML_KEYSTORE_B64: ${{ secrets.PAINEL_HML_KEYSTORE_BASE64 }}
+          PAINEL_HML_KEYSTORE_PASSWORD: ${{ secrets.PAINEL_HML_KEYSTORE_PASSWORD }}
+          PAINEL_HML_KEY_ALIAS: ${{ secrets.PAINEL_HML_KEY_ALIAS }}
+          PAINEL_HML_KEY_PASSWORD: ${{ secrets.PAINEL_HML_KEY_PASSWORD }}
+          PAINEL_HML_CERT_SHA256: ${{ secrets.PAINEL_HML_CERT_SHA256 }}
+        run: |
+          umask 077
+          python3 - <<'PY'
+          import os,pathlib,base64,subprocess
+          names=['HML_KEYSTORE_B64','PAINEL_HML_KEYSTORE_PASSWORD','PAINEL_HML_KEY_ALIAS','PAINEL_HML_KEY_PASSWORD','PAINEL_HML_CERT_SHA256']
+          present=[bool(os.environ.get(k)) for k in names]
+          out=pathlib.Path(os.environ['GITHUB_OUTPUT'])
+          if not any(present):
+              with out.open('a') as f:f.write('verificada=false\n')
+              with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:f.write('## APK não liberado\nChave original HML não configurada. Testes executados; nenhum APK instalável foi gerado. A instalação atual permanece preservada.\n')
+              raise SystemExit(0)
+          if not all(present):raise SystemExit('Configuração HML incompleta. Nenhum APK será liberado.')
+          folder=pathlib.Path(os.environ['RUNNER_TEMP'])/'painel-hml-assinatura';folder.mkdir(mode=0o700)
+          key=folder/'original.jks'
+          try:raw=base64.b64decode(''.join(os.environ['HML_KEYSTORE_B64'].split()),validate=True)
+          except Exception:raise SystemExit('Formato da chave HML inválido; detalhes privados omitidos.')
+          with key.open('xb') as f:f.write(raw)
+          os.chmod(key,0o600)
+          env=dict(os.environ,PAINEL_HML_KEYSTORE_FILE=str(key))
+          result=subprocess.run(['python3','android-painel/scripts/verificar_assinatura_hml.py'],env=env,capture_output=True)
+          if result.returncode or result.stdout.strip()!=b'assinatura_hml=verificada':raise SystemExit('Chave HML não aprovada. Nenhum certificado ou saída privada foi exibido.')
+          with out.open('a') as f:f.write('verificada=true\n')
+          PY
+      - name: Gerar somente APK Painel HML com chave conferida
+        if: steps.assinatura.outputs.verificada == 'true'
+        working-directory: android-painel
+        env:
+          PAINEL_HML_KEYSTORE_FILE: ${{ runner.temp }}/painel-hml-assinatura/original.jks
+          PAINEL_HML_KEYSTORE_PASSWORD: ${{ secrets.PAINEL_HML_KEYSTORE_PASSWORD }}
+          PAINEL_HML_KEY_ALIAS: ${{ secrets.PAINEL_HML_KEY_ALIAS }}
+          PAINEL_HML_KEY_PASSWORD: ${{ secrets.PAINEL_HML_KEY_PASSWORD }}
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Conferir identidade e assinatura do pacote final
+        if: steps.assinatura.outputs.verificada == 'true'
+        env:
+          PAINEL_HML_CERT_SHA256: ${{ secrets.PAINEL_HML_CERT_SHA256 }}
         run: |
           SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          "$SDK/build-tools/35.0.0/aapt" dump badging Painel_do_Mandato_Homologacao_Debug.apk > /tmp/apk-hml-badging.txt
-          "$SDK/build-tools/35.0.0/aapt" dump badging Mandato_em_Acao_Cidadao_Homologacao.apk > /tmp/apk-cidadao-hml-badging.txt
-          python - <<'PYCODE'
-          from pathlib import Path
-          texto = Path('/tmp/apk-hml-badging.txt').read_text()
-          assert "package: name='br.com.wagnertomaszewski.painelmandato.homologacao'" in texto
-          assert 'application-debuggable' in texto
-          assert 'android.permission.ACCESS_FINE_LOCATION' in texto
-          assert 'android.permission.USE_BIOMETRIC' in texto
-          cidadao = Path('/tmp/apk-cidadao-hml-badging.txt').read_text()
-          assert "package: name='br.com.wagnertomaszewski.painelmandato.cidadao.homologacao'" in cidadao
-          assert 'application-debuggable' in cidadao and 'android.permission.USE_BIOMETRIC' in cidadao
-          manifests = [p for p in Path('android-painel/app/build/intermediates').rglob('AndroidManifest.xml') if 'release' in p.parts]
-          assert manifests, 'Manifesto release não foi processado para conferência'
-          assert all('ACCESS_FINE_LOCATION' not in p.read_text() and 'ACCESS_COARSE_LOCATION' not in p.read_text() and 'USE_BIOMETRIC' not in p.read_text() and 'USE_FINGERPRINT' not in p.read_text() for p in manifests), 'Permissão de teste não pode entrar em release'
-          print('APK isolado de homologação confirmado; nenhum app publicado foi alterado.')
-          PYCODE
-      - name: Evidências dos testes JVM
+          "$SDK/build-tools/35.0.0/aapt" dump badging android-painel/app/build/outputs/apk/debug/app-debug.apk > "$RUNNER_TEMP/apk-identidade.txt"
+          "$SDK/build-tools/35.0.0/apksigner" verify --print-certs android-painel/app/build/outputs/apk/debug/app-debug.apk > "$RUNNER_TEMP/apk-assinatura-privada.txt"
+          python3 - <<'PY'
+          import os,pathlib,re
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])
+          assert "package: name='br.com.wagnertomaszewski.painelmandato.homologacao'" in (root/'apk-identidade.txt').read_text()
+          text=(root/'apk-assinatura-privada.txt').read_text()
+          match=re.search(r'Signer #1 certificate SHA-256 digest:\s*([0-9a-fA-F]+)',text)
+          assert match and match[1].lower()==os.environ['PAINEL_HML_CERT_SHA256'].replace(':','').strip().lower(),'Assinatura final não corresponde à referência HML.'
+          print('Pacote HML e compatibilidade de assinatura conferidos, sem exibir certificados.')
+          PY
+      - name: Evidencias dos testes JVM
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -70,16 +117,14 @@ jobs:
             android-painel/app/build/test-results/testDebugUnitTest/
             android-painel/app/build/test-results/testCidadaoHmlUnitTest/
           retention-days: 30
-      - name: Disponibilizar APK
+      - name: Disponibilizar apenas APK de assinatura compativel
+        if: steps.assinatura.outputs.verificada == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-Homologacao-DEBUG-NAO-PUBLICAR
-          path: Painel_do_Mandato_Homologacao_Debug.apk
+          name: Painel-Homologacao-ASSINATURA-CONFERIDA
+          path: android-painel/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
           retention-days: 30
-
-      - name: Disponibilizar APK cidadão isolado
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mandato-Cidadao-Homologacao-NAO-PUBLICAR
-          path: Mandato_em_Acao_Cidadao_Homologacao.apk
-          retention-days: 30
+      - name: Limpar material temporario de assinatura
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/painel-hml-assinatura" "$RUNNER_TEMP/apk-assinatura-privada.txt"
