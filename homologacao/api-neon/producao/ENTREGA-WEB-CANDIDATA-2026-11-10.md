@@ -167,3 +167,31 @@ Chromium local encontrou provedor AT-SPI indisponível. Não equivale a aceite v
 A sessão do Supabase Dashboard exibiu Sign in ao tentar abrir o Storage. É necessário
 login interativo para concluir a exportação privada dos arquivos. Não foi solicitado
 que credenciais, chaves ou códigos fossem enviados ao chat.
+
+## Retomada após interrupção do login
+
+Conferidos novamente somente os estados persistidos: branch em 9da8234; Render
+live em f36bf2d; Neon HML com 1 fator MFA, 136 eventos e 4 anexos. Produção continua
+com 40 solicitações, 58 arquivos, zero fatores MFA verificados e sem schema privado.
+As telas HML de cadastro e Painel abriram; o catálogo privado exige nova sessão/MFA.
+Não foi criado novo registro nem repetida a suíte de 483 verificações.
+
+Pendência de preparação resolvida nesta retomada: o Painel candidato agora oferece
+cadastramento inicial do autenticador, por ação explícita do proprietário e sessão
+Supabase existente. Preserva fator TOTP já verificado; QR fica somente na tela
+privada e é apagado ao fechar/sair. O código vai no corpo do POST ao Auth e a sessão
+elevada fica em memória. Cadastrar não equivale a ativar: é obrigatória a confirmação
+TOTP. Fechar sem confirmar não autoriza operações; um fator não verificado pode
+exigir limpeza pelo proprietário antes de recomeçar. Não houve criação de fator real.
+
+Foram executados apenas 3 testes novos do fluxo MFA web e 2 verificações de
+empacotamento afetadas. Os 3 casos novos passaram após corrigir a exportação do
+identificador público de projeto no módulo de configuração; as 2 verificações de
+empacotamento passaram. Não somar às suítes anteriores como cobertura independente
+do ecossistema. Verificação sintática do módulo administrativo aprovada.
+
+Backup dos arquivos e teste autenticado continuam bloqueados por login interativo;
+a solicitação segura anterior foi interrompida, sem autenticação comprovada. Não
+reaberta automaticamente. Backups já salvos não foram refeitos. O cadastro MFA
+produtivo precisa de participação do proprietário e implantação autorizada desta
+interface, não de desativação da biometria ou de permissões existentes.

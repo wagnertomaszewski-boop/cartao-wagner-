@@ -20,7 +20,7 @@ export async function montarCandidata({config,destino}){
  if(html===original||html.includes('consulta_publica_protocolo')||html.includes('criar_solicitacao_com_localizacao')||html.includes('RECUPERACAO_MANUAL_HML'))throw Error('Remoção dos caminhos antigos não conferida.');
  const fotoDepois=[...html.matchAll(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/g)].map(x=>createHash('sha256').update(x[0]).digest('hex'));if(JSON.stringify(fotoAntes)!==JSON.stringify(fotoDepois))throw Error('Imagem aprovada alterada.');
  await mkdir(out+'/v2/seguranca',{recursive:true});await writeFile(out+'/v2/index.html',html);
- for(const [fonte,alvo]of [['tela.mjs','tela-privada.mjs'],['cliente.mjs','cliente.mjs']])await cp(new URL('./web/'+fonte,import.meta.url),out+'/v2/seguranca/'+alvo);
+ for(const [fonte,alvo]of [['tela.mjs','tela-privada.mjs'],['cliente.mjs','cliente.mjs'],['mfa-web.mjs','mfa-web.mjs']])await cp(new URL('./web/'+fonte,import.meta.url),out+'/v2/seguranca/'+alvo);
  const configuracao=(await readFile(new URL('./configuracao.mjs',import.meta.url),'utf8')).split('export function validarConfiguracaoServidor')[0];await writeFile(out+'/v2/seguranca/configuracao.mjs',configuracao);
  await writeFile(out+'/v2/seguranca/configuracao-publica.json',JSON.stringify(config,null,2));
  for(const [fonte,alvo]of [['localizacao-solicitacao-hml.mjs','localizacao.mjs'],['fotos-solicitacao-hml.mjs','fotos.mjs']])await cp(new URL('../telas/v2/seguranca/'+fonte,import.meta.url),out+'/v2/seguranca/'+alvo);
@@ -38,7 +38,7 @@ export async function montarCandidata({config,destino}){
  // O nome do módulo raiz e de cada import muda por versão; não depende de limpar
  // dados do aplicativo nem de esperar o max-age=600 observado no Pages.
  const versao=encodeURIComponent(config.versao);
- for(const nome of ['tela-privada.mjs','cliente.mjs','configuracao.mjs','localizacao.mjs','fotos.mjs','painel-privado.mjs']){
+ for(const nome of ['tela-privada.mjs','cliente.mjs','configuracao.mjs','localizacao.mjs','fotos.mjs','painel-privado.mjs','mfa-web.mjs']){
   const caminho=out+'/v2/seguranca/'+nome;
   let codigo=await readFile(caminho,'utf8');codigo=codigo.replace(/from '(\.\/[^'?]+\.mjs)'/g,(_m,p)=>"from '"+p+'?v='+versao+"'");await writeFile(caminho,codigo);
  }

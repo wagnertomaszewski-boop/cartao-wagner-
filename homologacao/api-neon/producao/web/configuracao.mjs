@@ -1,1 +1,1 @@
-export {validarConfiguracaoPublica} from '../configuracao.mjs';
+export {validarConfiguracaoPublica,PROJETO} from '../configuracao.mjs';
