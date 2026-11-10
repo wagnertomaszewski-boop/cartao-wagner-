@@ -135,3 +135,28 @@ Aceite físico de câmera/GPS/seleção de fotos pendente. Fonte/assinatura do A
 cidadão publicado não confirmadas. Portabilidade do backend e contenção das RPCs
 legadas em produção requerem preparação final e autorização; nenhuma foi aplicada.
 Não há autorização para publicação definitiva ou migração. Não declarar 100%.
+
+## Resultado desta execução
+
+Correção funcional salva no commit `81d124087c4a62592b1a90e6b6db38aa3bceb3b2`.
+GitHub Actions Android `42835510213`, job `129896520776`: **success**.
+- 6 testes novos do bloqueio de assinatura aprovados, zero falhas (também locais;
+  a repetição local/CI representa os mesmos seis casos, não doze).
+- 20 testes JVM Android aprovados, zero falhas/erros/ignorados, contados lendo
+  todos os XMLs do artefato `13774031040` (Testes-Biometria-Homologacao).
+- Compilação debug/cidadão HML/release aprovada e isolamento de permissões aprovado.
+- Ausência da configuração da chave HML: geração, conferência do APK final e upload
+  de APK foram ignorados intencionalmente pelo gate. Só foi publicado artefato de
+  testes JVM, nenhum APK instalável. Portanto a assinatura original não foi recuperada.
+- Os cinco workflows existentes disparados automaticamente pelo push concluíram
+  com sucesso. Não houve rerun manual das 483 verificações nem soma de sobreposições.
+- HTTP: /health, /hml/v2/index.html, /hml/v2/solicitar e
+  /hml/painel/recuperacoes responderam 200 nesta execução. Isso não equivale a novo
+  teste físico, login administrativo ou integração de GPS.
+- Conferência do relatório de restauração persistente: restaurado=true, 34 tabelas,
+  auditoria_update_operador=false. Não foi repetido o ensaio já aprovado.
+
+Arquivos da correção: .github/workflows/painel-v17-apk.yml,
+android-painel/app/build.gradle, android-painel/scripts/verificar_assinatura_hml.py,
+android-painel/tests/test_assinatura_hml.py e este documento. Nenhum código da
+biometria, página pública, banco ou configuração de produção foi modificado.
