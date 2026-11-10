@@ -14,6 +14,7 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
  const jar=new Map(),url='http://127.0.0.1:'+server.address().port;
  async function call(path,data,origin=HML_ORIGIN){const r=await fetch(url+'/hml'+path,{method:data===undefined?'GET':'POST',headers:{Origin:origin,'Content-Type':'application/json',cookie:[...jar].map(([k,v])=>k+'='+v).join('; ')},body:data===undefined?undefined:JSON.stringify(data)});for(const c of r.headers.getSetCookie()){const a=c.split(';')[0],i=a.indexOf('=');jar.set(a.slice(0,i),a.slice(i+1));}return {status:r.status,headers:r.headers,data:await r.json()};}
  try{
+  const modulo=await fetch(url+'/hml/v2/seguranca/atualizacao-visivel.mjs');assert.equal(modulo.status,200);assert.match(modulo.headers.get('content-type'),/javascript/);assert.match(await modulo.text(),/criarAtualizacaoVisivel/);
   assert.equal((await call('/manual/pedidos')).status,401);
   assert.equal((await call('/conteudos',{})).status,401);assert.equal((await call('/modelo/dashboard')).status,401);assert.deepEqual((await call('/publico/conteudos')).data,[]);
 

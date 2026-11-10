@@ -1,3 +1,4 @@
+import {criarAtualizacaoVisivel} from './atualizacao-visivel.mjs';
 import {criarClienteBiometriaCidadao,criarBuscaPrivada} from './biometria-cidadao.mjs';
 import {criarClienteRecuperacaoManual,formatarDataMandato,salvarArquivoLocal} from './cliente-recuperacao-manual.mjs';
 const $=id=>document.getElementById(id);let api,pedido=null,nova=null,acesso=null,ocupado=false,cicloDaTela=0;
@@ -6,7 +7,7 @@ const atualizarBiometria=()=>{$('ativar-biometria-cidadao').disabled=!acesso||ac
 try{api=criarClienteRecuperacaoManual({origem:location.origin,buscar:criarBuscaPrivada((...args)=>fetch(...args),()=>cicloDaTela)});}catch(e){$('mensagem').textContent=e.message;document.querySelectorAll('button').forEach(b=>b.disabled=true);}
 async function agir(fn){if(!api||ocupado)return;ocupado=true;try{$('mensagem').textContent='';await fn();}catch(e){$('mensagem').textContent=e.message;}finally{ocupado=false;}}
 function limpar(){cicloDaTela++;$('andamento').hidden=true;for(const id of ['assunto','situacao','descricao','localidade','historico','respostas','anexos'])$(id).replaceChildren();pedido=null;nova=null;acesso=null;$('qr-acompanhamento').removeAttribute('src');$('qr-acompanhamento').hidden=true;for(const id of ['chave','codigo','nova-chave','telefone'])$(id).value='';}
-addEventListener('pagehide',limpar);
+addEventListener('pagehide',()=>{atualizacao.parar();limpar();});
 function render(r){$('qr-acompanhamento').hidden=true;$('qr-acompanhamento').removeAttribute('src');$('andamento').hidden=!r.encontrado;if(!r.encontrado)throw Error('Protocolo ou chave inválidos.');$('assunto').textContent=r.assunto||'Solicitação';$('situacao').textContent=(r.status||'Acompanhamento protegido')+' · versão '+r.versao;
  $('descricao').textContent=(r.descricao||'')+(r.resultado?' · Resultado: '+r.resultado:'');$('localidade').textContent=r.localidade||'';
  for(const id of ['historico','respostas','anexos'])$(id).replaceChildren();
@@ -41,3 +42,13 @@ if(biometria){
   else if(tipo==='leitura')$('mensagem').textContent='Leitura registrada. Isso não confirma entrega de mensagem pelo WhatsApp.';
  });});
 }
+
+async function atualizarAndamento(){
+ if(!acesso)throw Error('Consulte novamente com protocolo e chave.');
+ if(acesso.biometrico){biometria.consultar();return;}
+ const r=await api.consultar(acesso);
+ if(!r.encontrado){limpar();atualizarBiometria();throw Error('Acesso expirado ou revogado. Consulte novamente com protocolo e chave.');}
+ render(r);
+}
+$('atualizar-andamento').onclick=()=>agir(atualizarAndamento);
+const atualizacao=criarAtualizacaoVisivel({atualizar:()=>agir(atualizarAndamento),podeAtualizar:()=>!ocupado&&!!acesso&&!acesso.biometrico&&!pedido&&!nova&&!document.activeElement?.matches('input,textarea,select'),visivel:()=>document.visibilityState==='visible'});
