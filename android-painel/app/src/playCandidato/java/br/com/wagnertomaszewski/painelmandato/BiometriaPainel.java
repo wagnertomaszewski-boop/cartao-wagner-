@@ -52,8 +52,8 @@ final class BiometriaPainel extends ProtecaoLocal {
     }
     void paginaPronta(){
         if(!PoliticaBiometria.navegacaoPermitida(web.getUrl())||encerrada)return;
-        final int captura=++sequencia;
-        web.evaluateJavascript("window.mandatoAgendaMemoria===true||(typeof window.mandatoSessaoParaBiometria===\"function\"&&typeof window.mandatoRestaurarSessaoBiometrica===\"function\")",r->{if(encerrada||segundoPlano)return;if("true".equals(r)&&!ativa&&!emPrompt)ocultarBloqueio();else if(!"true".equals(r))mostrarBloqueio("A atualização web segura ainda não está disponível. Esta candidata não pode entrar na versão antiga.");});
+        final int pagina=sequencia;
+        web.evaluateJavascript("window.mandatoAgendaMemoria===true||(typeof window.mandatoSessaoParaBiometria===\"function\"&&typeof window.mandatoRestaurarSessaoBiometrica===\"function\")",r->{if(pagina!=sequencia||encerrada||segundoPlano)return;if("true".equals(r)&&!ativa&&!emPrompt)ocultarBloqueio();else if(!"true".equals(r))mostrarBloqueio("A atualização web segura ainda não está disponível. Esta candidata não pode entrar na versão antiga.");});
     }
     void invalidar(){loginCompleto("Sessão local encerrada. Entre novamente com e-mail, senha e MFA.");}
     boolean bloqueada(){return bloqueio!=null;}
@@ -72,6 +72,7 @@ final class BiometriaPainel extends ProtecaoLocal {
     }
     private void ativar(){
         if(!PoliticaBiometria.origemPermitida(web.getUrl())||!disponivel()){informar("Biometria forte indisponível ou não cadastrada. Use senha e MFA.");return;}
+        final int captura=++sequencia;
         web.evaluateJavascript("typeof window.mandatoSessaoParaBiometria==='function'?window.mandatoSessaoParaBiometria():null",valor->{
           if(captura!=sequencia||!PoliticaBiometria.origemPermitida(web.getUrl())||segundoPlano||encerrada)return;
           final String cookie;
