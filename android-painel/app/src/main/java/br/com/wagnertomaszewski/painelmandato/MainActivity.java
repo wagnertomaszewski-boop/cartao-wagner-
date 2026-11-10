@@ -103,7 +103,7 @@ public final class MainActivity extends Activity {
                 if (url.startsWith(ALLOWED_PREFIX) && "https".equals(uri.getScheme()) && (!BuildConfig.CIDADAO_HML || url.startsWith(ALLOWED_PREFIX+"v2/") || url.equals(ALLOWED_PREFIX+"mandato/solicitar"))) {
                     return false;
                 }
-                if (!BuildConfig.HOMOLOGACAO || ("whatsapp".equals(uri.getScheme()) && request.hasGesture())) openExternal(uri);
+                if (!BuildConfig.HOMOLOGACAO || (request.hasGesture() && ("whatsapp".equals(uri.getScheme()) || NavegacaoMapaHml.permitida(url)))) openExternal(uri);
                 return true;
             }
             @Override public void onPageStarted(WebView view, String url, Bitmap favicon) {
