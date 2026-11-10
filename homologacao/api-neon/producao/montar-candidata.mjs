@@ -39,6 +39,7 @@ export async function montarCandidata({config,destino}){
  painel=painel.slice(0,inicioAntigo)+`function verificarRecuperacaoSolicitacao(){document.getElementById('estadoRecPrivada')?.scrollIntoView({block:'center'});}
  function verificarIntegracaoChaves(){return Promise.resolve();}
  `+painel.slice(fimAntigo);
+ painel=painel.replace(/<section aria-labelledby="tituloChavesPrivadas"[\s\S]*?<\/section>/,'');
  painel=painel.replace(/<section class="gestao-card nota" aria-label="Recuperação segura de acesso" data-recuperacao-homologacao="pendente">[\s\S]*?<\/section>/g,'');
  painel=painel.replace(/if\(location\.origin==='https:\/\/mandato-neon-homologacao\.onrender\.com'[^\n]+/g,'');
  const inicioSessao=painel.indexOf('function salvarSessao(sessao){'),fimSessao=painel.indexOf('async function requisicao(',inicioSessao);

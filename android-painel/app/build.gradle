@@ -3,6 +3,8 @@ plugins { id 'com.android.application' }
 // A chave de assinatura nunca fica no repositório. O workflow fornece os
 // dados da chave permanente por variáveis de ambiente protegidas.
 def arquivoChave = System.getenv('PAINEL_KEYSTORE_FILE')
+def codigoVersaoPainel = Integer.parseInt(System.getenv('PAINEL_VERSION_CODE') ?: '3')
+if(codigoVersaoPainel<1)throw new GradleException('Codigo de versao invalido')
 // Homologação usa SOMENTE uma chave existente validada pelo workflow.
 // Ausência de chave mantém a variante sem assinatura; nunca cai no debug.keystore temporário.
 def chaveHml = System.getenv('PAINEL_HML_KEYSTORE_FILE')
@@ -20,7 +22,7 @@ android {
         applicationId 'br.com.wagnertomaszewski.painelmandato'
         minSdk 24
         targetSdk 36
-        versionCode (System.getenv('PAINEL_VERSION_CODE') ?: '3').toInteger()
+        versionCode codigoVersaoPainel
         versionName '1.1.1'
     }
     signingConfigs {

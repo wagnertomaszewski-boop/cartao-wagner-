@@ -62,3 +62,7 @@ Reversão: manter bloqueadas as três RPCs e manter documentos privados. Usar ma
 Login do proprietário no navegador remoto: Play Console para canal/versão/assinatura; Supabase para backup privado do Storage; Painel para conferência autenticada e cadastro/verificação MFA da própria conta. Nunca enviar senha, segredo TOTP ou códigos no chat. Cadastro MFA produtivo não será executado pelo agente sem confirmação específica.
 
 Celular: câmera/fotos múltiplas, GPS permitido/negado, ponto manual exato, solicitação V2 recebida no Painel, atualização de status, consulta por protocolo+chave, recuperação manual autorizada, e biometria da candidata oficial depois de pacote assinado compatível. Não afirmar esses testes físicos como concluídos.
+
+## Correções após a primeira compilação
+
+O primeiro CI confirmou 21 testes candidatos aprovados, mas encontrou dois parâmetros TypeScript sem tipo na entrada Deno e avaliação inválida de versionCode no DSL Gradle. Ambos foram corrigidos antes de repetir a compilação afetada. Também foi removido o cartão antigo de chaves desabilitadas da candidata (o fluxo real de recuperação o substitui). Os jobs existentes disparados automaticamente pelo push têm sobreposição e não representam casos adicionais aos históricos. Conferir os resultados do commit corretivo para o estado final da compilação.
