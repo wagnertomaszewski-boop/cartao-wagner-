@@ -78,7 +78,8 @@ public final class MainActivity extends Activity {
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(!BuildConfig.HOMOLOGACAO);
-        settings.setDatabaseEnabled(!BuildConfig.HOMOLOGACAO);
+        if(BuildConfig.BIOMETRIA_PLAY) settings.setUserAgentString(settings.getUserAgentString()+" MandatoPainelBiometria/1");
+        settings.setDatabaseEnabled(!BuildConfig.HOMOLOGACAO && !BuildConfig.BIOMETRIA_PLAY);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
@@ -100,6 +101,7 @@ public final class MainActivity extends Activity {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 String url = uri.toString();
+                if(BuildConfig.BIOMETRIA_PLAY && request.isForMainFrame() && "mandato-painel://sair".equals(url)){biometria.invalidar();return true;}
                 if (url.startsWith(ALLOWED_PREFIX) && "https".equals(uri.getScheme()) && (!BuildConfig.CIDADAO_HML || url.startsWith(ALLOWED_PREFIX+"v2/") || url.equals(ALLOWED_PREFIX+"mandato/solicitar"))) {
                     return false;
                 }
@@ -112,6 +114,7 @@ public final class MainActivity extends Activity {
             }
             @Override public void onPageFinished(WebView view, String url) {
                 status.setVisibility(View.GONE);
+                if(biometria!=null)biometria.paginaPronta();
             }
             @Override public void onReceivedError(WebView view,
                 WebResourceRequest request, android.webkit.WebResourceError error) {

@@ -17,5 +17,5 @@ const privilegios=(await pool.query("SELECT current_user AS usuario,has_table_pr
 if(privilegios.usuario!=='mandato_api_privada'||privilegios.altera_auditoria||privilegios.cria_publico)throw Error('Papel produtivo incompatível.');
 const idsPermitidos=String(env.MANDATO_ADMIN_UIDS||'').split(',').filter(Boolean);
 const repositorio=criarRepositorio({pool,segredo:env.MANDATO_SEGREDO,emissorUid:idsPermitidos[0],storage:criarStoragePrivado({credencial:env.SUPABASE_SERVICE_ROLE_KEY})});
-const handler=criarHandlerProducao({repositorio,origemApi:new URL(config.apiBase).origin,resolverAdminMfa:criarResolvedorMfaRecente({supabaseUrl:env.SUPABASE_URL,chavePublica:env.MANDATO_PUBLISHABLE_KEY,idsPermitidos})});
+const handler=criarHandlerProducao({repositorio,origemApi:new URL(config.apiBase).origin,resolverAdminMfa:criarResolvedorMfaRecente({supabaseUrl:env.SUPABASE_URL,chavePublica:env.MANDATO_PUBLISHABLE_KEY,idsPermitidos,sessaoAtiva:async(usuarioId,sessionId)=>(await pool.query('SELECT mandato_privado.sessao_administrativa_ativa($1::uuid,$2::uuid) AS ativa',[usuarioId,sessionId])).rows[0]?.ativa===true})});
 Deno.serve(adaptarParaEdge(handler,{versao:env.MANDATO_RELEASE_SHA}));

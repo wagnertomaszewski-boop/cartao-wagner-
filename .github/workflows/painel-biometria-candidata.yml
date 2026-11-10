@@ -1,0 +1,66 @@
+name: Painel Play - candidata biometrica sem publicacao
+on:
+  push:
+    branches: [feature/recuperacao-whatsapp-manual]
+    paths:
+      - 'android-painel/app/src/playCandidato/**'
+      - 'android-painel/app/src/testPlayCandidato/**'
+      - 'android-painel/app/src/main/**'
+      - 'android-painel/app/build.gradle'
+      - '.github/workflows/painel-biometria-candidata.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  candidata:
+    if: github.ref == 'refs/heads/feature/recuperacao-whatsapp-manual'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Valor apenas para compilação isolada. Confirmar maior versionCode na Play
+      # antes de preparar uma versão assinada. Não há upload nem chave neste job.
+      PAINEL_VERSION_CODE: '4'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Preparar SDK Android
+        run: |
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$(find "$SDK/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          test -x "$SDKMANAGER"
+          "$SDKMANAGER" --install 'platforms;android-36' 'build-tools;35.0.0'
+      - name: Testar e gerar candidata sem assinatura
+        working-directory: android-painel
+        run: gradle --no-daemon :app:testPlayCandidatoUnitTest :app:bundlePlayCandidato
+      - name: Conferir mesmo pacote e permissoes isoladas
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as E,zipfile
+          manifests=[p for p in Path('android-painel/app/build/intermediates').rglob('AndroidManifest.xml') if 'playCandidato' in p.parts]
+          assert manifests
+          for p in manifests:
+              r=E.parse(p).getroot(); text=p.read_text()
+              assert r.attrib.get('package')=='br.com.wagnertomaszewski.painelmandato'
+              assert 'USE_BIOMETRIC' in text and 'USE_FINGERPRINT' in text
+              assert 'ACCESS_FINE_LOCATION' not in text and 'ACCESS_COARSE_LOCATION' not in text
+          aab=Path('android-painel/app/build/outputs/bundle/playCandidato/app-playCandidato.aab')
+          with zipfile.ZipFile(aab) as z:
+              assert not any(n.upper().startswith('META-INF/') and n.upper().endswith(('.RSA','.DSA','.EC')) for n in z.namelist()),'Candidata deveria estar sem assinatura'
+          print('Mesmo pacote; biometria nativa; sem GPS; AAB sem assinatura; nenhuma publicação.')
+          PY
+      - name: Guardar evidencias e AAB tecnico nao instalavel
+        uses: actions/upload-artifact@v4
+        with:
+          name: Painel-Play-Candidata-NAO-ASSINADA
+          path: |
+            android-painel/app/build/outputs/bundle/playCandidato/*.aab
+            android-painel/app/build/test-results/testPlayCandidatoUnitTest/*.xml
+          retention-days: 14
+          if-no-files-found: error

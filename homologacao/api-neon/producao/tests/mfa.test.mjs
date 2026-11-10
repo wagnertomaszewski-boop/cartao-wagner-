@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {criarResolvedorMfaRecente} from '../mfa.mjs';
 const uid='00000000-0000-4000-8000-000000000001',agora=1800000000000;
-const claims={sub:uid,aal:'aal2',exp:agora/1000+60,amr:[{method:'totp',timestamp:agora/1000-30},{method:'password',timestamp:agora/1000-60}]};
+const claims={sub:uid,session_id:'00000000-0000-4000-8000-000000000002',aal:'aal2',exp:agora/1000+60,amr:[{method:'totp',timestamp:agora/1000-30},{method:'password',timestamp:agora/1000-60}]};
 const jwt=c=>'cabecalho.'+Buffer.from(JSON.stringify(c)).toString('base64url')+'.assinatura-sintetica';
-const params={supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',chavePublica:'sb_publishable_sintetica',idsPermitidos:[uid],agora:()=>agora};
+const params={supabaseUrl:'https://pmmsdjozyyxkbuqlkfpb.supabase.co',chavePublica:'sb_publishable_sintetica',idsPermitidos:[uid],agora:()=>agora,sessaoAtiva:async()=>true};
 test('MFA produtivo usa AMR TOTP verificado, rejeita refresh antigo, outra identidade e horário futuro',async()=>{const resolver=criarResolvedorMfaRecente({...params,buscar:async()=>({ok:true,json:async()=>({id:uid,aud:'authenticated',is_anonymous:false})})});assert.equal((await resolver(jwt(claims))).mfaRecente,true);for(const c of [{...claims,aal:'aal1'},{...claims,amr:[{method:'totp',timestamp:agora/1000-300}]},{...claims,amr:[{method:'totp',timestamp:agora/1000+1}]},{...claims,sub:'outro'},{...claims,amr:[{method:'password',timestamp:agora/1000}]}])assert.equal((await resolver(jwt(c))).mfaRecente,false);});
 test('claims informados pelo cliente não autorizam sessão recusada ou revogada no Auth',async()=>{const resolver=criarResolvedorMfaRecente({...params,buscar:async()=>({ok:false})});assert.equal(await resolver(jwt(claims)),null);});

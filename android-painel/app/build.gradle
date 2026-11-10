@@ -15,11 +15,12 @@ android {
     defaultConfig {
         buildConfigField 'boolean', 'HOMOLOGACAO', 'false'
         buildConfigField 'boolean', 'CIDADAO_HML', 'false'
+        buildConfigField 'boolean', 'BIOMETRIA_PLAY', 'false'
         manifestPlaceholders = [appName: 'Painel do Mandato']
         applicationId 'br.com.wagnertomaszewski.painelmandato'
         minSdk 24
         targetSdk 36
-        versionCode 3
+        versionCode (System.getenv('PAINEL_VERSION_CODE') ?: '3').toInteger()
         versionName '1.1.1'
     }
     signingConfigs {
@@ -59,6 +60,15 @@ android {
         release {
             minifyEnabled false
             signingConfig signingConfigs.release
+        }
+        playCandidato {
+            initWith release
+            // Mesmo aplicativo; sem sufixo .homologacao. Não é distribuído automaticamente.
+            debuggable false
+            signingConfig null
+            versionNameSuffix '-candidata-bio'
+            buildConfigField 'boolean', 'BIOMETRIA_PLAY', 'true'
+            matchingFallbacks = ['release']
         }
     }
     sourceSets {
