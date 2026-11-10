@@ -27,6 +27,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: Selecionar somente os testes afetados
         id: escopo
+        working-directory: .
         env:
           BASE: ${{ github.event.before }}
           HEAD: ${{ github.sha }}
