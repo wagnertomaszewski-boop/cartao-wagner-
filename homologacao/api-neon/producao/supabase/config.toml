@@ -1,0 +1,5 @@
+# Somente a candidata. Não alterar configuração global ou outras funções.
+[functions.mandato-privado]
+# Cadastro/consulta por chave são públicos no transporte; o handler exige origem,
+# autorização de cada solicitação e valida JWT+TOTP nas rotas administrativas.
+verify_jwt = false

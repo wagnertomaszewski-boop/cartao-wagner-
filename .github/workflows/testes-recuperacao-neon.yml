@@ -17,10 +17,40 @@ jobs:
         working-directory: homologacao/api-neon
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: homologacao/api-neon/package-lock.json
       - run: npm ci --ignore-scripts
-      - run: npm test
+      - name: Selecionar somente os testes afetados
+        id: escopo
+        env:
+          BASE: ${{ github.event.before }}
+          HEAD: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import os,re,subprocess
+          base=os.environ.get('BASE','');head=os.environ['HEAD'];somente=False
+          if re.fullmatch('[0-9a-f]{40}',base) and base!='0'*40:
+              r=subprocess.run(['git','diff','--name-only',base,head,'--','homologacao/api-neon/','.github/workflows/testes-recuperacao-neon.yml'],capture_output=True,text=True)
+              arquivos=r.stdout.splitlines()
+              somente=r.returncode==0 and bool(arquivos) and all(p.startswith('homologacao/api-neon/producao/') or p=='.github/workflows/testes-recuperacao-neon.yml' for p in arquivos)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('somente_producao='+str(somente).lower()+'\n')
+          PY
+      - name: Testes complementares da candidata web
+        if: steps.escopo.outputs.somente_producao == 'true'
+        run: node --test producao/tests/*.test.mjs
+      - name: Runtime Deno da entrada Edge candidata
+        if: steps.escopo.outputs.somente_producao == 'true'
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Conferir entrada Edge sem conectar a producao
+        if: steps.escopo.outputs.somente_producao == 'true'
+        run: deno check --config producao/supabase/functions/mandato-privado/deno.json producao/supabase/functions/mandato-privado/index.ts
+      - name: Regressao existente quando o codigo homologado mudar
+        if: steps.escopo.outputs.somente_producao != 'true'
+        run: npm test
