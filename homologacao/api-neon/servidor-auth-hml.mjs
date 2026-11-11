@@ -126,7 +126,7 @@ export async function montar({env,pool}){
    if(path==='/hml/publico/projetos'&&req.method==='POST'){const d=await corpo(req);const lista=await conteudos.listar(false,d.p_tipo||null);return json(res,200,lista.filter(x=>!['noticia','agenda'].includes(x.tipo))),true;}
    if(path==='/hml/publico/projeto'&&req.method==='POST')return json(res,200,await conteudos.detalhe((await corpo(req)).p_id)),true;
    if(path==='/hml/cidadao/confirmar-leitura'&&req.method==='POST')return json(res,200,await gestao.confirmarLeitura(await corpo(req))),true;
-   if(path==='/hml/cidadao/arquivo/anexar'&&req.method==='POST')return json(res,200,await arquivos.anexar(await corpo(req,1500000))),true;
+   if(path==='/hml/cidadao/arquivo/anexar'&&req.method==='POST')return json(res,200,await arquivos.anexar(await corpo(req,14500000))),true;
    if(path==='/hml/cidadao/arquivo/baixar'&&req.method==='POST')return json(res,200,await arquivos.baixar(await corpo(req))),true;
    if(path==='/hml/cidadao/qr'&&req.method==='POST'){const d=await corpo(req);if(!(await fluxo.consultar(d)).encontrado)return json(res,200,{encontrado:false}),true;const destino=HML_ORIGIN+'/hml/v2/recuperar#protocolo='+encodeURIComponent(d.protocolo);const {default:QRCode}=await import('qrcode');return json(res,200,{encontrado:true,exigeChave:true,destino,qr:await QRCode.toDataURL(destino)}),true;}
    if(path==='/hml/cidadao/cadastrar'&&req.method==='POST')return json(res,200,await cadastro.cadastrar(await corpo(req))),true;
