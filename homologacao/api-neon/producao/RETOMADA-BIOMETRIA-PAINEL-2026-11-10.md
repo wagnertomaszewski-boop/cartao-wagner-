@@ -103,3 +103,13 @@ Código reproduzível: backup-storage-isolado.py; sete testes Python direcionado
 Limite preciso: esse ensaio comprova a restauração DOS ARQUIVOS no sistema de arquivos local, não a reimplantação da API Storage do Supabase nem suas políticas. Junto à restauração anterior das quatro tabelas, cobre dados e arquivos das solicitações dentro do escopo autorizado; não é backup integral do projeto Supabase, do Auth, de configurações ou do Financeiro. As capturas do banco e dos arquivos têm horários distintos e não constituem snapshot transacional único.
 
 Próximos impedimentos: sessão administrativa do Painel para conferência autenticada; MFA real da conta administrativa produtiva; assinatura/versionCode/canal e teste físico da candidata Android. A autorização para login/backup não foi tratada como autorização para publicação ou migração.
+
+## Revalidação do estado atual do MFA — preparação, sem publicação
+
+Foi identificado que claims AAL2/AMR recentes e sessão existente, sozinhos, poderiam manter uma autorização candidata após remoção do fator no estado atual do Auth. O resolvedor agora também confere fator TOTP atualmente verified na resposta autenticada de /user. Fatores ausentes, unverified, de outro tipo ou informados por user_metadata/claims do cliente não autorizam operações.
+
+Adicionalmente, a candidata recusa tokens cujo iat seja anterior ao updated_at atual da conta, bem como instantes ausentes, inválidos ou futuros. Essa regra conservadora também pode exigir autenticação novamente após atualização de perfil. Nenhum campo da conta ou fator real foi modificado. A resposta Auth é reaproveitada, com estado isolado por requisição, sem nova chamada de rede por validação e sem alterar o resolvedor compartilhado da homologação.
+
+Validação local dirigida: 10 testes aprovados, zero falhas e zero ignorados, incluindo 3 casos novos de fator removido/alteração de conta/concorrência. Esses dez incluem verificações já existentes e não devem ser somados aos 21 anteriores como casos inéditos. Suítes antigas e compilação Android não foram repetidas porque seu código não mudou. O cadastro/MFA real da conta produtiva e o teste integrado desse controle continuam pendentes do proprietário e da implantação autorizada.
+
+Ao retomar o navegador, o Painel HML carregou após a inicialização do Render e voltou a exibir o formulário de login. A conferência visual autenticada não foi concluída nesta sessão. O backup cifrado de 58 arquivos e sua restauração permanecem concluídos e preservados.
