@@ -1,6 +1,12 @@
 // Entrada para hospedagem HTTPS gerenciada, somente em homologação isolada.
 // O proxy do provedor termina TLS; este processo escuta HTTP internamente.
 import {iniciarHomologacao} from './iniciar-homologacao.mjs';
+// Atualiza os assets HML a partir das fontes versionadas a cada inicialização.
+// Evita servir telas/v2 antigas após o deploy de alterações no formulário.
+if(process.env.AUTH_HML_ATIVA==='sim'){
+ const {prepararTelas}=await import('./preparar-telas-hml.mjs');
+ await prepararTelas();
+}
 const porta=Number(process.env.PORT||10000);
 if(!Number.isInteger(porta)||porta<1||porta>65535) throw Error('PORT inválida');
 // O modo isolado não deve sequer configurar verificadores Supabase legados.
