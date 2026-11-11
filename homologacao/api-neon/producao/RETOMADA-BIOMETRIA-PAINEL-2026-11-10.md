@@ -83,3 +83,23 @@ Os erros intermediários de compilação foram corrigidos; não houve teste func
 Ainda faltam a conferência autenticada das interfaces, a cópia/restauração dos 58 arquivos privados, o MFA real do proprietário e a conferência do canal/versionCode/chave de upload na Play Console. O novo transporte biométrico Supabase ainda precisa de teste integrado e físico com o conjunto web/backend correspondente antes de distribuição. O sucesso físico anterior pertence à biometria HML, não a esta candidata.
 
 A navegação retomada alcançou a página de login do Supabase. Nenhuma credencial foi recebida no chat, nenhum fator MFA foi cadastrado e nenhuma permissão produtiva foi modificada. A aprovação final de publicação continua pendente.
+
+## Storage: pendência resolvida após login e autorização do proprietário
+
+O acesso autenticado ao Dashboard do Supabase foi confirmado. Foram baixados somente os buckets anexos-solicitacoes (54 objetos) e documentos-respostas (4 objetos), sem consultar/exportar comprovantes-financeiros ou outros aplicativos.
+
+O backup contém os bytes dos 58 objetos, caminhos originais e inventário privado. Total: 26.131.522 bytes. A origem foi conferida por tamanho e ETag: 57 MD5 simples e 1 multipart de parte única (MD5 da soma MD5 da parte). Não houve faltantes nem duplicações.
+
+O arquivo foi cifrado com OpenPGP AES-256 usando a chave de restauração produtiva já existente. O ensaio leu e decifrou o arquivo cifrado realmente salvo, restaurou os 58 objetos com os mesmos caminhos em diretório local NOVO e isolado e conferiu SHA-256 em todos. O destino temporário foi removido após a conferência. Nenhum objeto, política, usuário ou tabela produtiva foi modificado.
+
+Backup cifrado SHA-256: 5a43a95988c0fc2b2389f687a6df8f8e11b027bccb5db1d017bf065902e167fb. Relatório UTC: 2026-11-11T01:25:39.901048+00:00.
+
+Cópias persistidas:
+- Mandato-Storage-Producao-20261110.pgp — libfile_6039eb8e186c8191adea9e983814e11d.
+- Relatorio-Restauracao-Storage-20261110.json — libfile_6e1c27836c74819184f8e974f85ce286.
+
+Código reproduzível: backup-storage-isolado.py; sete testes Python direcionados aprovados, zero falhas/ignorados. Os testes cobrem restauração, adulteração, arquivos ausentes/duplicados, caminhos indevidos, bucket fora do escopo, ZIP duplicado e ETag multipart. Não foram repetidas as suítes web/Android.
+
+Limite preciso: esse ensaio comprova a restauração DOS ARQUIVOS no sistema de arquivos local, não a reimplantação da API Storage do Supabase nem suas políticas. Junto à restauração anterior das quatro tabelas, cobre dados e arquivos das solicitações dentro do escopo autorizado; não é backup integral do projeto Supabase, do Auth, de configurações ou do Financeiro. As capturas do banco e dos arquivos têm horários distintos e não constituem snapshot transacional único.
+
+Próximos impedimentos: sessão administrativa do Painel para conferência autenticada; MFA real da conta administrativa produtiva; assinatura/versionCode/canal e teste físico da candidata Android. A autorização para login/backup não foi tratada como autorização para publicação ou migração.
