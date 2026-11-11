@@ -66,3 +66,20 @@ Celular: câmera/fotos múltiplas, GPS permitido/negado, ponto manual exato, sol
 ## Correções após a primeira compilação
 
 O primeiro CI confirmou 21 testes candidatos aprovados, mas encontrou dois parâmetros TypeScript sem tipo na entrada Deno e avaliação inválida de versionCode no DSL Gradle. Ambos foram corrigidos antes de repetir a compilação afetada. Também foi removido o cartão antigo de chaves desabilitadas da candidata (o fluxo real de recuperação o substitui). Os jobs existentes disparados automaticamente pelo push têm sobreposição e não representam casos adicionais aos históricos. Conferir os resultados do commit corretivo para o estado final da compilação.
+
+## Evidências finais da compilação — 10/11/2026
+
+Código candidato: 09f36b99c4279484c84a5f4c8a0b5fe86267db61. Correções anteriores: 2b9da4e9323f7282e0e599c55537fc198f6d521d e 6100fada5017f3a19ee5277ae4c61b7848e2214f. O último ajuste corrigiu a referência do contador de callbacks e impediu que o carregamento da página invalidasse a restauração em andamento.
+
+- CI candidata web/API 42883910287: 21 aprovados, 0 falhas, 0 ignorados; `deno check` aprovado. A alteração posterior foi somente Android; a API não foi repetida. Os 10 casos locais direcionados estão contidos nesses 21 e não são somados.
+- CI Android candidato 42884296420: compilação e bundle aprovados; JUnit extraído do artefato confirma 3 testes, 0 falhas, 0 erros, 0 ignorados. Pacote e permissões conferidos, sem assinatura e sem publicação.
+- CI Android HML 42884296659: JUnit confirma 20 testes, 0 falhas, 0 erros, 0 ignorados. São os testes existentes, não 20 casos novos. APK HML não foi gerado porque não havia assinatura existente validada disponível no job.
+- Artifact Android 13796105219: `Painel-Play-Candidata-NAO-ASSINADA`, integridade ZIP verificada. SHA256 ZIP: 1f2ed5f959bb286af88df84d75e1f1ed9de7c185a7379d1797d20f78d35dcba5.
+- AAB técnico extraído: 83515 bytes, SHA256 6bcda7525cf2ddf9e37823f8b35005bcc4bd7228bc881d4015a50a64ef51185c. Não instalável diretamente e não pronto para upload assinado.
+- Overlay web regenerado fora da árvore pública, configurado para o commit 09f36b9, com cinco imagens incorporadas preservadas. Nenhum arquivo da árvore pública foi substituído. Scripts inline da V2, Painel e Agenda tiveram a sintaxe conferida.
+
+Os erros intermediários de compilação foram corrigidos; não houve teste funcional reprovado nas execuções finais acima. Essas contagens são separadas por escopo, sem somar sobreposição com as 483 verificações antigas ou entre rodadas.
+
+Ainda faltam a conferência autenticada das interfaces, a cópia/restauração dos 58 arquivos privados, o MFA real do proprietário e a conferência do canal/versionCode/chave de upload na Play Console. O novo transporte biométrico Supabase ainda precisa de teste integrado e físico com o conjunto web/backend correspondente antes de distribuição. O sucesso físico anterior pertence à biometria HML, não a esta candidata.
+
+A navegação retomada alcançou a página de login do Supabase. Nenhuma credencial foi recebida no chat, nenhum fator MFA foi cadastrado e nenhuma permissão produtiva foi modificada. A aprovação final de publicação continua pendente.
