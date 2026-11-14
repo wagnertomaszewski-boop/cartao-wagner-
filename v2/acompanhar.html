@@ -25,6 +25,11 @@ label{display:block;font-weight:700;margin:13px 0 6px;font-size:14px}input,texta
 <nav class="bottom"><a id="navInicio" href="./index.html"><b>⌂</b>Início</a><a id="navSolicitacoes" href="./solicitacao.html"><b>✎</b>Solicitações</a><a id="navEnquetes" href="./enquetes.html"><b>▥</b>Enquetes</a><a id="navNoticias" href="./noticias.html"><b>▤</b>Notícias</a></nav>
 </div>
 <script>
+// Na origem isolada, usar exclusivamente o fluxo real de homologação com protocolo e chave.
+if(location.origin==='https://mandato-neon-homologacao.onrender.com' && location.pathname.startsWith('/hml/')){
+ location.replace('/hml/v2/recuperar');
+}
+</script><script>
 const SUPABASE_URL="https://pmmsdjozyyxkbuqlkfpb.supabase.co",SUPABASE_KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 if(location.protocol==="file:"){
   const base="https://wagnertomaszewski-boop.github.io/cartao-wagner-/v2/";
