@@ -45,9 +45,15 @@ async function consultarSeguramenteV2(protocolo){
  const campo=document.getElementById('chaveConsultaAcompanharV2');
  const chave=campo.value;
  try{
-  const {criarConsultaSegura}=await import('./seguranca/consulta-segura.mjs');
-  const api=criarConsultaSegura({apiBase:API_CONSULTA_SEGURA_ACOMPANHAR_V2});
-  const dados=await api.consultar({protocolo,chave});
+  const emHomologacao=location.origin==='https://mandato-neon-homologacao.onrender.com' && location.pathname.startsWith('/hml/');
+  let dados;
+  if(emHomologacao){
+   const {criarClienteRecuperacaoManual}=await import('./seguranca/cliente-recuperacao-manual.mjs');
+   dados=await criarClienteRecuperacaoManual({origem:location.origin}).consultar({protocolo,chave});
+  }else{
+   // Fora da origem isolada, nunca consultar a base legada por protocolo.
+   throw Error('Consulta segura disponível somente na homologação isolada.');
+  }
   const s=Array.isArray(dados.resultado)?dados.resultado[0]:null;
   if(!s)throw Error('Protocolo ou chave inválidos.');
   document.getElementById('rProtocolo').textContent=protocolo;
@@ -80,7 +86,7 @@ async function consultar(){
  const res=document.getElementById("resultado"),er=document.getElementById("erro"),b=document.getElementById("consultar");
  res.classList.remove("show");er.className="notice";er.style.display="none";
  if(!p||!chave){er.className="notice err";er.textContent="Informe o protocolo e a chave individual.";er.style.display="block";return;}
- if(!API_CONSULTA_SEGURA_ACOMPANHAR_V2){er.className="notice err";er.textContent="Consulta segura indisponível nesta homologação. Nenhum dado foi exibido.";er.style.display="block";return;}
+ if(location.origin!=='https://mandato-neon-homologacao.onrender.com'||!location.pathname.startsWith('/hml/')){er.className="notice err";er.textContent="Esta versão de consulta é exclusiva da homologação isolada.";er.style.display="block";return;}
  b.disabled=true;
  try{await consultarSeguramenteV2(p)}catch(e){er.className="notice err";er.textContent="Não foi possível validar o protocolo e a chave.";er.style.display="block"}finally{b.disabled=false}
 }
