@@ -59,8 +59,9 @@ async function consultarSeguramenteV2(protocolo){
    // Fora da origem isolada, nunca consultar a base legada por protocolo.
    throw Error('Consulta segura disponível somente na homologação isolada.');
   }
-  const s=Array.isArray(dados.resultado)?dados.resultado[0]:null;
-  if(!s)throw Error('Protocolo ou chave inválidos.');
+  // A API isolada retorna {encontrado, assunto, status, ...}, não {resultado:[...]}. 
+  if(dados?.encontrado!==true)throw Error('Protocolo ou chave inválidos.');
+  const s=dados;
   document.getElementById('rProtocolo').textContent=protocolo;
   document.getElementById('rStatus').textContent=s.status||'Recebida';
   document.getElementById('rAssunto').textContent=s.assunto||'Solicitação';
@@ -74,7 +75,7 @@ async function consultarSeguramenteV2(protocolo){
   for(const item of respostasSeguras){
    const linha=document.createElement('div');
    linha.className='reply';
-   linha.textContent=String(item.texto||'');
+   linha.textContent=String(item.mensagem||item.texto||'');
    alvo.appendChild(linha);
   }
   document.getElementById('resultado').classList.add('show');
