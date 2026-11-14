@@ -135,7 +135,7 @@ export async function montar({env,pool}){
    if(path==='/hml/manual/solicitar'&&req.method==='POST')return json(res,200,await manual.solicitar(await corpo(req))),true;
    if(path==='/hml/manual/validar'&&req.method==='POST')return json(res,200,await manual.validar(await corpo(req))),true;
    const op=await exigirAdminMfa({auth,pool,headers:fromNodeHeaders(req.headers),adminEmail:env.AUTH_HML_ADMIN_EMAIL});
-   if(path==='/hml/modelo/arquivo/anexar'&&req.method==='POST')return json(res,200,await arquivos.anexar(await corpo(req,1500000),op)),true;
+   if(path==='/hml/modelo/arquivo/anexar'&&req.method==='POST')return json(res,200,await arquivos.anexar(await corpo(req,14500000),op)),true;
    if(path==='/hml/modelo/arquivo/baixar'&&req.method==='POST')return json(res,200,await arquivos.baixar(await corpo(req),op)),true;
    if(path==='/hml/conteudos/arquivo'&&req.method==='POST')return json(res,200,await midiaConteudo.anexar(op,await corpo(req,1500000))),true;
    const arquivoEditor=/^\/hml\/conteudos\/arquivo\/([0-9a-f-]{36})$/.exec(path);
