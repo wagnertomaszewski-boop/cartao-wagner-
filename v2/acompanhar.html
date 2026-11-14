@@ -40,7 +40,7 @@ async function historico(p,statusAtual){try{const r=await fetch(SUPABASE_URL+"/r
 async function respostas(p){const a=document.getElementById("rRespostas");a.innerHTML="";try{const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/consulta_publica_respostas_protocolo",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({p_protocolo:p})});const d=await r.json();if(!r.ok||!d.length){a.innerHTML='<div class="muted">Ainda não há resposta registrada.</div>';return}d.forEach(x=>{const e=document.createElement("div");e.className="reply";if(x.criado_em){const t=document.createElement("time");t.textContent=dt(x.criado_em);e.appendChild(t)}if(x.mensagem){const q=document.createElement("div");q.textContent=x.mensagem;e.appendChild(q)}ax(x.anexos).forEach(z=>{if(z&&z.url){const l=document.createElement("a");l.href=z.url;l.target="_blank";l.textContent="📎 "+(z.nome||"Abrir documento");e.appendChild(l)}});a.appendChild(e)})}catch{a.innerHTML='<div class="muted">Não foi possível carregar as respostas agora.</div>'}}
 // Caminho seguro preparado para migração, mantido DESLIGADO em homologação.
 const CONSULTA_SEGURA_ACOMPANHAR_V2_ATIVA=true;
-const API_CONSULTA_SEGURA_ACOMPANHAR_V2='';
+const API_CONSULTA_SEGURA_ACOMPANHAR_V2='https://mandato-neon-homologacao.onrender.com/';
 async function consultarSeguramenteV2(protocolo){
  const campo=document.getElementById('chaveConsultaAcompanharV2');
  const chave=campo.value;
