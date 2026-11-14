@@ -42,6 +42,11 @@ label{display:block;font-weight:700;margin:13px 0 6px;font-size:14px}input,texta
 <nav class="bottom"><a href="./index.html"><b>⌂</b>Início</a><a class="active" href="./solicitacao.html"><b>✎</b>Solicitações</a><a href="./enquetes.html"><b>▥</b>Enquetes</a><a href="./noticias.html"><b>▤</b>Notícias</a></nav>
 </div>
 <script>
+// Na origem isolada, usar exclusivamente o fluxo real de homologação com protocolo e chave.
+if(location.origin==='https://mandato-neon-homologacao.onrender.com' && location.pathname.startsWith('/hml/')){
+ location.replace('/hml/v2/solicitar');
+}
+</script><script>
 const SUPABASE_URL="https://pmmsdjozyyxkbuqlkfpb.supabase.co",SUPABASE_KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 let categoria="";document.querySelectorAll(".cat").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"));b.classList.add("active");categoria=b.dataset.cat}));
 document.getElementById("formSolicitacao").addEventListener("submit",async function(e){e.preventDefault();const btn=document.getElementById("botaoEnviar"),msg=document.getElementById("mensagem");btn.disabled=true;btn.textContent="ENVIANDO...";msg.className="notice";msg.style.display="none";try{let caminho=null;const arq=document.getElementById("anexo").files[0];if(arq){const nome=Date.now()+"-"+arq.name.replace(/[^a-zA-Z0-9._-]/g,"_");const up=await fetch(SUPABASE_URL+"/storage/v1/object/anexos-solicitacoes/"+nome,{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":arq.type},body:arq});if(!up.ok)throw new Error("Não foi possível enviar o anexo.");caminho=nome}
