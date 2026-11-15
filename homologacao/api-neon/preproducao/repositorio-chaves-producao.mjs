@@ -8,6 +8,32 @@ export function criarRepositorioChavesProducao({pool, segredoServidor}) {
   throw new Error('Configuração privada insuficiente');
  const verificar = chave => createHmac('sha256',segredoServidor).update('key:').update(chave).digest();
  return {
+  // Cadastro e chave na mesma transação: evita solicitação sem acesso privado.
+  async cadastrarComChave({nome,whatsapp,localidade,assunto,descricao,anexos=[],latitude=null,longitude=null}) {
+   if (![nome,whatsapp,localidade,assunto,descricao].every(v=>typeof v==='string'&&v.trim()) ||
+       !Array.isArray(anexos)||anexos.some(a=>typeof a!=='string') ||
+       ((latitude===null)!==(longitude===null)) ||
+       (latitude!==null&&(!Number.isFinite(latitude)||!Number.isFinite(longitude)||latitude< -90||latitude>90||longitude< -180||longitude>180)))
+     throw new Error('Dados de solicitação inválidos');
+   const chave=randomBytes(32).toString('base64url');
+   const cliente=await pool.connect();
+   try {
+    await cliente.query('BEGIN');
+    const inserida=await cliente.query(
+     'INSERT INTO public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,anexos,latitude,longitude) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id,protocolo',
+     [nome.trim(),whatsapp.trim(),localidade.trim(),assunto.trim(),descricao.trim(),anexos.length?anexos:null,latitude,longitude]);
+    const {id,protocolo}=inserida.rows[0]||{};
+    if(!id||!protocolo)throw new Error('Protocolo não gerado');
+    await cliente.query(
+     'INSERT INTO mandato_privado.chaves_acompanhamento(solicitacao_id,segredo_verificador) VALUES($1,$2)',
+     [id,verificar(chave)]);
+    await cliente.query('COMMIT');
+    return {protocolo,chave};
+   } catch(e) {
+    await cliente.query('ROLLBACK');
+    throw e;
+   } finally { cliente.release(); }
+  },
   async vincularChave({solicitacaoId, protocolo}) {
    if (!Number.isSafeInteger(solicitacaoId)||solicitacaoId<=0||typeof protocolo!=='string'||!protocolo.trim())
     throw new Error('Solicitação inválida');
