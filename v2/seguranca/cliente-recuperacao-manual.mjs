@@ -25,7 +25,7 @@ export function criarClienteRecuperacaoManual({origem,buscar=globalThis.fetch}={
 }
 export function uriWhatsappPrivada(emissao,agora=Date.now()){
  if(emissao?.envioPermitido!==true||!/^\+55[1-9][0-9]{10}$/.test(emissao.telefone)||!/^\d{6}$/.test(emissao.codigo)||typeof emissao.mensagem!=='string'||!Number.isFinite(Date.parse(emissao.expiraEm))||agora>=Date.parse(emissao.expiraEm))throw Error('Confira o destino autorizado e a validade do código.');
- return 'whatsapp://send?phone='+emissao.telefone.slice(1)+'&text='+encodeURIComponent(emissao.mensagem);
+ return 'https://api.whatsapp.com/send?phone='+emissao.telefone.slice(1)+'&text='+encodeURIComponent(emissao.mensagem);
 }
 
 export function formatarDataMandato(valor,somenteHora=false){
