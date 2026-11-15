@@ -1,6 +1,22 @@
 // Entrada para hospedagem HTTPS gerenciada, somente em homologação isolada.
 // O proxy do provedor termina TLS; este processo escuta HTTP internamente.
 import {iniciarHomologacao} from './iniciar-homologacao.mjs';
+// Gate de testes isolados: bloqueia deploy HML se a segurança básica falhar.
+if(process.env.AUTH_HML_ATIVA==='sim'){
+ const {execFileSync}=await import('node:child_process');
+ const {readdirSync}=await import('node:fs');
+ const {fileURLToPath}=await import('node:url');
+ const {join}=await import('node:path');
+ const pasta=fileURLToPath(new URL('./preproducao/',import.meta.url));
+ const testes=readdirSync(pasta).filter(nome=>nome.endsWith('.test.mjs')).sort();
+ if(testes.length===0) throw Error('Testes de pré-produção ausentes');
+ const caminhos=testes.map(nome=>join(pasta,nome));
+ const saida=execFileSync(process.execPath,['--test',...caminhos],{encoding:'utf8',timeout:30000,maxBuffer:1024*1024});
+ const resumo=saida.match(/# tests (\\d+)[\\s\\S]*?# pass (\\d+)[\\s\\S]*?# fail (\\d+)/);
+ if(!resumo || resumo[1]!==resumo[2] || resumo[3]!=='0') throw Error('Falha nos testes de pré-produção');
+ console.log('PREPRODUCAO_TESTES_OK: '+resumo[2]+' aprovados; 0 falhas');
+}
+
 // Atualiza os assets HML a partir das fontes versionadas a cada inicialização.
 // Evita servir telas/v2 antigas após o deploy de alterações no formulário.
 if(process.env.AUTH_HML_ATIVA==='sim'){
