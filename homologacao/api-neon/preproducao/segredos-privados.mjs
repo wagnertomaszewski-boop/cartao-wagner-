@@ -19,7 +19,5 @@ export function conferirVerificador(tipo, valor, esperado, secret) {
 }
 export function criarChave() { return randomBytes(32).toString('base64url'); }
 export function criarCodigoTemporario() {
-  // Rejeição uniforme não necessária: 2^32 divisível? usa randomInt com eliminação de viés internamente.
-  const { randomInt } = cryptoApi;
   return String(randomInt(0, 1000000)).padStart(6, '0');
 }
