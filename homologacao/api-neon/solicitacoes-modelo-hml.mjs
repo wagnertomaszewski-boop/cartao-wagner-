@@ -34,7 +34,7 @@ export function criarCadastroModeloHml({pool,segredo}){
  }catch(e){if(proprio)await c.query('ROLLBACK');throw e;}finally{if(proprio)c.release();}}
  return {
  async cadastrar(d){
- if(d.ficticio!==true||!['mandato','v2'].includes(d.origem)||d.p_whatsapp!=='+5551000000000'||!texto(d.p_nome,120)||!texto(d.p_assunto,160)||!texto(d.p_descricao)||!texto(d.p_localidade,160)||Object.hasOwn(d,'protocolo')||Object.hasOwn(d,'chave'))throw erro('Use somente dados fictícios e o telefone de teste indicado.');
+ if(d.ficticio!==true||!['mandato','v2'].includes(d.origem)||!(d.p_whatsapp==='+5551000000000'||(d.whatsappRealAutorizado===true&&typeof d.p_whatsapp==='string'&&/^\+55[1-9][0-9]{10}$/.test(d.p_whatsapp)))||!texto(d.p_nome,120)||!texto(d.p_assunto,160)||!texto(d.p_descricao)||!texto(d.p_localidade,160)||Object.hasOwn(d,'protocolo')||Object.hasOwn(d,'chave'))throw erro('Use dados fictícios; para testar WhatsApp real, informe número brasileiro válido e autorize seu uso na homologação.');
  if(d.latitude!=null||d.longitude!=null){if(d.localizacaoAutorizada!==true||typeof d.latitude!=='number'||typeof d.longitude!=='number'||!Number.isFinite(d.latitude)||!Number.isFinite(d.longitude)||Math.abs(d.latitude)>90||Math.abs(d.longitude)>180)throw erro('Localização inválida ou sem autorização.');}
  if(Object.hasOwn(d,'operacaoId')&&(typeof d.operacaoId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(d.operacaoId)))throw erro('Identificador de envio inválido.');
  if(d.localizacaoOrigem!=null&&!['gps','mapa'].includes(d.localizacaoOrigem))throw erro('Origem da localização inválida.');
