@@ -32,3 +32,10 @@ test('limitador nega por padrão e não consulta dados', async () => {
   assert.deepEqual(await consultar({protocolo:'2026-TESTE',chave}),{autorizado:false});
   assert.equal(consultas,0);
 });
+
+test('falha do limitador impede consulta ao banco', async () => {
+  let consultas=0;
+  const consultar=criarConsultaProtegida({buscarPorProtocolo:async()=>{consultas++;return registro;},segredoServidor:segredo,limitarTentativas:async()=>{throw new Error('indisponivel');}});
+  assert.deepEqual(await consultar({protocolo:'2026-TESTE',chave}),{autorizado:false});
+  assert.equal(consultas,0);
+});
