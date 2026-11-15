@@ -8,7 +8,7 @@ test('chaves aleatórias independentes e tamanho adequado', () => {
   assert.equal(Buffer.from(a,'base64url').length,32);
 });
 test('código temporário tem seis dígitos', () => {
-  for(let i=0;i<100;i++) assert.match(criarCodigoTemporario(), /^\\d{6}$/);
+  for(let i=0;i<100;i++) assert.match(criarCodigoTemporario(), /^[0-9]{6}$/);
 });
 test('verificador é específico por finalidade e compara sem revelar segredo', () => {
   const a=verificadorHmac('key','valor-teste',secret);
