@@ -1,12 +1,13 @@
 // Adaptador transacional para o cadastro definitivo (ainda não ativado).
 // Uso exclusivo por backend autenticado, com pool PostgreSQL privado.
 // A chave é gerada pelo backend, entregue uma única vez ao cidadão e nunca ao Painel.
-import { randomBytes, createHmac } from 'node:crypto';
+import { criarChave, verificadorHmac, verificarSegredoServidor } from './segredos-privados.mjs';
 
 export function criarRepositorioChavesProducao({pool, segredoServidor}) {
  if (!pool?.connect || typeof segredoServidor !== 'string' || Buffer.byteLength(segredoServidor)<32)
   throw new Error('Configuração privada insuficiente');
- const verificar = chave => createHmac('sha256',segredoServidor).update('key:').update(chave).digest();
+ verificarSegredoServidor(segredoServidor);
+ const verificar = chave => verificadorHmac('key',chave,segredoServidor);
  return {
   // Cadastro e chave na mesma transação: evita solicitação sem acesso privado.
   async cadastrarComChave({nome,whatsapp,localidade,assunto,descricao,anexos=[],latitude=null,longitude=null}) {
@@ -15,7 +16,7 @@ export function criarRepositorioChavesProducao({pool, segredoServidor}) {
        ((latitude===null)!==(longitude===null)) ||
        (latitude!==null&&(!Number.isFinite(latitude)||!Number.isFinite(longitude)||latitude< -90||latitude>90||longitude< -180||longitude>180)))
      throw new Error('Dados de solicitação inválidos');
-   const chave=randomBytes(32).toString('base64url');
+   const chave=criarChave();
    const cliente=await pool.connect();
    try {
     await cliente.query('BEGIN');
@@ -37,7 +38,7 @@ export function criarRepositorioChavesProducao({pool, segredoServidor}) {
   async vincularChave({solicitacaoId, protocolo}) {
    if (!Number.isSafeInteger(solicitacaoId)||solicitacaoId<=0||typeof protocolo!=='string'||!protocolo.trim())
     throw new Error('Solicitação inválida');
-   const chave=randomBytes(32).toString('base64url');
+   const chave=criarChave();
    const cliente=await pool.connect();
    try {
     await cliente.query('BEGIN');
