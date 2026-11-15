@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id);
-async function api(path,data){const r=await fetch('/hml'+path,{method:data===undefined?'GET':'POST',credentials:'same-origin',cache:'no-store',headers:data===undefined?{}:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});const v=await r.json();if(!r.ok)throw Error(v.erro||'Operação indisponível');return v;}
+async function api(path,data){let r;try{r=await fetch('/hml'+path,{method:data===undefined?'GET':'POST',credentials:'same-origin',cache:'no-store',headers:data===undefined?{}:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});}catch{throw Error('Conexão interrompida durante a operação. Não repita a aprovação: confira o estado do pedido e a auditoria antes de tentar novamente.');}const v=await r.json();if(!r.ok)throw Error(v.erro||'Operação indisponível');return v;}
 const mostrar=async fn=>{try{$('mensagem').textContent='';await fn();}catch(e){$('mensagem').textContent=e.message;}};
 let fixture=null,telefone=null,pedido=null,emissao=null,modoExpiracao=false,timer,novoPrazo;
 const confere=()=>({identidadeConferida:$('identidade').checked,telefoneConfirmado:telefone});
@@ -30,7 +30,7 @@ $('preparar').onclick=()=>mostrar(async()=>{
  if(Date.now()>=new Date(emissao.expiraEm))throw Error('Código expirado');const atual=emissao;
  await api('/manual/pedidos/'+pedido.pedidoId+'/abrir',{...confere(),desafioId:atual.desafioId});if(atual!==emissao)throw Error('Gere outro código');
  // Link somente em memória, usando URI privada do aplicativo. Sem URL pública/analytics.
- $('abrir').href='whatsapp://send?phone='+atual.telefone.slice(1)+'&text='+encodeURIComponent(atual.mensagem);$('abrir').hidden=false;
+ $('abrir').href='https://api.whatsapp.com/send?phone='+atual.telefone.slice(1)+'&text='+encodeURIComponent(atual.mensagem);$('abrir').hidden=false;
  $('mensagem').textContent='Toque no link para abrir o WhatsApp, confira o destinatário e envie manualmente. Entrega não confirmada.';
 });
 $('abrir').onclick=ev=>{if(!emissao||Date.now()>=new Date(emissao.expiraEm)){ev.preventDefault();$('mensagem').textContent='Código expirado';return;}setTimeout(()=>{$('abrir').removeAttribute('href');$('abrir').hidden=true;},0);};
