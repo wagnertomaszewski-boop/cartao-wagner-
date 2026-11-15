@@ -1,0 +1,20 @@
+name: Preproducao - testes criptograficos isolados
+on:
+  push:
+    branches: [feature/recuperacao-whatsapp-manual]
+    paths:
+      - 'homologacao/api-neon/preproducao/**'
+      - '.github/workflows/preproducao-criptografia.yml'
+  workflow_dispatch:
+jobs:
+  seguranca:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Testes isolados - sem banco ou segredos reais
+        run: node --test homologacao/api-neon/preproducao/*.test.mjs
