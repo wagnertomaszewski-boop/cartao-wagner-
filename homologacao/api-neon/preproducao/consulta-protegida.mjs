@@ -13,7 +13,9 @@ export function criarConsultaProtegida({ buscarPorProtocolo, segredoServidor, li
     const negado = { autorizado: false };
     if (!protocoloValido(protocolo) || !chaveValida(chave)) return negado;
     // O limitador deve falhar fechado em caso de erro, indisponibilidade ou excesso.
-    const permitido = await limitarTentativas({ origem, protocolo });
+    let permitido = false;
+    try { permitido = await limitarTentativas({ origem, protocolo }); }
+    catch { return negado; }
     if (permitido !== true) return negado;
     const registro = await buscarPorProtocolo(protocolo);
     if (!registro || registro.revogada_em || !registro.segredo_verificador) return negado;
