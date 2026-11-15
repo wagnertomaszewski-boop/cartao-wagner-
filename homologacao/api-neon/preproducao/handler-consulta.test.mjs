@@ -32,3 +32,16 @@ test('sem origem validada bloqueia mesmo com chave',async()=>{
  const r=await tratar({metodo:'POST',corpo:{protocolo:'2026-TESTE',chave}});
  assert.equal(r.status,403);
 });
+
+test('falha do PostgreSQL devolve 503 sem dados pessoais',async()=>{
+ const poolFalho={query:async()=>{throw Error('banco fora');}};
+ const handler=criarHandlerConsulta({pool:poolFalho,segredoServidor:segredo,obterOrigemConfiavel:()=> 'ip-confiavel'});
+ const resposta=await handler({metodo:'POST',corpo:{protocolo:'2026-TESTE',chave}});
+ assert.equal(resposta.status,503);
+ assert.equal(JSON.stringify(resposta).includes('banco fora'),false);
+});
+test('falha na identificação da origem não autoriza consulta',async()=>{
+ const handler=criarHandlerConsulta({pool,segredoServidor:segredo,obterOrigemConfiavel:()=>{throw Error('proxy inválido');}});
+ const resposta=await handler({metodo:'POST',corpo:{protocolo:'2026-TESTE',chave}});
+ assert.equal(resposta.status,403);
+});
