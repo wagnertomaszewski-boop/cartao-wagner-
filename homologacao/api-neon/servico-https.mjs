@@ -12,7 +12,7 @@ if(process.env.AUTH_HML_ATIVA==='sim'){
  if(testes.length===0) throw Error('Testes de pré-produção ausentes');
  const caminhos=testes.map(nome=>join(pasta,nome));
  const saida=execFileSync(process.execPath,['--test',...caminhos],{encoding:'utf8',timeout:30000,maxBuffer:1024*1024});
- const resumo=saida.match(/# tests (\\d+)[\\s\\S]*?# pass (\\d+)[\\s\\S]*?# fail (\\d+)/);
+ const resumo=saida.match(/# tests (\d+)[\s\S]*?# pass (\d+)[\s\S]*?# fail (\d+)/);
  if(!resumo || resumo[1]!==resumo[2] || resumo[3]!=='0') throw Error('Falha nos testes de pré-produção');
  console.log('PREPRODUCAO_TESTES_OK: '+resumo[2]+' aprovados; 0 falhas');
 }
