@@ -20,7 +20,7 @@ test('nega consulta apenas com protocolo',async()=>{
 test('permite protocolo e chave sem devolver dados pessoais',async()=>{
  const r=await tratar({metodo:'POST',corpo:{protocolo:'2026-TESTE',chave},contexto:{origemVerificada:'ip-confiavel'}});
  assert.equal(r.status,200);
- assert.deepEqual(r.corpo,{autorizado:true,solicitacaoId:123});
+ assert.deepEqual(r.corpo,{autorizado:true});
 });
 test('sem origem validada bloqueia mesmo com chave',async()=>{
  const r=await tratar({metodo:'POST',corpo:{protocolo:'2026-TESTE',chave}});
