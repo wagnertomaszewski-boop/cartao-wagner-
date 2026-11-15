@@ -15,6 +15,6 @@ export function criarHandlerConsulta({ pool, segredoServidor, obterOrigemConfiav
   const origem = obterOrigemConfiavel(contexto);
   const resultado = await consultar({ protocolo: corpo.protocolo, chave: corpo.chave, origem });
   if (!resultado.autorizado) return { status: 403, cabecalhos, corpo: { autorizado: false } };
-  return { status: 200, cabecalhos, corpo: resultado };
+  return { status: 200, cabecalhos, corpo: { autorizado: true } };
  };
 }
