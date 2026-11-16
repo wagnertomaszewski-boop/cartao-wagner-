@@ -19,7 +19,7 @@ http.createServer(async(req,res)=>{
  if(req.url==='/saude/banco'&&req.method==='GET'){
   if(!pool)return responder(res,503,{banco:'nao_configurado'});
   try {await pool.query('SELECT 1');return responder(res,200,{banco:'acessivel'});}
-  catch {return responder(res,503,{banco:'indisponivel'});}
+  catch (erro) {const codigo=String(erro?.code||'');const categoria=/^(28P01|28000)$/.test(codigo)?'autenticacao':/^(ENOTFOUND|EAI_AGAIN)$/.test(codigo)?'dns':/^(ETIMEDOUT|ECONNREFUSED|ENETUNREACH)$/.test(codigo)?'rede':/^(SELF_SIGNED_CERT_IN_CHAIN|UNABLE_TO_VERIFY_LEAF_SIGNATURE|DEPTH_ZERO_SELF_SIGNED_CERT|ERR_TLS_CERT_ALTNAME_INVALID)$/.test(codigo)?'tls':'outro';console.warn('Diagnostico banco: '+categoria+' codigo='+codigo.slice(0,30));return responder(res,503,{banco:'indisponivel',categoria});}
  }
  if(req.url!=='/api/solicitacoes')return responder(res,404,{erro:'Não encontrado'});
  if(origin!==origemPermitida)return responder(res,403,{erro:'Origem não autorizada'});
