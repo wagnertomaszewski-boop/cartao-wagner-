@@ -16,8 +16,8 @@ function permitir(ip){const agora=Date.now();if(tentativas.size>20000)tentativas
 const responder=(res,status,obj,origem)=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...(origem?{'access-control-allow-origin':origem,'vary':'Origin'}:{})});res.end(JSON.stringify(obj));};
 http.createServer(async(req,res)=>{
  const origin=req.headers.origin;
- if(req.url==='/saude'&&req.method==='GET')return responder(res,200,{servico:'mandato-api-producao',cadastro:ativo?'configurado':'bloqueado'});
- if(req.url==='/saude/configuracao'&&req.method==='GET')return responder(res,200,{conexao:diagnosticoEndereco,segredoConfigurado:!!(segredo&&Buffer.byteLength(segredo)>=32),cadastroAtivo:ativo});
+ if((req.url==='/'||req.url==='/saude')&&req.method==='GET')return responder(res,200,{servico:'mandato-api-producao',cadastro:ativo?'configurado':'bloqueado'});
+ if((req.url==='/saude/configuracao'||req.url==='/saude/configuracao/')&&req.method==='GET')return responder(res,200,{conexao:diagnosticoEndereco,segredoConfigurado:!!(segredo&&Buffer.byteLength(segredo)>=32),cadastroAtivo:ativo});
  if(req.url==='/saude/banco'&&req.method==='GET'){
   if(!pool)return responder(res,503,{banco:'nao_configurado'});
   try {await pool.query('SELECT 1');return responder(res,200,{banco:'acessivel'});}
