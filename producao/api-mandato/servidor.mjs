@@ -7,6 +7,7 @@ const origemPermitida=process.env.V2_ORIGIN||'https://wagnertomaszewski-boop.git
 const conexao=process.env.PRODUCAO_DATABASE_URL;
 const segredo=process.env.PRODUCAO_HMAC_SECRET;
 const ativo=!!(conexao&&segredo&&Buffer.byteLength(segredo)>=32&&process.env.PRODUCAO_CADASTRO_ATIVO==='sim');
+const diagnosticoEndereco=(()=>{try{const u=new URL(conexao);return {formato:u.protocol==='postgresql:'||u.protocol==='postgres:',pooler:u.hostname.endsWith('.pooler.supabase.com'),direto:u.hostname.endsWith('.supabase.co'),porta:u.port||'padrao',senhaPlaceholder:u.password.includes('YOUR-PASSWORD'),hostVazio:!u.hostname};}catch{return {formato:false,pooler:false,direto:false,porta:'invalida',senhaPlaceholder:false,hostVazio:true};}})();
 const pool=conexao&&segredo&&Buffer.byteLength(segredo)>=32?new Pool({connectionString:conexao,ssl:{rejectUnauthorized:true},max:5,connectionTimeoutMillis:5000}):null;
 const handler=ativo?criarHandlerCadastroProducao({pool,segredoServidor:segredo}):null;
 // Limite por instância; antes de habilitar produção com múltiplas instâncias, substituir por limite persistente.
@@ -16,6 +17,7 @@ const responder=(res,status,obj,origem)=>{res.writeHead(status,{'content-type':'
 http.createServer(async(req,res)=>{
  const origin=req.headers.origin;
  if(req.url==='/saude'&&req.method==='GET')return responder(res,200,{servico:'mandato-api-producao',cadastro:ativo?'configurado':'bloqueado'});
+ if(req.url==='/saude/configuracao'&&req.method==='GET')return responder(res,200,{conexao:diagnosticoEndereco,segredoConfigurado:!!(segredo&&Buffer.byteLength(segredo)>=32),cadastroAtivo:ativo});
  if(req.url==='/saude/banco'&&req.method==='GET'){
   if(!pool)return responder(res,503,{banco:'nao_configurado'});
   try {await pool.query('SELECT 1');return responder(res,200,{banco:'acessivel'});}
