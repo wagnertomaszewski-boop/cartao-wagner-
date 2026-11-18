@@ -829,6 +829,12 @@ function renderPedidosMandatoV2(){
  if(b)b.innerHTML=pedidosInformacaoV2.map(p=>make(p,true)).join('');
 }
 document.addEventListener('DOMContentLoaded',renderPedidosMandatoV2);
+// Garante que links antigos para v2/enquetes.html abram a tela funcional da V2.
+function abrirEnquetesPorLinkDiretoV2(){
+  if(window.location.hash==='#enquetes') go('enquetes');
+}
+window.addEventListener('hashchange',abrirEnquetesPorLinkDiretoV2);
+document.addEventListener('DOMContentLoaded',abrirEnquetesPorLinkDiretoV2);
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="./solicitacao-localizacao.js" defer></script>
