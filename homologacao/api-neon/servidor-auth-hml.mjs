@@ -149,7 +149,7 @@ export async function montar({env,pool}){
    if(path==='/hml/modelo/importar-legado-ficticio'&&req.method==='POST')return json(res,200,await cadastro.importarLegadoFicticio(op,await corpo(req))),true;
    if(path==='/hml/modelo/legado'&&req.method==='POST')return json(res,200,await cadastro.importarFixture(await corpo(req))),true;
    if(path==='/hml/manual/pedidos'&&req.method==='GET')return json(res,200,await manual.listar()),true;
-   if(path==='/hml/manual/fixture-pessoal'&&req.method==='POST'){const p=await manual.criarFixture(op,{...await corpo(req),testePessoal:true});return json(res,200,{id:p.id,protocolo:p.protocolo,telefoneMascarado:p.telefone.slice(0,5)+'*****'+p.telefone.slice(-4),ficticio:true}),true;}
+   if(path==='/hml/manual/fixture-pessoal'&&req.method==='POST'){const dados=await corpo(req);const p=await manual.criarFixture(op,{...dados,testePessoal:true});return json(res,200,{id:p.id,protocolo:p.protocolo,telefoneMascarado:p.telefone.slice(0,5)+'*****'+p.telefone.slice(-4),ficticio:true,...(dados.verificarChaveInicial===true?{chaveInicial:p.chaveInicial}:{})}),true;}
    if(path==='/hml/manual/fixture'&&req.method==='POST'){await corpo(req);return json(res,200,await manual.criarFixture(op)),true;}
    const auditMatch=/^\/hml\/manual\/pedidos\/([0-9a-f-]{36})\/auditoria$/.exec(path);
    if(auditMatch&&req.method==='GET')return json(res,200,await manual.auditar(auditMatch[1])),true;

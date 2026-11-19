@@ -104,6 +104,9 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
   assert.equal((await cliente.consultar({protocolo:fp.protocolo,chave:fp.chaveInicial})).encontrado,false);
   assert.ok((await cliente.auditoria(rp.pedidoId)).eventos.some(e=>e.evento==='manual_codigo_reuso_bloqueado'));
   const pessoal=await call('/manual/fixture-pessoal',{telefone:'+5551999999999',confirmacaoTelefone:'+5551999999999',autorizoMeuNumero:true});assert.equal(pessoal.status,200);assert.equal(pessoal.data.ficticio,true);assert.equal('telefone' in pessoal.data,false);assert.equal('chaveInicial' in pessoal.data,false);assert.ok(pessoal.data.telefoneMascarado.includes('*****'));assert.equal(pessoal.headers.get('cache-control'),'no-store');
+  const pessoalComChave=await call('/manual/fixture-pessoal',{telefone:'+5551999999999',confirmacaoTelefone:'+5551999999999',autorizoMeuNumero:true,verificarChaveInicial:true});
+  assert.equal(pessoalComChave.status,200);
+  assert.equal((await call('/cidadao/consultar',{protocolo:pessoalComChave.data.protocolo,chave:pessoalComChave.data.chaveInicial})).data.encontrado,true);
   await pool.query("UPDATE auth_admin_hml.mfa_sessoes SET confirmado_em=now()-interval '6 minutes'");
   assert.equal((await call('/manual/fixture-pessoal',{telefone:'+5551999999999',confirmacaoTelefone:'+5551999999999',autorizoMeuNumero:true})).status,403);
   assert.equal((await call('/manual/pedidos/'+rp.pedidoId+'/auditoria')).status,403);

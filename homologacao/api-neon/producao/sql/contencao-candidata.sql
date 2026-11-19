@@ -15,10 +15,11 @@ END $$;
 REVOKE EXECUTE ON FUNCTION public.consulta_publica_protocolo(text) FROM PUBLIC,anon,authenticated;
 REVOKE EXECUTE ON FUNCTION public.consulta_publica_historico_protocolo(text) FROM PUBLIC,anon,authenticated;
 REVOKE EXECUTE ON FUNCTION public.consulta_publica_respostas_protocolo(text) FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION public.consultar_protocolo(text) FROM PUBLIC,anon,authenticated;
 UPDATE storage.buckets SET public=false WHERE id='documentos-respostas';
 -- Não altera o bucket de conteúdo público nem permissões do Painel sobre solicitações.
 DO $$ DECLARE f regprocedure; BEGIN
- FOREACH f IN ARRAY ARRAY['public.consulta_publica_protocolo(text)'::regprocedure,'public.consulta_publica_historico_protocolo(text)'::regprocedure,'public.consulta_publica_respostas_protocolo(text)'::regprocedure] LOOP
+ FOREACH f IN ARRAY ARRAY['public.consulta_publica_protocolo(text)'::regprocedure,'public.consulta_publica_historico_protocolo(text)'::regprocedure,'public.consulta_publica_respostas_protocolo(text)'::regprocedure,'public.consultar_protocolo(text)'::regprocedure] LOOP
   IF has_function_privilege('anon',f,'EXECUTE') OR has_function_privilege('authenticated',f,'EXECUTE') THEN RAISE EXCEPTION 'Contorno de execução ainda presente';END IF;
  END LOOP;
 END $$;

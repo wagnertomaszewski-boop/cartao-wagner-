@@ -44,3 +44,17 @@ ROLLBACK;
 - Nenhuma chave, número de telefone ou documento é registrado em logs.
 - Painel administrativo continua funcional com autorização de servidor.
 - Rotas de envio de solicitações, agenda e projetos continuam funcionando.
+
+## Inventário reconfirmado em 19/11/2026
+
+| Caminho | Dependência e impacto |
+| --- | --- |
+| Mandato em Ação legado | `acompanhar.html` ainda chama a RPC de resumo sem chave. O acompanhamento legado deixa de funcionar se a RPC for revogada antes da atualização do cliente. Confirmar a versão efetivamente entregue pelo aplicativo Android antes da transição. |
+| V2 | `v2/index.html` e os snapshots `app-v2-1422.html`, `app-v2-1708.html` e `app-v2-1718.html` contêm chamadas legadas. No host isolado o V2 encaminha para `/hml/v2/recuperar`. A página dedicada `v2/acompanhar.html` exige chave e teve as funções legadas inativas removidas no código. |
+| Painel | Os caminhos administrativos leem tabelas sob políticas administrativas ou usam endpoints autenticados. O Painel de recuperação isolado exige sessão e MFA recente para as operações de recuperação. |
+| API | A consulta de homologação usa protocolo e chave sobre o Neon. A API isolada `mandato-api-producao` ainda não integra o fluxo completo de consulta e recuperação. O backend candidato consultado no ensaio usa dados fictícios. |
+| Supabase | A leitura anônima direta das tabelas de solicitações, status, respostas e fiscalização está desabilitada e a RLS está ativa. As quatro RPCs SECURITY DEFINER têm EXECUTE efetivo para anon e authenticated. O bucket `documentos-respostas` está público e requer transição separada para downloads autenticados, inclusive para links antigos. |
+
+Os scripts de contenção foram ensaiados no PostgreSQL local com funções e dados fictícios. O ensaio preserva a consulta pelo papel privado explícito no rascunho e o bucket de conteúdo público no ensaio candidato. Antes de aplicar em produção, validar a versão publicada dos aplicativos, acesso a respostas e anexos para cidadãos com chave, rotas do Painel e emissão de chave para solicitações antigas.
+
+Em caso de indisponibilidade durante a transição, colocar o acompanhamento afetado em manutenção ou retornar a uma versão com autenticação equivalente. Manter a revogação das RPCs públicas e o bucket de documentos privado após a contenção. Consultar o [procedimento de migração e reversão](PROCEDIMENTO-MIGRACAO-REVERSAO-PRODUCAO.md).

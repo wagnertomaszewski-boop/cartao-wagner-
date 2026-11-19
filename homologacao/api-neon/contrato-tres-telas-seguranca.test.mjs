@@ -3,10 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {criarConsultaSegura} from '../../v2/seguranca/consulta-segura.mjs';
 
-// Contrato compartilhado das três telas, antes da ativação em produção.
+// Contrato compartilhado das telas legadas, antes da ativação em produção.
 const paginas=[
  ['v2/index.html','SEGURANCA_V2_ATIVA','API_SEGURANCA_V2','./seguranca/consulta-segura.mjs'],
- ['v2/acompanhar.html','CONSULTA_SEGURA_ACOMPANHAR_V2_ATIVA','API_CONSULTA_SEGURA_ACOMPANHAR_V2','./seguranca/consulta-segura.mjs'],
  ['acompanhar.html','CONSULTA_SEGURA_LEGADO_ATIVA','API_CONSULTA_SEGURA_LEGADO','./v2/seguranca/consulta-segura.mjs']
 ];
 for(const [pagina,flag,api,modulo] of paginas){

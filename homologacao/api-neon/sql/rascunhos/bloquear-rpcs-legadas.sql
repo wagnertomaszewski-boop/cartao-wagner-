@@ -12,5 +12,18 @@ END $$;
 REVOKE EXECUTE ON FUNCTION public.consulta_publica_protocolo(text) FROM PUBLIC,anon,authenticated;
 REVOKE EXECUTE ON FUNCTION public.consulta_publica_historico_protocolo(text) FROM PUBLIC,anon,authenticated;
 REVOKE EXECUTE ON FUNCTION public.consulta_publica_respostas_protocolo(text) FROM PUBLIC,anon,authenticated;
+REVOKE EXECUTE ON FUNCTION public.consultar_protocolo(text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.consulta_publica_protocolo(text),public.consulta_publica_historico_protocolo(text),public.consulta_publica_respostas_protocolo(text) TO mandato_api_privada;
+DO $$ DECLARE f regprocedure; BEGIN
+ FOREACH f IN ARRAY ARRAY[
+  'public.consulta_publica_protocolo(text)'::regprocedure,
+  'public.consulta_publica_historico_protocolo(text)'::regprocedure,
+  'public.consulta_publica_respostas_protocolo(text)'::regprocedure,
+  'public.consultar_protocolo(text)'::regprocedure
+ ] LOOP
+  IF has_function_privilege('anon',f,'EXECUTE') OR has_function_privilege('authenticated',f,'EXECUTE') THEN
+   RAISE EXCEPTION 'Permissão pública de consulta ainda presente';
+  END IF;
+ END LOOP;
+END $$;
 COMMIT;
