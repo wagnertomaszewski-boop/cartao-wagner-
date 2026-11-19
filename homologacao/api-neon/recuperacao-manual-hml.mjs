@@ -60,8 +60,9 @@ export function criarRecuperacaoManualHml({pool,segredo,telefoneTeste=null,agora
    const p=await obter(c,id);conferir(p,d);
    if(p.situacao!=='aprovado'||p.decidido_por!==op.usuarioId||p.consumido_em)throw erro(403,'Aprovação vinculada necessária');
    if(p.emissoes>=3)throw erro(429,'Limite de emissões atingido');
-   if(p.emitido_em&&agora()-new Date(p.emitido_em).getTime()<60000)throw erro(429,'Aguarde um minuto antes de gerar outro código');
-   const emitidoEm=agora(),codigo=gerarCodigo(),desafioId=randomUUID(),expiraEm=new Date(emitidoEm+300000).toISOString();
+   const emitidoEm=agora();
+   if(p.codigo_hash&&new Date(p.expira_em).getTime()>emitidoEm)throw erro(429,'Já existe um código vigente. Aguarde o vencimento antes de gerar outro');
+   const codigo=gerarCodigo(),desafioId=randomUUID(),expiraEm=new Date(emitidoEm+300000).toISOString();
    if(!/^\d{6}$/.test(codigo))throw Error('Gerador inválido');
    await c.query('UPDATE auth_admin_hml.recuperacoes_manuais SET desafio_id=$2,codigo_hash=$3,expira_em=$4,emitido_em=$5,emissoes=emissoes+1,tentativas=0 WHERE id=$1',[id,desafioId,hash(desafioId,codigo),expiraEm,new Date(emitidoEm).toISOString()]);
    await audit(c,'manual_codigo_gerado',op,id);

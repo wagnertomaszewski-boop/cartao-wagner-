@@ -3,7 +3,23 @@ const uuid=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 export function normalizarTelefone(valor){let n=String(valor||'').replace(/[^0-9]/g,'');if(n.length===11)n='55'+n;if(!/^55[1-9][0-9]{10}$/.test(n))throw Error('Informe o telefone cadastrado com DDD.');return '+'+n;}
 export function criarClienteRecuperacaoManual({origem,buscar=globalThis.fetch}={}){
  if(origem!==ORIGEM_HML)throw Error('Recuperação disponível somente na homologação.');
- async function enviar(path,data,admin=false){const r=await buscar(origem+'/hml'+path,{method:data===undefined?'GET':'POST',credentials:admin?'same-origin':'omit',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(15000),headers:data===undefined?{}:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});let v;try{v=await r.json();}catch{throw Error('Serviço indisponível. Tente novamente.');}if(!r.ok){if(r.status===401||r.status===403)throw Error(admin?'Entre e confirme novamente o MFA para esta operação.':'Protocolo ou chave inválidos, ou acesso não autorizado.');if(r.status===409)throw Error('Os dados mudaram ou a operação já foi registrada. Recarregue antes de repetir.');if(r.status===429)throw Error('Limite de tentativas atingido. Aguarde antes de tentar novamente.');throw Error('Não foi possível concluir. Confira os dados e tente novamente.');}return v;}
+ async function enviar(path,data,admin=false){
+  const confirmaMutacao=/^\/manual\/pedidos\/[^/]+\/(decidir|emitir|abrir)$/.test(path);
+  const indisponivel=()=>Error(confirmaMutacao
+   ?'Não foi possível confirmar o resultado. Atualize os pedidos e confira o estado e a auditoria antes de repetir.'
+   :'Serviço indisponível. Tente novamente.');
+  let resposta,resultado;
+  try{
+   resposta=await buscar(origem+'/hml'+path,{method:data===undefined?'GET':'POST',credentials:admin?'same-origin':'omit',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(15000),headers:data===undefined?{}:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});
+   resultado=await resposta.json();
+  }catch{throw indisponivel();}
+  if(resposta.ok)return resultado;
+  if(resposta.status>=500&&confirmaMutacao)throw indisponivel();
+  if(resposta.status===401||resposta.status===403)throw Error(admin?'Entre e confirme novamente o MFA para esta operação.':'Protocolo ou chave inválidos, ou acesso não autorizado.');
+  if(resposta.status===409)throw Error('Os dados mudaram ou a operação já foi registrada. Recarregue antes de repetir.');
+  if(resposta.status===429)throw Error('Limite de tentativas atingido. Aguarde antes de tentar novamente.');
+  throw Error('Não foi possível concluir. Confira os dados e tente novamente.');
+ }
  const protocolo=p=>{if(typeof p!=='string'||p.trim().length<1||p.trim().length>80||/[\x00-\x1f\x7f]/.test(p))throw Error('Informe um protocolo válido.');return p.trim();};
  const id=p=>{if(!uuid.test(String(p)))throw Error('Pedido inválido.');return p;};
  return {

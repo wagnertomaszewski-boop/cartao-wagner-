@@ -70,11 +70,35 @@ test('HTTP com Postgres: login, cadastro TOTP, prova de sessão, aprovação aud
   assert.equal((await call('/cidadao/consultar',{protocolo:fixture.protocolo})).data.encontrado,false);
   assert.equal((await call('/manual/fixture-pessoal',{})).status,400);
   // Mesmo cliente usado nas telas definitivas, contra HTTP + autenticação TOTP reais.
-  const cliente=criarClienteRecuperacaoManual({origem:HML_ORIGIN,buscar:(endpoint,opcoes)=>fetch(url+new URL(endpoint).pathname,{...opcoes,headers:{...opcoes.headers,Origin:HML_ORIGIN,...(opcoes.credentials==='same-origin'?{cookie:[...jar].map(([k,v])=>k+'='+v).join('; ')}:{})}})});
+  let perderResposta;
+  const cliente=criarClienteRecuperacaoManual({origem:HML_ORIGIN,buscar:async(endpoint,opcoes)=>{
+   const path=new URL(endpoint).pathname;
+   const resposta=await fetch(url+path,{...opcoes,headers:{...opcoes.headers,Origin:HML_ORIGIN,...(opcoes.credentials==='same-origin'?{cookie:[...jar].map(([k,v])=>k+'='+v).join('; ')}:{})}});
+   if(perderResposta&&path.endsWith(perderResposta)){
+    perderResposta=null;
+    assert.equal(resposta.status,200);
+    await resposta.text();
+    throw new TypeError('Failed to fetch');
+   }
+   return resposta;
+  }});
   const fp=(await call('/manual/fixture',{})).data;
   const rp=await cliente.solicitar({protocolo:fp.protocolo,telefone:fp.telefone});
   const cf={identidadeConferida:true,telefoneConfirmado:fp.telefone,justificativa:'Identidade fictícia conferida para o teste do cliente definitivo.',decisao:'aprovar'};
-  await cliente.decidir(rp.pedidoId,cf);const ec=await cliente.emitir(rp.pedidoId,cf);
+  perderResposta='/decidir';
+  await assert.rejects(cliente.decidir(rp.pedidoId,cf),/confira o estado e a auditoria/);
+  assert.equal((await cliente.listar()).pedidos.find(p=>p.id===rp.pedidoId).situacao,'aprovado');
+  await assert.rejects(cliente.decidir(rp.pedidoId,cf),/já foi registrada/);
+  assert.equal((await cliente.auditoria(rp.pedidoId)).eventos.filter(e=>e.evento==='manual_aprovacao').length,1);
+  perderResposta='/emitir';
+  await assert.rejects(cliente.emitir(rp.pedidoId,cf),/confira o estado e a auditoria/);
+  const estadoCodigo=(await cliente.listar()).pedidos.find(p=>p.id===rp.pedidoId);
+  assert.equal(estadoCodigo.codigoSituacao,'vigente');
+  assert.equal(estadoCodigo.emissoes,1);
+  await assert.rejects(cliente.emitir(rp.pedidoId,cf),/Limite/);
+  assert.equal((await cliente.auditoria(rp.pedidoId)).eventos.filter(e=>e.evento==='manual_codigo_gerado').length,1);
+  await pool.query("UPDATE auth_admin_hml.recuperacoes_manuais SET expira_em=now()-interval '1 second' WHERE id=$1",[rp.pedidoId]);
+  const ec=await cliente.emitir(rp.pedidoId,cf);
   const vc=await cliente.validar({...rp,codigo:ec.codigo});assert.equal(vc.confirmado,true);assert.equal((await cliente.validar({...rp,codigo:ec.codigo})).confirmado,false);
   assert.equal((await cliente.consultar({protocolo:fp.protocolo,chave:vc.novaChave})).encontrado,true);
   assert.equal((await cliente.consultar({protocolo:fp.protocolo,chave:fp.chaveInicial})).encontrado,false);
