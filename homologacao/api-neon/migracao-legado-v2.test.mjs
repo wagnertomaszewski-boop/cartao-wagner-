@@ -8,8 +8,8 @@ test('a interface pública mantém nova consulta segura desligada até migraçã
  assert.match(html,/const SEGURANCA_V2_ATIVA=false;/);
  assert.match(html,/const API_SEGURANCA_V2='';/);
 });
-test('o caminho legado de consulta continua identificável para migração sem interrupção',()=>{
- assert.match(html,/rest\/v1\/rpc\/consulta_publica_protocolo/);
+test('a consulta sem chave nunca usa as RPCs legadas',()=>{
+ assert.doesNotMatch(html,/consulta_publica_(?:protocolo|historico_protocolo|respostas_protocolo)|consultar_protocolo/);
  assert.match(html,/if\(SEGURANCA_V2_ATIVA\)/);
 });
 test('consulta nova exige chave e apaga seu valor depois da tentativa',()=>{

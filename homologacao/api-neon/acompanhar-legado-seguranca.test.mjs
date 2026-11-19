@@ -12,7 +12,7 @@ test('consulta preparada exige cliente HTTPS e chave secreta, sem revelar locali
  assert.match(pagina,/rLocalidade'\)\.textContent = 'Protegida'/);
  assert.match(pagina,/chaveSeguraLegado'\)\.value = ''/);
 });
-test('consulta antiga só é alcançada enquanto nova integração não estiver habilitada',()=>{
+test('acompanhamento entra em manutenção quando a consulta segura está desabilitada',()=>{
  assert.match(pagina,/if \(CONSULTA_SEGURA_LEGADO_ATIVA\) \{\s*await consultarSeguramenteLegado\(protocolo\);\s*return;/);
- assert.match(pagina,/rpc\/consulta_publica_protocolo/);
+ assert.doesNotMatch(pagina,/consulta_publica_(?:protocolo|historico_protocolo|respostas_protocolo)|consultar_protocolo/);
 });

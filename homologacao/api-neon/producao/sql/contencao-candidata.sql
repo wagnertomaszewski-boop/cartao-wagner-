@@ -5,12 +5,29 @@ DO $$ DECLARE v text; BEGIN
  OR current_setting('mandato.backend_privado_validado',true) IS DISTINCT FROM 'sim'
  THEN RAISE EXCEPTION 'Contenção não autorizada ou backend não validado'; END IF;
  -- Nova consulta precisa estar presente; não trocar leitura por indisponibilidade silenciosa.
- IF to_regclass('mandato_privado.chaves_acompanhamento') IS NULL THEN RAISE EXCEPTION 'Estrutura privada ausente'; END IF;
+ IF to_regclass('mandato_privado.pedidos_recuperacao') IS NULL OR
+    to_regclass('mandato_privado.codigos_recuperacao') IS NULL OR
+    to_regclass('mandato_privado.auditoria_recuperacao') IS NULL OR
+    to_regclass('mandato_privado.arquivos') IS NULL OR NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema='mandato_privado' AND table_name='chaves_acompanhamento'
+        AND column_name='segredo_verificador' AND udt_name='bytea'
+    ) THEN
+  RAISE EXCEPTION 'Contrato de consulta e recuperação privada incompatível';
+ END IF;
+ IF NOT EXISTS (SELECT 1 FROM pg_class WHERE oid='storage.objects'::regclass AND relrowsecurity) THEN
+  RAISE EXCEPTION 'RLS de Storage ausente';
+ END IF;
+ IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id='documentos-respostas') THEN
+  RAISE EXCEPTION 'Bucket de respostas ausente';
+ END IF;
  -- Reutiliza exatamente a restrição administrativa já existente nos documentos.
  SELECT qual INTO v FROM pg_policies WHERE schemaname='storage' AND tablename='objects'
  AND policyname='admin atualiza documentos de resposta' AND roles=ARRAY['authenticated']::name[];
  IF v IS NULL THEN RAISE EXCEPTION 'Política administrativa original não conferida'; END IF;
- EXECUTE format('CREATE POLICY documentos_resposta_leitura_admin ON storage.objects FOR SELECT TO authenticated USING (%s)',v);
+ EXECUTE format('CREATE POLICY documentos_resposta_leitura_admin ON storage.objects FOR SELECT TO authenticated USING (bucket_id = %L AND (%s))','documentos-respostas',v);
+ -- Uma política permissiva futura de outro fluxo não pode reabrir este bucket.
+ EXECUTE format('CREATE POLICY documentos_resposta_leitura_restrita ON storage.objects AS RESTRICTIVE FOR SELECT TO PUBLIC USING (bucket_id <> %L OR (%s))','documentos-respostas',v);
 END $$;
 REVOKE EXECUTE ON FUNCTION public.consulta_publica_protocolo(text) FROM PUBLIC,anon,authenticated;
 REVOKE EXECUTE ON FUNCTION public.consulta_publica_historico_protocolo(text) FROM PUBLIC,anon,authenticated;

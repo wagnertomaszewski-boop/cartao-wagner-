@@ -56,20 +56,7 @@ async function testar(){
     set("auth", false, "Servidor de autenticação: FALHOU\n"+e.name+": "+e.message);
   }
 
-  try{
-    const r=await fetchComTempo(URL+"/rest/v1/rpc/consulta_publica_protocolo",{
-      method:"POST",
-      headers:{
-        "apikey":KEY,
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({p_protocolo:"TESTE-CONEXAO-000"})
-    });
-    const txt=await r.text();
-    set("api", r.ok, "Banco de solicitações: HTTP "+r.status+"\n"+txt.slice(0,500));
-  }catch(e){
-    set("api", false, "Banco de solicitações: FALHOU\n"+e.name+": "+e.message);
-  }
+  set("api", false, "A consulta de solicitações exige protocolo e chave individual.");
 }
 testar();
 </script>
