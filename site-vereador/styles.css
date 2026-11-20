@@ -22,3 +22,7 @@
 @media(max-width:840px){.screen-primary{width:235px;height:468px;left:calc(50% - 160px)}.screen-secondary{width:215px;height:444px;left:calc(50% + 25px);top:78px}.real-app-showcase{height:550px;min-height:550px}}
 @media(max-width:650px){.real-app-showcase{height:500px;min-height:500px;margin-top:5px}.real-app-showcase .app-halo{width:330px;height:330px;left:calc(50% - 165px);top:calc(50% - 165px)}.screen-primary{width:224px;height:446px;left:calc(50% - 153px);top:14px;border-width:6px;border-radius:29px}.screen-secondary{width:202px;height:421px;left:calc(50% + 20px);top:43px;border-width:6px;border-radius:29px}.screen-label{bottom:0;font-size:10px}}
 @media(max-width:380px){.screen-primary{width:210px;height:420px;left:calc(50% - 149px)}.screen-secondary{width:188px;height:396px;left:calc(50% + 15px)}.real-app-showcase{height:476px;min-height:476px}}
+
+/* V5: cartões de atuação navegáveis e acessíveis */
+.work-card h3 a{color:inherit;text-decoration:none;transition:color .2s ease}
+.work-card h3 a:hover,.work-card h3 a:focus-visible{color:#087c6a;text-decoration:underline;text-underline-offset:3px}
