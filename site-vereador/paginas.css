@@ -113,3 +113,14 @@
 }
 @media(max-width:380px){.innovation-strip{grid-template-columns:1fr}.innovation-strip img{display:none}}
 @media(prefers-reduced-motion:reduce){.account-detail summary span{transition:none}}
+
+
+/* V7 — notícias com documentos e histórico editorial */
+.news-updates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px;margin-top:24px}
+.news-update{display:flex;flex-direction:column}
+.news-update h3{font-size:1.27rem;line-height:1.32;letter-spacing:-.025em;margin-top:15px}
+.news-update p{font-size:.91rem;line-height:1.64}
+.news-update .source-link{margin-top:auto!important;padding-top:17px}
+.news-secondary{display:inline-block;font-weight:800;font-size:.82rem;margin-top:15px;text-underline-offset:4px}
+@media(max-width:920px){.news-updates{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.news-updates{grid-template-columns:1fr;gap:12px}.news-update{padding:20px}}
