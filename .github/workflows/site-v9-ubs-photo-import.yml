@@ -1,0 +1,34 @@
+name: Importar foto UBS Xavier (temporario)
+on:
+  push:
+    branches:
+      - site-v9-ubs-xavier-foto-real
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  importar-foto:
+    if: "!contains(github.event.head_commit.message, '[skip ubs-photo]')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: site-v9-ubs-xavier-foto-real
+      - name: Baixar a foto enviada para o site
+        env:
+          UBS_PHOTO_URL: 'https://d2jqrm6oza8nb6.cloudfront.net/datasets/858952fc-8169-47d2-b59c-827b24030dc7.jpg?_jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlIYXNoIjoiMTA2YWU4NTczYjI5OWQ2MCIsImJ1Y2tldCI6InJ1bndheS1kYXRhc2V0cyIsInN0YWdlIjoicHJvZCIsImV4cCI6MTc5NTMwNDE1MX0.MadpFmCIKEJIye0jmh_NWXlfcZqAv4NvLXkVZiPw4qU'
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 2 --max-time 120 "$UBS_PHOTO_URL" -o site-vereador/assets/ubs-xavier-tomaszewski.jpg
+          test "$(stat -c '%s' site-vereador/assets/ubs-xavier-tomaszewski.jpg)" -gt 100000
+          file --mime-type site-vereador/assets/ubs-xavier-tomaszewski.jpg | grep -q 'image/jpeg'
+      - name: Guardar fotografia no repositorio
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site-vereador/assets/ubs-xavier-tomaszewski.jpg
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "site: adicionar foto original da UBS Xavier [skip ubs-photo]"
+          git push origin HEAD:site-v9-ubs-xavier-foto-real
