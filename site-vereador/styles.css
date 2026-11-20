@@ -31,3 +31,16 @@
 a:focus-visible,button:focus-visible{outline:3px solid #c48d0a;outline-offset:4px}.screen-device img{object-fit:cover}
 @media(max-width:650px){.screen-primary{left:calc(50% - 149px)}.screen-secondary{width:190px;left:calc(50% - 25px)}}
 @media(max-width:380px){.screen-secondary{width:176px;left:calc(50% - 20px)}}
+
+/* V5.1 — assinatura editorial da frase "Juntos por um Cristal melhor" */
+.signature{display:flex;flex-direction:column;align-items:flex-start;gap:4px;margin-top:27px;padding-top:13px}
+.signature .signature-prefix{display:block;color:#617886;font-size:12px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;line-height:1.5}
+.signature .signature-lockup{display:flex;align-items:center;gap:12px;max-width:100%;min-width:0}
+.signature .signature-city{color:#12324a;font-family:'Manrope',system-ui,-apple-system,sans-serif;font-size:clamp(28px,3vw,37px);font-weight:850;letter-spacing:-.055em;line-height:1}
+.signature img.signature-word{display:block;width:clamp(145px,17vw,192px);height:auto;max-width:100%;flex-shrink:1;filter:brightness(.82) saturate(1.12);transform:translateY(3px)}
+@media(max-width:650px){
+.signature{margin-top:21px;padding-top:5px}
+.signature .signature-lockup{gap:9px}
+.signature .signature-city{font-size:clamp(26px,7vw,34px)}
+.signature img.signature-word{width:clamp(132px,39vw,177px)}
+}
