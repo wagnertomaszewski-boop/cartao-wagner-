@@ -44,3 +44,25 @@ a:focus-visible,button:focus-visible{outline:3px solid #c48d0a;outline-offset:4p
 .signature .signature-city{font-size:clamp(26px,7vw,34px)}
 .signature img.signature-word{width:clamp(132px,39vw,177px)}
 }
+
+
+/* V6 — atalhos claros entre a apresentação e as atividades do mandato */
+.quick-section{background:#fff;border-bottom:1px solid #e7eef0;padding:24px 0 28px}
+.quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.quick-card{display:flex;align-items:center;gap:14px;padding:18px 16px;min-width:0;border:1px solid #e0ece8;border-radius:16px;background:#f8fbfa;color:#173b4c;text-decoration:none;transition:box-shadow .2s,transform .2s,border-color .2s}
+.quick-card:hover{transform:translateY(-3px);border-color:#8bd8b6;box-shadow:0 12px 25px #0a3b3230}
+.quick-icon{height:42px;width:42px;border-radius:12px;flex-shrink:0;display:grid;place-items:center;background:#e0f6eb;color:#087954;font-size:22px;font-weight:800}
+.quick-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.quick-copy strong{font-size:13px;font-weight:800;line-height:1.35}
+.quick-copy small{font-size:11px;line-height:1.48;color:#59707d}
+.quick-arrow{margin-left:auto;flex-shrink:0;align-self:flex-start;color:#15815c;font-size:18px}
+@media(max-width:1000px) and (min-width:651px){
+.quick-grid{gap:9px}.quick-card{gap:9px;padding:13px 10px}.quick-icon{width:34px;height:34px;font-size:18px}.quick-copy small{font-size:10px}
+}
+@media(max-width:650px){
+.quick-section{padding:17px 0}.quick-grid{grid-template-columns:1fr;gap:9px}
+.quick-card{padding:12px 14px;border-radius:13px}
+.quick-icon{width:37px;height:37px;font-size:20px}.quick-copy strong{font-size:13px}
+.quick-copy small{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.quick-card{transition:none}.quick-card:hover{transform:none}}
