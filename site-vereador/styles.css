@@ -66,3 +66,18 @@ a:focus-visible,button:focus-visible{outline:3px solid #c48d0a;outline-offset:4p
 .quick-copy small{font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){.quick-card{transition:none}.quick-card:hover{transform:none}}
+
+
+/* V7 — publicações e situação verificável dos projetos na página inicial */
+.home-transparency{background:#f5faf8;border:1px solid #dbe8e4;border-radius:19px;padding:24px;margin-top:24px}
+.home-transparency-top{display:flex;align-items:end;justify-content:space-between;gap:18px}
+.home-transparency-top h3{font-size:clamp(20px,2.6vw,27px);color:#0b3143;margin:5px 0 14px;letter-spacing:-.035em}
+.home-transparency-top>a{color:#04745f;font-weight:800;text-decoration:underline;text-underline-offset:4px;font-size:13px;white-space:nowrap;margin-bottom:18px}
+.home-transparency-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.home-transparency-grid a{display:flex;flex-direction:column;gap:6px;padding:17px;background:#fff;border:1px solid #deebe7;border-radius:13px;text-decoration:none;min-width:0;transition:box-shadow .15s,border-color .15s}
+.home-transparency-grid a:hover{border-color:#70b8a0;box-shadow:0 8px 20px #092b301b}
+.home-transparency-grid span{font-size:10px;color:#0e765e;font-weight:900;letter-spacing:.08em}
+.home-transparency-grid strong{font-size:15px;line-height:1.3;color:#0b3143}
+.home-transparency-grid small{font-size:12px;line-height:1.45;color:#57727e}
+@media(max-width:760px){.home-transparency{padding:16px}.home-transparency-top{display:block}.home-transparency-top>a{display:inline-block;margin-bottom:15px}.home-transparency-grid{grid-template-columns:1fr}.home-transparency-grid a{padding:14px 16px}}
+@media(prefers-reduced-motion:reduce){.home-transparency-grid a{transition:none}}
