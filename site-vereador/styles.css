@@ -26,3 +26,8 @@
 /* V5: cartões de atuação navegáveis e acessíveis */
 .work-card h3 a{color:inherit;text-decoration:none;transition:color .2s ease}
 .work-card h3 a:hover,.work-card h3 a:focus-visible{color:#087c6a;text-decoration:underline;text-underline-offset:3px}
+
+/* V5: foco visível para acessibilidade */
+a:focus-visible,button:focus-visible{outline:3px solid #c48d0a;outline-offset:4px}.screen-device img{object-fit:cover}
+@media(max-width:650px){.screen-primary{left:calc(50% - 149px)}.screen-secondary{width:190px;left:calc(50% - 25px)}}
+@media(max-width:380px){.screen-secondary{width:176px;left:calc(50% - 20px)}}
