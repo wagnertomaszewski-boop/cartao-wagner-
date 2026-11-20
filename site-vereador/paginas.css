@@ -142,3 +142,9 @@
 .account-links{display:flex;flex-direction:column;gap:6px}
 @media(max-width:760px){.account-photo img{height:clamp(198px,54vw,290px)}.account-photo-jumps{font-size:.78rem;gap:6px}.account-photo-jumps a{padding:6px 9px}}
 @media(prefers-reduced-motion:reduce){.account-photo img{transition:none}.account-photo a:hover img{transform:none}}
+
+
+/* V9 — fachada e placa da UBS de Alto Alegre no registro público */
+.account-photo-wide img{height:clamp(175px,21vw,270px);object-fit:cover;object-position:center 47%}
+.account-photo-wide figcaption{font-size:.77rem}
+@media(max-width:760px){.account-photo-wide img{height:clamp(200px,56vw,310px)}}
