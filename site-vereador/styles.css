@@ -143,3 +143,10 @@ a:focus-visible,button:focus-visible{outline:3px solid #c48d0a;outline-offset:4p
 .equipment-compact .equipment-copy{padding:17px}
 }
 @media(prefers-reduced-motion:reduce){.equipment-photo img{transition:none}.equipment-photo:hover img{transform:none}}
+
+
+/* V9 — fotografia real da UBS Xavier na vitrine da página inicial */
+.home-transparency-grid .home-record-with-photo{padding:10px 10px 15px;gap:6px}
+.home-record-with-photo img{width:100%;height:156px;object-fit:cover;object-position:center 48%;border-radius:9px;margin:0 0 7px;display:block}
+.home-transparency-grid .home-record-with-photo>span,.home-transparency-grid .home-record-with-photo>strong,.home-transparency-grid .home-record-with-photo>small{margin-left:6px;margin-right:6px}
+@media(max-width:760px){.home-record-with-photo img{height:clamp(160px,52vw,260px)}}
