@@ -148,3 +148,19 @@
 .account-photo-wide img{height:clamp(175px,21vw,270px);object-fit:cover;object-position:center 47%}
 .account-photo-wide figcaption{font-size:.77rem}
 @media(max-width:760px){.account-photo-wide img{height:clamp(200px,56vw,310px)}}
+
+
+/* V9 — apresentação do Prêmio Excelência no Poder Público com foto real */
+.award-photo{margin:0;border-radius:17px;overflow:hidden;background:#e8eff3;display:flex;flex-direction:column}
+.award-photo img{width:100%;height:370px;object-fit:cover;object-position:center 43%;display:block}
+.award-photo figcaption{padding:12px 15px;background:#e9f2f0;color:#36586b;font-size:.79rem;line-height:1.55}
+.award-app-grid{display:grid;grid-template-columns:minmax(0,.68fr) minmax(0,1.32fr);gap:24px;align-items:center;background:#fff;border:1px solid #dce8e9;border-radius:22px;padding:20px}
+.award-app-photo{margin:0;background:#ecf4f3;border-radius:17px;overflow:hidden}
+.award-app-photo img{display:block;width:100%;height:360px;object-fit:cover;object-position:center 40%}
+.award-app-photo figcaption{color:#426471;font-size:.77rem;line-height:1.5;padding:10px 14px}
+.award-app-copy{padding:16px}
+.award-app-copy .section-heading{margin:6px 0 17px}
+.award-app-copy p{color:#4c6776;font-size:.97rem;line-height:1.75}
+.award-app-links{display:flex;flex-direction:column;align-items:flex-start;gap:13px;margin-top:21px}
+.award-app-links>a:not(.button){font-weight:750;font-size:.88rem}
+@media(max-width:760px){.award-photo img{height:390px}.award-app-grid{grid-template-columns:1fr;padding:12px;gap:14px}.award-app-photo img{height:310px;object-position:center 38%}.award-app-copy{padding:12px 8px 18px}}
