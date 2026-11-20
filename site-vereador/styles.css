@@ -81,3 +81,65 @@ a:focus-visible,button:focus-visible{outline:3px solid #c48d0a;outline-offset:4p
 .home-transparency-grid small{font-size:12px;line-height:1.45;color:#57727e}
 @media(max-width:760px){.home-transparency{padding:16px}.home-transparency-top{display:block}.home-transparency-top>a{display:inline-block;margin-bottom:15px}.home-transparency-grid{grid-template-columns:1fr}.home-transparency-grid a{padding:14px 16px}}
 @media(prefers-reduced-motion:reduce){.home-transparency-grid a{transition:none}}
+
+
+/* V8 — equipamentos e recursos: fotos reais do Mandato em Ação */
+.equipment-section{background:#f3f8f7;border-top:1px solid #e1ebe9;border-bottom:1px solid #e1ebe9}
+.equipment-section-heading{margin-bottom:27px}
+.equipment-section-heading .section-heading{max-width:720px}
+.equipment-gallery{display:grid;grid-template-columns:minmax(0,1.27fr) minmax(0,1fr);grid-template-rows:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
+.equipment-feature{background:#fff;border:1px solid #dce8e5;border-radius:19px;overflow:hidden;box-shadow:0 12px 35px #0b35451a;min-width:0}
+.equipment-featured{grid-row:span 2;display:flex;flex-direction:column}
+.equipment-photo{position:relative;display:block;overflow:hidden;background:#deebe6}
+.equipment-photo img{display:block;object-fit:cover;width:100%;height:100%;transition:transform .32s}
+.equipment-photo:hover img{transform:scale(1.035)}
+.equipment-photo:focus-visible{outline:4px solid #e0b653;outline-offset:-4px}
+.equipment-featured .equipment-photo{height:clamp(258px,31vw,382px);flex-shrink:0}
+.equipment-featured .equipment-photo img{object-position:center 58%}
+.equipment-photo-label{position:absolute;left:15px;bottom:15px;display:inline-block;background:#062a3de8;color:#f4fffc;font-size:10px;font-weight:850;letter-spacing:.11em;padding:8px 11px;border-radius:100px}
+.equipment-copy{padding:21px 22px 23px}
+.equipment-copy h3{color:#14354b;font-size:clamp(19px,2vw,25px);line-height:1.21;letter-spacing:-.035em;margin:7px 0 12px}
+.equipment-eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.11em;font-weight:850;color:#12816b}
+.equipment-copy p{color:#516c79;font-size:13.5px;line-height:1.68;margin:0 0 15px}
+.equipment-facts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.equipment-facts>span{border-radius:9px;background:#ecf5f1;color:#126350;font-size:11px;font-weight:800;line-height:1.4;padding:8px 11px}
+.equipment-facts small{display:block;color:#637980;font-size:10px;font-weight:550}
+.equipment-detail-link{display:inline-flex;align-items:center;gap:8px;color:#006b56;font-size:12px;font-weight:850;text-underline-offset:4px;margin-top:7px}
+.equipment-compact{display:grid;grid-template-columns:minmax(0,43%) minmax(0,57%)}
+.equipment-compact .equipment-photo{height:100%;min-height:226px}
+.equipment-compact .equipment-photo img{height:100%;width:100%;object-position:center}
+.equipment-compact .equipment-photo-label{left:9px;bottom:9px;font-size:9px;padding:7px 8px}
+.equipment-compact .equipment-copy{padding:17px 15px 17px 18px;display:flex;flex-direction:column;justify-content:center}
+.equipment-compact h3{font-size:clamp(17px,1.55vw,20px);margin:1px 0 8px}
+.equipment-compact p{font-size:12px;line-height:1.55;margin-bottom:8px}
+.equipment-status{font-size:10px;font-weight:800;color:#785d25;background:#fff5e6;border-radius:7px;display:inline-block;align-self:flex-start;padding:5px 9px}
+.equipment-compact .equipment-detail-link{font-size:11px;margin-top:12px}
+.equipment-section-footer{display:flex;align-items:center;justify-content:space-between;gap:27px;margin-top:23px}
+.equipment-section-footer p{max-width:740px;font-size:12px;line-height:1.6;color:#5b7580;margin:0}
+.equipment-section-footer a{color:#04735d;font-weight:800;font-size:12px;white-space:nowrap;text-underline-offset:4px}
+@media(max-width:1030px) and (min-width:761px){
+.equipment-gallery{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}
+.equipment-featured{grid-column:1/-1;grid-row:auto;display:grid;grid-template-columns:1.05fr 1fr}
+.equipment-featured .equipment-photo{height:100%;min-height:320px}
+.equipment-featured .equipment-copy{display:flex;flex-direction:column;justify-content:center}
+.equipment-compact{display:flex;flex-direction:column}
+.equipment-compact .equipment-photo{height:190px;min-height:0}
+.equipment-compact .equipment-copy{flex:1}
+}
+@media(max-width:760px){
+.equipment-section-heading{margin-bottom:20px}
+.equipment-gallery{display:grid;grid-template-columns:1fr;grid-template-rows:none;gap:12px}
+.equipment-featured{grid-row:auto}
+.equipment-featured .equipment-photo{height:clamp(220px,58vw,345px)}
+.equipment-featured .equipment-copy{padding:18px}
+.equipment-compact{display:grid;grid-template-columns:minmax(0,41%) minmax(0,59%)}
+.equipment-compact .equipment-photo{height:100%;min-height:206px}
+.equipment-section-footer{display:block;margin-top:17px}
+.equipment-section-footer a{display:inline-block;margin-top:12px;white-space:normal}
+}
+@media(max-width:380px){
+.equipment-compact{display:flex;flex-direction:column}
+.equipment-compact .equipment-photo{height:205px;min-height:0}
+.equipment-compact .equipment-copy{padding:17px}
+}
+@media(prefers-reduced-motion:reduce){.equipment-photo img{transition:none}.equipment-photo:hover img{transform:none}}

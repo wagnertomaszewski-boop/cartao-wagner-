@@ -124,3 +124,21 @@
 .news-secondary{display:inline-block;font-weight:800;font-size:.82rem;margin-top:15px;text-underline-offset:4px}
 @media(max-width:920px){.news-updates{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.news-updates{grid-template-columns:1fr;gap:12px}.news-update{padding:20px}}
+
+
+/* V8 — imagens de máquinas, com legibilidade e navegação por fotos */
+.account-photo{margin:15px 0 2px;overflow:hidden;border:1px solid #d9e8e2;border-radius:13px;background:#f0f6f2}
+.account-photo a{display:block;overflow:hidden;background:#e9f3ef}
+.account-photo img{display:block;width:100%;height:212px;object-fit:cover;object-position:center 47%;transition:transform .22s}
+.account-photo a:hover img{transform:scale(1.025)}
+.account-photo a:focus-visible{outline:3px solid #e3af49;outline-offset:-3px}
+.account-card[id="solis-90"] .account-photo img{object-position:center 38%}
+.account-card[id="trator-agricultura"] .account-photo img{object-position:center 38%}
+.account-photo figcaption{background:#f5f9f7;color:#526d74;font-size:.76rem;line-height:1.55;padding:9px 12px}
+.account-photo-jumps{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:16px 0;color:#516a76;font-size:.86rem}
+.account-photo-jumps>span{font-weight:800;margin-right:4px}
+.account-photo-jumps a{background:#e6f5ec;border:1px solid #b6dfcb;border-radius:99px;padding:6px 11px;color:#086950;text-decoration:none;font-weight:750}
+.account-photo-jumps a:hover{background:#cfebde}
+.account-links{display:flex;flex-direction:column;gap:6px}
+@media(max-width:760px){.account-photo img{height:clamp(198px,54vw,290px)}.account-photo-jumps{font-size:.78rem;gap:6px}.account-photo-jumps a{padding:6px 9px}}
+@media(prefers-reduced-motion:reduce){.account-photo img{transition:none}.account-photo a:hover img{transform:none}}
