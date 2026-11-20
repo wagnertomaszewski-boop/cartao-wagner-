@@ -164,3 +164,10 @@
 .award-app-links{display:flex;flex-direction:column;align-items:flex-start;gap:13px;margin-top:21px}
 .award-app-links>a:not(.button){font-weight:750;font-size:.88rem}
 @media(max-width:760px){.award-photo img{height:390px}.award-app-grid{grid-template-columns:1fr;padding:12px;gap:14px}.award-app-photo img{height:310px;object-position:center 38%}.award-app-copy{padding:12px 8px 18px}}
+
+
+/* V9 — imagem ilustrativa selecionada para o Mês do Esporte e Lazer */
+.account-photo-poster{background:#e9f3fa}
+.account-photo-poster a{background:#e9f3fa}
+.account-photo-poster img{width:100%;height:auto;aspect-ratio:4/3;object-fit:contain;object-position:center}
+@media(max-width:760px){.account-photo-poster img{height:auto;aspect-ratio:4/3}}
