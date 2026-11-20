@@ -150,3 +150,11 @@ a:focus-visible,button:focus-visible{outline:3px solid #c48d0a;outline-offset:4p
 .home-record-with-photo img{width:100%;height:156px;object-fit:cover;object-position:center 48%;border-radius:9px;margin:0 0 7px;display:block}
 .home-transparency-grid .home-record-with-photo>span,.home-transparency-grid .home-record-with-photo>strong,.home-transparency-grid .home-record-with-photo>small{margin-left:6px;margin-right:6px}
 @media(max-width:760px){.home-record-with-photo img{height:clamp(160px,52vw,260px)}}
+
+
+/* V9 — fotografia real do reconhecimento do Mandato em Ação */
+.award-news-art{position:relative;margin:0;padding:0;min-height:385px;overflow:hidden;background:#0b314b}
+.award-news-art img{width:100%;height:100%;min-height:385px;max-height:510px;object-fit:cover;object-position:center 38%}
+.award-news-art:after{content:"";position:absolute;inset:48% 0 0;background:linear-gradient(transparent,#091c2cbd);pointer-events:none}
+.award-news-art figcaption{position:absolute;z-index:2;bottom:17px;left:20px;right:18px;color:#fff;font-weight:800;font-size:11px;line-height:1.4;letter-spacing:.07em;text-transform:uppercase;text-shadow:0 1px 3px #092433c7}
+@media(max-width:760px){.award-news-art{min-height:0}.award-news-art img{height:350px;min-height:0;object-position:center 36%}.award-news-art figcaption{bottom:14px;left:16px}}
