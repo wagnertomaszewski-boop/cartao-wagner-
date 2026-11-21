@@ -5,9 +5,15 @@ export function criarHandlerProducao({repositorio,resolverAdminMfa,origemApi}){
  const rotas={'admin/sessao/validar':'validarSessao','solicitacoes/cadastrar':'cadastrar','solicitacoes/consultar':'consultar','arquivos/anexar':'anexar','arquivos/baixar':'baixar','recuperacao/solicitar':'solicitarRecuperacao','recuperacao/validar':'validarCodigo','admin/recuperacao/listar':'listarRecuperacoes','admin/recuperacao/decidir':'decidir','admin/recuperacao/emitir':'emitir','admin/recuperacao/confirmar-envio':'confirmarEnvio'};
  return async function handler(req,res){
   if(!req.url?.startsWith('/api/v1/'))return false;
-  const origin=req.headers.origin,permitida=[ORIGEM_WEB,origemApi].includes(origin);
-  const send=(s,d)=>{res.writeHead(s,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Vary':'Origin',...(permitida?{'Access-Control-Allow-Origin':origin}:{})});res.end(JSON.stringify(d));};
-  if(!permitida){send(403,{erro:'Origem não autorizada.'});return true;}
+  // CORS protege navegadores, mas não é autenticação. Clientes Android/nativos
+  // podem não enviar Origin: aceitar somente sua ausência real (undefined),
+  // sem devolver Access-Control-Allow-Origin. Origem 'null'/vazia continua negada.
+  const origin=req.headers.origin;
+  const origemReconhecida=[ORIGEM_WEB,origemApi].includes(origin);
+  const semOrigin=origin===undefined;
+  const permitida=origemReconhecida||semOrigin;
+  const send=(s,d)=>{res.writeHead(s,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Vary':'Origin',...(origemReconhecida?{'Access-Control-Allow-Origin':origin}:{})});res.end(JSON.stringify(d));};
+  if(!permitida||(req.method==='OPTIONS'&&semOrigin)){send(403,{erro:'Origem não autorizada.'});return true;}
   if(req.method==='OPTIONS'){res.writeHead(204,{'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Authorization','Vary':'Origin','Cache-Control':'no-store'});res.end();return true;}
   const rota=req.url.slice('/api/v1/'.length),nome=rotas[rota];if(req.method!=='POST'||!nome){send(404,{erro:'Rota não encontrada.'});return true;}
   try{
