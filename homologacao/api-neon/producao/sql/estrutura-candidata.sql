@@ -51,7 +51,7 @@ GRANT USAGE ON SEQUENCE public.protocolo_seq TO mandato_api_privada;
 -- Identity de public.solicitacoes também precisa de USAGE, se configurada.
 DO $$ DECLARE seq text;BEGIN seq:=pg_get_serial_sequence('public.solicitacoes','id');IF seq IS NOT NULL THEN EXECUTE format('GRANT USAGE ON SEQUENCE %s TO mandato_api_privada',seq);END IF;END $$;
 -- Evita interrupção na reaplicação e impede aceitar política homônima mais permissiva.
-DO $
+DO $$
 DECLARE p record;BEGIN
  FOR p IN
   SELECT * FROM (VALUES
@@ -80,6 +80,6 @@ DECLARE p record;BEGIN
    RAISE EXCEPTION 'Política pública preexistente incompatível: %.%. Não sobrescrever.',p.tabela,p.politica;
   END IF;
  END LOOP;
-END $;
+END $$;
 -- Não altera protocolos/status antigos, políticas administrativas, históricos ou arquivos.
 COMMIT;
