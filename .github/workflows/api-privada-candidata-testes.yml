@@ -1,0 +1,37 @@
+name: API privada candidata - testes isolados
+# Sem credenciais, deploys, conexão externa ou mudanças em produção.
+on:
+  push:
+    branches:
+      - feature/recuperacao-whatsapp-manual
+    paths:
+      - '.github/workflows/api-privada-candidata-testes.yml'
+      - 'homologacao/api-neon/producao/**'
+      - 'homologacao/api-neon/sql/**'
+      - 'homologacao/api-neon/preproducao/**'
+      - 'homologacao/api-neon/package.json'
+      - 'homologacao/api-neon/package-lock.json'
+      - 'v2/**'
+      - 'painel/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  api-candidata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Buscar codigo da branch
+        uses: actions/checkout@v4
+      - name: Preparar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: homologacao/api-neon/package-lock.json
+      - name: Instalar dependencias do lockfile
+        working-directory: homologacao/api-neon
+        run: npm ci --ignore-scripts --no-audit
+      - name: Executar integracao de verdade em Postgres isolado PGlite
+        working-directory: homologacao/api-neon
+        run: node --test producao/tests/*.test.mjs
