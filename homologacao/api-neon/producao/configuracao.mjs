@@ -14,7 +14,19 @@ export function validarConfiguracaoServidor(env){
  if(env.MANDATO_PUBLICACAO_AUTORIZADA!=='sim'||!/^[0-9a-f]{40}$/.test(env.MANDATO_RELEASE_SHA||''))throw Error('Publicação não autorizada.');
  if(typeof env.MANDATO_SEGREDO!=='string'||Buffer.byteLength(env.MANDATO_SEGREDO)<32||env.MANDATO_SEGREDO===env.AUTH_HML_SECRET)throw Error('Segredo produtivo independente obrigatório.');
  const db=new URL(env.DATABASE_URL);
- // Somente o banco Supabase existente: nunca o Neon HML.
- if(db.protocol!=='postgresql:'||decodeURIComponent(db.username)!=='mandato_api_privada'||!db.password||db.hostname!==`db.${PROJETO}.supabase.co`||db.pathname!=='/postgres')throw Error('Conexão produtiva restrita obrigatória.');
+ // Permitir somente o Supabase existente e o papel restrito, nunca postgres/admin.
+ // Endpoint direto: IPv6 ou IPv4 contratado. Supavisor: IPv4, sessão (5432)
+ // ou transação (6543), recomendado para funções Edge. O usuário do pooler
+ // inclui o ID do projeto para impedir conexão acidental a outro tenant.
+ const usuario=decodeURIComponent(db.username);
+ const direto=db.hostname===`db.${PROJETO}.supabase.co`
+  && usuario==='mandato_api_privada'
+  && (db.port===''||db.port==='5432');
+ const pooler=/^aws-[0-9]+-sa-east-1\\.pooler\\.supabase\\.com$/.test(db.hostname)
+  && usuario===`mandato_api_privada.${PROJETO}`
+  && (db.port==='5432'||db.port==='6543');
+ if(!['postgres:','postgresql:'].includes(db.protocol)||!db.password
+  ||db.pathname!=='/postgres'||db.hash||( !direto && !pooler))
+  throw Error('Conexão produtiva restrita obrigatória.');
  return c;
 }
