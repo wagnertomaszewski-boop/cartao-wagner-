@@ -171,3 +171,25 @@
 .account-photo-poster a{background:#e9f3fa}
 .account-photo-poster img{width:100%;height:auto;aspect-ratio:4/3;object-fit:contain;object-position:center}
 @media(max-width:760px){.account-photo-poster img{height:auto;aspect-ratio:4/3}}
+
+
+/* V13 — fotografias integrais dos tratores também nos cartões de Projetos */
+.account-card[id="solis-90"] .account-photo,
+.account-card[id="trator-agricultura"] .account-photo{
+  background:linear-gradient(145deg,#e2eee9,#f1f6f1,#d8e9e3);
+}
+.account-card[id="solis-90"] .account-photo img,
+.account-card[id="trator-agricultura"] .account-photo img{
+  display:block;
+  width:100%;
+  height:clamp(325px,37vw,490px);
+  object-fit:contain;
+  object-position:center center;
+  background:transparent;
+}
+@media(max-width:760px){
+  .account-card[id="solis-90"] .account-photo img,
+  .account-card[id="trator-agricultura"] .account-photo img{
+    height:clamp(345px,103vw,480px);
+  }
+}
