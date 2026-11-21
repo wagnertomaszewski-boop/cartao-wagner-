@@ -29,7 +29,15 @@ DO $$ DECLARE t text; BEGIN
   EXECUTE format('REVOKE ALL ON TABLE mandato_privado.%I FROM PUBLIC,anon,authenticated',t);
   EXECUTE format('ALTER TABLE mandato_privado.%I ENABLE ROW LEVEL SECURITY',t);
   EXECUTE format('ALTER TABLE mandato_privado.%I FORCE ROW LEVEL SECURITY',t);
-  EXECUTE format('CREATE POLICY backend_restrito ON mandato_privado.%I TO mandato_api_privada USING(true) WITH CHECK(true)',t);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='mandato_privado' AND tablename=t AND policyname='backend_restrito') THEN
+   EXECUTE format('CREATE POLICY backend_restrito ON mandato_privado.%I TO mandato_api_privada USING(true) WITH CHECK(true)',t);
+  ELSIF NOT EXISTS (
+   SELECT 1 FROM pg_policies WHERE schemaname='mandato_privado' AND tablename=t
+   AND policyname='backend_restrito' AND permissive='PERMISSIVE' AND cmd='ALL'
+   AND roles=ARRAY['mandato_api_privada']::name[] AND qual='true' AND with_check='true'
+  ) THEN
+   RAISE EXCEPTION 'Política privada preexistente incompatível em %. Não sobrescrever.',t;
+  END IF;
  END LOOP;
 END $$;
 GRANT SELECT,INSERT,UPDATE ON mandato_privado.chaves_acompanhamento,mandato_privado.pedidos_recuperacao,mandato_privado.codigos_recuperacao,mandato_privado.limites TO mandato_api_privada;
@@ -42,10 +50,36 @@ GRANT SELECT ON public.solicitacoes_status_historico,public.respostas_solicitaco
 GRANT USAGE ON SEQUENCE public.protocolo_seq TO mandato_api_privada;
 -- Identity de public.solicitacoes também precisa de USAGE, se configurada.
 DO $$ DECLARE seq text;BEGIN seq:=pg_get_serial_sequence('public.solicitacoes','id');IF seq IS NOT NULL THEN EXECUTE format('GRANT USAGE ON SEQUENCE %s TO mandato_api_privada',seq);END IF;END $$;
-CREATE POLICY backend_privado_le ON public.solicitacoes FOR SELECT TO mandato_api_privada USING(true);
-CREATE POLICY backend_privado_insere ON public.solicitacoes FOR INSERT TO mandato_api_privada WITH CHECK(true);
-CREATE POLICY backend_privado_anexos ON public.solicitacoes FOR UPDATE TO mandato_api_privada USING(true) WITH CHECK(true);
-CREATE POLICY backend_privado_historico ON public.solicitacoes_status_historico FOR SELECT TO mandato_api_privada USING(true);
-CREATE POLICY backend_privado_respostas ON public.respostas_solicitacoes FOR SELECT TO mandato_api_privada USING(true);
+-- Evita interrupção na reaplicação e impede aceitar política homônima mais permissiva.
+DO $
+DECLARE p record;BEGIN
+ FOR p IN
+  SELECT * FROM (VALUES
+   ('solicitacoes','backend_privado_le','SELECT','true',NULL::text),
+   ('solicitacoes','backend_privado_insere','INSERT',NULL::text,'true'),
+   ('solicitacoes','backend_privado_anexos','UPDATE','true','true'),
+   ('solicitacoes_status_historico','backend_privado_historico','SELECT','true',NULL::text),
+   ('respostas_solicitacoes','backend_privado_respostas','SELECT','true',NULL::text)
+  ) AS v(tabela,politica,comando,condicao,verificacao)
+ LOOP
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename=p.tabela AND policyname=p.politica) THEN
+   EXECUTE format(
+    'CREATE POLICY %I ON public.%I FOR %s TO mandato_api_privada %s %s',
+    p.politica,p.tabela,p.comando,
+    CASE WHEN p.condicao IS NULL THEN '' ELSE 'USING(true)' END,
+    CASE WHEN p.verificacao IS NULL THEN '' ELSE 'WITH CHECK(true)' END
+   );
+  ELSIF NOT EXISTS (
+   SELECT 1 FROM pg_policies WHERE schemaname='public'
+    AND tablename=p.tabela AND policyname=p.politica
+    AND permissive='PERMISSIVE' AND cmd=p.comando
+    AND roles=ARRAY['mandato_api_privada']::name[]
+    AND qual IS NOT DISTINCT FROM p.condicao
+    AND with_check IS NOT DISTINCT FROM p.verificacao
+  ) THEN
+   RAISE EXCEPTION 'Política pública preexistente incompatível: %.%. Não sobrescrever.',p.tabela,p.politica;
+  END IF;
+ END LOOP;
+END $;
 -- Não altera protocolos/status antigos, políticas administrativas, históricos ou arquivos.
 COMMIT;
