@@ -22,7 +22,7 @@ export function validarConfiguracaoServidor(env){
  const direto=db.hostname===`db.${PROJETO}.supabase.co`
   && usuario==='mandato_api_privada'
   && (db.port===''||db.port==='5432');
- const pooler=/^aws-[0-9]+-sa-east-1\\.pooler\\.supabase\\.com$/.test(db.hostname)
+ const pooler=/^aws-[0-9]+-sa-east-1\.pooler\.supabase\.com$/.test(db.hostname)
   && usuario===`mandato_api_privada.${PROJETO}`
   && (db.port==='5432'||db.port==='6543');
  if(!['postgres:','postgresql:'].includes(db.protocol)||!db.password
