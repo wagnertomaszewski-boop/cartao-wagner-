@@ -116,3 +116,30 @@ test('gatilho real de histórico não bloqueia cadastro por papel privado restri
   assert.equal(direitos.altera_historico,false);
  }finally{await a.db.close();}
 });
+
+test('migração candidata pode ser reaplicada sem recriar políticas, tabelas ou perder registros sintéticos',async()=>{
+ const a=await ambiente();
+ try{
+  const p=await a.repo.cadastrar(dados('00000000-0000-4000-8000-000000000019'));
+  const antes=(await a.db.query('SELECT count(*) AS n FROM public.solicitacoes')).rows[0].n;
+  const policiesBefore=(await a.db.query("SELECT count(*) AS n FROM pg_policies WHERE policyname IN ('backend_restrito','backend_privado_le','backend_privado_insere','backend_privado_anexos','backend_privado_historico','backend_privado_respostas')")).rows[0].n;
+  const sql=await readFile(new URL('../sql/estrutura-candidata.sql',import.meta.url),'utf8');
+  await a.db.exec(sql);
+  const policiesAfter=(await a.db.query("SELECT count(*) AS n FROM pg_policies WHERE policyname IN ('backend_restrito','backend_privado_le','backend_privado_insere','backend_privado_anexos','backend_privado_historico','backend_privado_respostas')")).rows[0].n;
+  assert.equal(policiesAfter,policiesBefore,'não duplica políticas');
+  assert.equal((await a.db.query('SELECT count(*) AS n FROM public.solicitacoes')).rows[0].n,antes,'não altera pedidos');
+  assert.equal((await a.repo.consultar({protocolo:p.protocolo,chave:p.chaveInicial})).encontrado,true);
+ }finally{await a.db.close();}
+});
+
+test('migração candidata rejeita política homônima de outro papel e mantém a segurança',async()=>{
+ const a=await ambiente();
+ try{
+  await a.db.exec('ALTER POLICY backend_privado_le ON public.solicitacoes TO anon;');
+  const sql=await readFile(new URL('../sql/estrutura-candidata.sql',import.meta.url),'utf8');
+  await assert.rejects(a.db.exec(sql),/Política pública preexistente incompatível/);
+  await a.db.exec('ROLLBACK');
+  assert.equal((await a.db.query("SELECT roles::text FROM pg_policies WHERE schemaname='public' AND tablename='solicitacoes' AND policyname='backend_privado_le'")).rows[0].roles,'{anon}');
+  assert.equal((await a.db.query("SELECT count(*) AS n FROM mandato_privado.chaves_acompanhamento")).rows[0].n,0);
+ }finally{await a.db.close();}
+});
