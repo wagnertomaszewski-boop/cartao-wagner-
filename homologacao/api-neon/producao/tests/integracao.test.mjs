@@ -95,3 +95,24 @@ test('preserva chave HMAC v1 emitida pelo cadastro anterior e recusa versão des
   assert.equal((await a.repo.consultar({protocolo:solicitacao.protocolo,chave})).encontrado,false);
  }finally{await a.db.close();}
 });
+
+test('gatilho real de histórico não bloqueia cadastro por papel privado restrito',async()=>{
+ const a=await ambiente();
+ try{
+  await a.db.exec("CREATE FUNCTION public.registrar_historico_status_solicitacao() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='public' AS $$ BEGIN IF tg_op='INSERT' THEN INSERT INTO public.solicitacoes_status_historico(solicitacao_id,status,criado_em) VALUES(new.id,coalesce(new.status,'Recebida'),coalesce(new.criado_em,now())); RETURN new; END IF; IF new.status IS DISTINCT FROM old.status THEN INSERT INTO public.solicitacoes_status_historico(solicitacao_id,status,criado_em) VALUES(new.id,coalesce(new.status,'Recebida'),now()); END IF; RETURN new; END $$;");
+  await a.db.exec("CREATE TRIGGER trg_registrar_historico_status_solicitacao AFTER INSERT OR UPDATE OF status ON public.solicitacoes FOR EACH ROW EXECUTE FUNCTION public.registrar_historico_status_solicitacao();");
+  await a.db.exec("ALTER TABLE public.solicitacoes ENABLE ROW LEVEL SECURITY;ALTER TABLE public.solicitacoes_status_historico ENABLE ROW LEVEL SECURITY;");
+  await a.db.exec("SET ROLE mandato_api_privada;");
+  const p=await a.repo.cadastrar(dados('00000000-0000-4000-8000-000000000011'));
+  const consulta=await a.repo.consultar({protocolo:p.protocolo,chave:p.chaveInicial});
+  assert.equal(consulta.encontrado,true);
+  assert.deepEqual(consulta.historico.map(x=>x.status),['Encaminhado']);
+  const pedido=await a.repo.solicitarRecuperacao({protocolo:p.protocolo,telefone:dados().p_whatsapp});
+  await a.repo.decidir({pedidoId:pedido.pedidoId,decisao:'aprovar',identidadeConferida:true,justificativa:'Identidade fictícia conferida.'},op);
+  const emissao=await a.repo.emitir({pedidoId:pedido.pedidoId,telefoneConfirmado:dados().p_whatsapp},op);
+  assert.equal((await a.repo.validarCodigo({...pedido,codigo:emissao.codigo})).validado,true);
+  const direitos=(await a.db.query("SELECT has_table_privilege(current_user,'mandato_privado.auditoria_recuperacao','UPDATE') AS altera_auditoria,has_table_privilege(current_user,'public.solicitacoes_status_historico','INSERT') AS altera_historico")).rows[0];
+  assert.equal(direitos.altera_auditoria,false);
+  assert.equal(direitos.altera_historico,false);
+ }finally{await a.db.close();}
+});
