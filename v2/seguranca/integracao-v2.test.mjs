@@ -15,9 +15,12 @@ test('modo seguro consulta a API protegida e limpa a chave',()=>{
  assert.match(html,/document\.getElementById\('chaveConsultaV2'\)\.value=''/);
  assert.match(html,/consultaSeguraV2\.pedirRecuperacao/);
 });
-test('consulta antiga permanece apenas no modo de compatibilidade não ativado',()=>{
+test('V2 não contém consulta legada insegura e bloqueia acompanhamento sem chave',()=>{
  assert.match(html,/if\(SEGURANCA_V2_ATIVA\)\{/);
- assert.match(html,/consulta_publica_protocolo/);
+ assert.doesNotMatch(html,/consulta_publica_protocolo/);
+ assert.doesNotMatch(html,/consulta_publica_historico_protocolo/);
+ assert.doesNotMatch(html,/consulta_publica_respostas_protocolo/);
+ assert.match(html,/throw Error\('Acompanhamento em manutenção\. A consulta exige protocolo e chave individual\.'\)/);
  assert.match(html,/if\(!itens\.length\)throw Error/);
 });
 
