@@ -54,14 +54,29 @@
 </section>
 <section class="section" id="registros" aria-labelledby="vote-list-title">
  <span class="section-kicker">REGISTROS DOCUMENTADOS</span><h2 class="section-heading" id="vote-list-title">Decisões de 2025 e 2026.</h2>
- <p class="section-lead">Filtre por ano ou busque um assunto. Os registros serão ampliados à medida que as votações nominais forem verificadas.</p>
- <div class="vote-controls"><div role="group" class="vote-year-group" aria-label="Selecionar ano">
-  <button type="button" data-year-filter="todos" aria-pressed="true">Todos</button>
+ <p class="section-lead">Pesquise pelo número do PL, pelo nome ou pelo assunto; combine os filtros de ano, área e resultado. Os registros serão ampliados à medida que as votações nominais forem verificadas.</p>
+ <div class="vote-controls">
+ <label class="vote-search-label" for="vote-search">Número, nome ou palavra do projeto
+   <input type="search" id="vote-search" placeholder="Ex.: 19/2025, fumicultura, tabaco" autocomplete="off" spellcheck="false" aria-describedby="vote-search-help">
+ </label>
+ <div class="vote-secondary-filters">
+  <label class="vote-select-label" for="vote-topic">Assunto
+    <select id="vote-topic"><option value="todos">Todos os assuntos</option><option value="agricultura">Agricultura</option><option value="administracao">Administração</option><option value="educacao">Educação</option><option value="legislacao">Legislação</option><option value="meio ambiente">Meio ambiente</option><option value="orcamento">Orçamento</option><option value="patrimonio municipal">Patrimônio municipal</option></select>
+  </label>
+  <label class="vote-select-label" for="vote-result">Resultado do plenário
+    <select id="vote-result"><option value="todos">Todos os resultados</option><option value="aprovado">Aprovado</option><option value="rejeitado">Rejeitado</option></select>
+  </label>
+ </div>
+ <div class="vote-year-group" role="group" aria-label="Selecionar ano">
+  <button type="button" data-year-filter="todos" aria-pressed="true">Todos os anos</button>
   <button type="button" data-year-filter="2026" aria-pressed="false">2026</button>
   <button type="button" data-year-filter="2025" aria-pressed="false">2025</button>
- </div><label class="vote-search-label" for="vote-search">Buscar por tema ou projeto<input type="search" id="vote-search" placeholder="Ex.: educação, fumicultura, orçamento" autocomplete="off"></label></div>
+ </div>
+ <p id="vote-search-help" class="vote-search-help">Busque pelo número (19/2025 ou 019/2025), por nome ou por termos como “fumo” e “resíduos”. Os votos individuais seguem em conferência.</p>
+ <button id="vote-clear" type="button" class="vote-clear-button">Limpar filtros</button>
+</div>
  <p id="vote-count" class="vote-count" role="status" aria-live="polite">8 registros documentados nesta seleção.</p>
- <div class="vote-grid" id="vote-grid"><article class="vote-card" id="pl-027-2026" data-year="2026" data-topic="administração" data-search="quadro de cargos e atribuições da prefeitura pl nº 27/2026 proposta do executivo para criar cargos e alterar nomenclaturas e disposições da lei municipal nº 1.476/2019. administração 37ª sessão ordinária de 2026">
+ <div class="vote-grid" id="vote-grid"><article class="vote-card" id="pl-027-2026" data-year="2026" data-topic="administração" data-number="27/2026" data-result="aprovado" data-search="quadro de cargos e atribuições da prefeitura pl nº 27/2026 proposta do executivo para criar cargos e alterar nomenclaturas e disposições da lei municipal nº 1.476/2019. administração 37ª sessão ordinária de 2026 servidores cargos prefeitura recursos humanos administracao">
  <div class="vote-card-head"><span class="vote-date">13/10/2026</span><span class="vote-topic">Administração</span></div>
  <p class="vote-number">PL nº 27/2026</p><h3>Quadro de cargos e atribuições da Prefeitura</h3>
  <p class="vote-description">Proposta do Executivo para criar cargos e alterar nomenclaturas e disposições da Lei Municipal nº 1.476/2019.</p>
@@ -71,7 +86,7 @@
  </div>
  <div class="vote-card-bottom"><p>Fonte: 37ª Sessão Ordinária de 2026</p><a href="https://www.cmcristal.rs.gov.br/atas/sessao_ordinaria/0/1/0/924" target="_blank" rel="noopener noreferrer">Consultar ata oficial da Câmara ↗</a></div>
 </article>
-<article class="vote-card" id="pl-024-2026" data-year="2026" data-topic="meio ambiente" data-search="política municipal de gestão integrada de resíduos sólidos pl nº 24/2026 instituição da política municipal e aprovação da revisão 01/2026 do plano municipal de gestão integrada de resíduos sólidos. meio ambiente 35ª sessão ordinária de 2026">
+<article class="vote-card" id="pl-024-2026" data-year="2026" data-topic="meio ambiente" data-number="24/2026" data-result="aprovado" data-search="política municipal de gestão integrada de resíduos sólidos pl nº 24/2026 instituição da política municipal e aprovação da revisão 01/2026 do plano municipal de gestão integrada de resíduos sólidos. meio ambiente 35ª sessão ordinária de 2026 residuos lixo coleta reciclagem ambiental meio ambiente">
  <div class="vote-card-head"><span class="vote-date">28/09/2026</span><span class="vote-topic">Meio ambiente</span></div>
  <p class="vote-number">PL nº 24/2026</p><h3>Política Municipal de Gestão Integrada de Resíduos Sólidos</h3>
  <p class="vote-description">Instituição da política municipal e aprovação da revisão 01/2026 do Plano Municipal de Gestão Integrada de Resíduos Sólidos.</p>
@@ -81,7 +96,7 @@
  </div>
  <div class="vote-card-bottom"><p>Fonte: 35ª Sessão Ordinária de 2026</p><a href="https://www.cmcristal.rs.gov.br/atas/sessao_ordinaria/0/1/0/916" target="_blank" rel="noopener noreferrer">Consultar ata oficial da Câmara ↗</a></div>
 </article>
-<article class="vote-card" id="pl-026-2026" data-year="2026" data-topic="educação" data-search="seminário municipal de ensino de cristal pl nº 26/2026 proposta que institui o seminário municipal de ensino no município. educação 35ª sessão ordinária de 2026">
+<article class="vote-card" id="pl-026-2026" data-year="2026" data-topic="educação" data-number="26/2026" data-result="aprovado" data-search="seminário municipal de ensino de cristal pl nº 26/2026 proposta que institui o seminário municipal de ensino no município. educação 35ª sessão ordinária de 2026 ensino educacao professores alunos educadores seminario">
  <div class="vote-card-head"><span class="vote-date">28/09/2026</span><span class="vote-topic">Educação</span></div>
  <p class="vote-number">PL nº 26/2026</p><h3>Seminário Municipal de Ensino de Cristal</h3>
  <p class="vote-description">Proposta que institui o Seminário Municipal de Ensino no município.</p>
@@ -91,7 +106,7 @@
  </div>
  <div class="vote-card-bottom"><p>Fonte: 35ª Sessão Ordinária de 2026</p><a href="https://www.cmcristal.rs.gov.br/atas/sessao_ordinaria/0/1/0/916" target="_blank" rel="noopener noreferrer">Consultar ata oficial da Câmara ↗</a></div>
 </article>
-<article class="vote-card" id="pl-001-2026" data-year="2026" data-topic="legislação" data-search="atualização de dispositivos da lei orgânica pl nº 1/2026 · legislativo projeto legislativo de atualização de dispositivos da lei orgânica municipal, conforme ementa registrada na ata. legislação 32ª sessão ordinária de 2026">
+<article class="vote-card" id="pl-001-2026" data-year="2026" data-topic="legislação" data-number="1/2026" data-result="aprovado" data-search="atualização de dispositivos da lei orgânica pl nº 1/2026 · legislativo projeto legislativo de atualização de dispositivos da lei orgânica municipal, conforme ementa registrada na ata. legislação 32ª sessão ordinária de 2026 lei organica poder legislativo constituicao">
  <div class="vote-card-head"><span class="vote-date">08/09/2026</span><span class="vote-topic">Legislação</span></div>
  <p class="vote-number">PL nº 1/2026 · Legislativo</p><h3>Atualização de dispositivos da Lei Orgânica</h3>
  <p class="vote-description">Projeto legislativo de atualização de dispositivos da Lei Orgânica Municipal, conforme ementa registrada na ata.</p>
@@ -101,7 +116,7 @@
  </div>
  <div class="vote-card-bottom"><p>Fonte: 32ª Sessão Ordinária de 2026</p><a href="https://www.cmcristal.rs.gov.br/atas/sessao_ordinaria/0/1/0/911" target="_blank" rel="noopener noreferrer">Consultar ata oficial da Câmara ↗</a></div>
 </article>
-<article class="vote-card" id="pl-022-2026" data-year="2026" data-topic="orçamento" data-search="diretrizes orçamentárias para 2027 pl nº 22/2026 proposta do executivo sobre as diretrizes orçamentárias municipais para o exercício de 2027. orçamento 32ª sessão ordinária de 2026">
+<article class="vote-card" id="pl-022-2026" data-year="2026" data-topic="orçamento" data-number="22/2026" data-result="aprovado" data-search="diretrizes orçamentárias para 2027 pl nº 22/2026 proposta do executivo sobre as diretrizes orçamentárias municipais para o exercício de 2027. orçamento 32ª sessão ordinária de 2026 ldo orçamento despesas receita diretrizes orcamentarias">
  <div class="vote-card-head"><span class="vote-date">08/09/2026</span><span class="vote-topic">Orçamento</span></div>
  <p class="vote-number">PL nº 22/2026</p><h3>Diretrizes Orçamentárias para 2027</h3>
  <p class="vote-description">Proposta do Executivo sobre as diretrizes orçamentárias municipais para o exercício de 2027.</p>
@@ -111,7 +126,7 @@
  </div>
  <div class="vote-card-bottom"><p>Fonte: 32ª Sessão Ordinária de 2026</p><a href="https://www.cmcristal.rs.gov.br/atas/sessao_ordinaria/0/1/0/911" target="_blank" rel="noopener noreferrer">Consultar ata oficial da Câmara ↗</a></div>
 </article>
-<article class="vote-card" id="pl-023-2026" data-year="2026" data-topic="administração" data-search="reorganização da estrutura administrativa municipal pl nº 23/2026 proposta do executivo para reorganizar a estrutura administrativa, extinguir e criar órgãos. administração 32ª sessão ordinária de 2026">
+<article class="vote-card" id="pl-023-2026" data-year="2026" data-topic="administração" data-number="23/2026" data-result="aprovado" data-search="reorganização da estrutura administrativa municipal pl nº 23/2026 proposta do executivo para reorganizar a estrutura administrativa, extinguir e criar órgãos. administração 32ª sessão ordinária de 2026 prefeitura secretarias estrutura administracao">
  <div class="vote-card-head"><span class="vote-date">08/09/2026</span><span class="vote-topic">Administração</span></div>
  <p class="vote-number">PL nº 23/2026</p><h3>Reorganização da estrutura administrativa municipal</h3>
  <p class="vote-description">Proposta do Executivo para reorganizar a estrutura administrativa, extinguir e criar órgãos.</p>
@@ -121,7 +136,7 @@
  </div>
  <div class="vote-card-bottom"><p>Fonte: 32ª Sessão Ordinária de 2026</p><a href="https://www.cmcristal.rs.gov.br/atas/sessao_ordinaria/0/1/0/911" target="_blank" rel="noopener noreferrer">Consultar ata oficial da Câmara ↗</a></div>
 </article>
-<article class="vote-card" id="pl-018-2025" data-year="2025" data-topic="patrimônio municipal" data-search="autorização para aquisição de imóvel pl nº 18/2025 projeto do executivo que autoriza o município a adquirir bem imóvel, conforme ata da sessão. patrimônio municipal 29ª sessão ordinária de 2025">
+<article class="vote-card" id="pl-018-2025" data-year="2025" data-topic="patrimônio municipal" data-number="18/2025" data-result="aprovado" data-search="autorização para aquisição de imóvel pl nº 18/2025 projeto do executivo que autoriza o município a adquirir bem imóvel, conforme ata da sessão. patrimônio municipal 29ª sessão ordinária de 2025 compra terreno aquisicao imovel area escola">
  <div class="vote-card-head"><span class="vote-date">18/08/2025</span><span class="vote-topic">Patrimônio municipal</span></div>
  <p class="vote-number">PL nº 18/2025</p><h3>Autorização para aquisição de imóvel</h3>
  <p class="vote-description">Projeto do Executivo que autoriza o Município a adquirir bem imóvel, conforme ata da sessão.</p>
@@ -131,7 +146,7 @@
  </div>
  <div class="vote-card-bottom"><p>Fonte: 29ª Sessão Ordinária de 2025</p><a href="https://www.cmcristal.rs.gov.br/atas/sessao_ordinaria/2025/1/0/800" target="_blank" rel="noopener noreferrer">Consultar ata oficial da Câmara ↗</a></div>
 </article>
-<article class="vote-card" id="pl-019-2025" data-year="2025" data-topic="agricultura" data-search="reconhecimento da relevância da fumicultura pl nº 19/2025 declara a fumicultura atividade de relevante interesse econômico, social e cultural no município. agricultura 29ª sessão ordinária de 2025">
+<article class="vote-card" id="pl-019-2025" data-year="2025" data-topic="agricultura" data-number="19/2025" data-result="aprovado" data-search="reconhecimento da relevância da fumicultura pl nº 19/2025 declara a fumicultura atividade de relevante interesse econômico, social e cultural no município. agricultura 29ª sessão ordinária de 2025 fumo tabaco fumicultores plantio producao agricola agricultura familiar">
  <div class="vote-card-head"><span class="vote-date">18/08/2025</span><span class="vote-topic">Agricultura</span></div>
  <p class="vote-number">PL nº 19/2025</p><h3>Reconhecimento da relevância da fumicultura</h3>
  <p class="vote-description">Declara a fumicultura atividade de relevante interesse econômico, social e cultural no município.</p>
@@ -152,22 +167,49 @@
 </div>
 <script>
 (function(){
+'use strict';
 const years=Array.from(document.querySelectorAll('[data-year-filter]'));
 const records=Array.from(document.querySelectorAll('.vote-card'));
 const search=document.getElementById('vote-search');
+const topic=document.getElementById('vote-topic');
+const result=document.getElementById('vote-result');
+const clear=document.getElementById('vote-clear');
 const count=document.getElementById('vote-count');
 const empty=document.getElementById('vote-empty');
 let year='todos';
-function normalize(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
-function update(){
-  const q=normalize(search.value);let visible=0;
-  records.forEach(card=>{const match=(year==='todos'||card.dataset.year===year)&&(!q||normalize(card.dataset.search).includes(q));card.hidden=!match;if(match)visible++;});
-  years.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.yearFilter===year)));
-  count.textContent=visible===1?'1 registro exibido.':visible+' registros exibidos.';
-  empty.hidden=visible!==0;
+function normalize(value){
+  return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim().replace(/\s+/g,' ');
 }
-years.forEach(b=>b.addEventListener('click',()=>{year=b.dataset.yearFilter;update();}));
-search.addEventListener('input',update);
+function matchQuery(card, rawQuery){
+  const raw=String(rawQuery||'').trim();if(!raw)return true;
+  const numeric=raw.match(/^(?:(?:pl|projeto(?:\s+de\s+lei)?)\s*(?:n(?:º|°|o|úmero)?)?\s*)?0*(\d{1,5})\s*(?:[\/-]\s*(\d{4}))?$/i);
+  if(numeric){
+    const n=String(parseInt(numeric[1],10));
+    const [number,year]=card.dataset.number.split('/');
+    return String(parseInt(number,10))===n&&(!numeric[2]||year===numeric[2]);
+  }
+  const hay=normalize(card.dataset.search+' '+card.dataset.number);
+  const terms=normalize(raw).split(' ').filter(Boolean);
+  return terms.every(term=>hay.split(' ').some(word=>word.startsWith(term)));
+}
+function update(){
+  let visible=0;
+  records.forEach(card=>{
+    const ok=(year==='todos'||card.dataset.year===year)
+      &&(topic.value==='todos'||normalize(card.dataset.topic)===topic.value)
+      &&(result.value==='todos'||card.dataset.result===result.value)
+      &&matchQuery(card,search.value);
+    card.hidden=!ok;if(ok)visible++;
+  });
+  years.forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.yearFilter===year)));
+  count.textContent=visible===1?'1 projeto encontrado.':visible+' projetos encontrados.';
+  empty.hidden=visible>0;
+}
+years.forEach(button=>button.addEventListener('click',()=>{year=button.dataset.yearFilter;update();}));
+[search,topic,result].forEach(input=>input.addEventListener(input===search?'input':'change',update));
+clear.addEventListener('click',()=>{
+  year='todos';search.value='';topic.value='todos';result.value='todos';update();search.focus();
+});
 update();
 })();
 </script>
