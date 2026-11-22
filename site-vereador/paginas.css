@@ -270,3 +270,29 @@
  .vote-info-row>strong{text-align:right}
 }
 @media(max-width:365px){.vote-info-row{flex-wrap:wrap}.vote-info-row>strong{text-align:left}}
+
+
+/* V15 — busca de votação por número, nome, assunto, resultado e ano */
+.vote-controls{
+ display:grid;
+ grid-template-columns:minmax(0,1fr);
+ gap:15px;
+ align-items:stretch;
+}
+.vote-search-label{display:block;max-width:none;flex:none;color:#274d61;font-size:.9rem}
+.vote-search-label input{font-size:1rem;min-height:52px;margin-top:8px}
+.vote-secondary-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.vote-select-label{display:block;color:#536b78;font-size:.82rem;font-weight:750}
+.vote-select-label select{display:block;width:100%;margin-top:6px;min-height:44px;background:white;color:#183e51;border:1px solid #bacfd3;border-radius:9px;padding:9px 32px 9px 12px;font:inherit;font-size:.9rem}
+.vote-search-help{font-size:.81rem;color:#647984;margin:0;line-height:1.55}
+.vote-clear-button{justify-self:start;background:transparent;border:1px solid #a7cfc3;border-radius:9px;padding:9px 16px;color:#0b735c;font:750 .85rem system-ui,sans-serif;cursor:pointer}
+.vote-clear-button:hover{background:#e6f6ef}
+.vote-controls select:focus-visible,.vote-controls input:focus-visible,.vote-clear-button:focus-visible{outline:3px solid #e0b653;outline-offset:3px}
+@media(max-width:760px){
+ .vote-controls{display:grid;gap:14px}
+ .vote-secondary-filters{grid-template-columns:1fr}
+ .vote-search-label{margin-top:0}
+ .vote-year-group{display:flex;gap:7px}
+ .vote-year-group button{padding:9px 12px}
+ .vote-clear-button{width:100%}
+}
