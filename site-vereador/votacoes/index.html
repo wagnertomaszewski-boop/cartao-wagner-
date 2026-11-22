@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0a233d">
-<meta name="description" content="Histórico de votações da Câmara de Cristal em 2025 e 2026, com atas oficiais e indicação transparente dos votos individuais ainda em conferência.">
+<meta name="description" content="Histórico de votações da Câmara de Cristal de 2024 a 2026, com atas oficiais e indicação transparente dos votos individuais ainda em conferência.">
 <meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="canonical" href="https://www.vereadorwagner.com.br/votacoes/">
 <meta property="og:type" content="website"><meta property="og:locale" content="pt_BR">
@@ -36,13 +36,13 @@
     <p>O cidadão merece saber o que foi discutido, como o plenário decidiu e, quando houver comprovação, qual foi meu voto em cada projeto.</p>
     <a class="button vote-hero-button" href="#registros">Consultar votações registradas ↓</a>
   </div>
-  <div class="vote-hero-aside"><span class="vote-hero-icon" aria-hidden="true">⚖</span><strong>Transparência com documentos</strong><span>Fonte oficial em cada registro · 2025 e 2026</span></div>
+  <div class="vote-hero-aside"><span class="vote-hero-icon" aria-hidden="true">⚖</span><strong>Transparência com documentos</strong><span>Fonte oficial em cada registro · 2024 a 2026</span></div>
  </div>
 </section>
 <div class="page-body container">
 <section class="section vote-intro" aria-labelledby="vote-intro-title">
  <span class="section-kicker">LEVANTAMENTO EM ANDAMENTO</span><h2 class="section-heading" id="vote-intro-title">Primeiro, os fatos. Depois, <span class="vote-heading-accent">cada voto comprovado.</span></h2>
- <p class="section-lead">Esta primeira versão reúne uma seleção inicial de projetos de lei cuja decisão do plenário foi localizada nas atas oficiais de 2025 e 2026. <strong>O resultado coletivo não confirma automaticamente o voto individual de cada vereador.</strong></p>
+ <p class="section-lead">Esta primeira versão reúne uma seleção inicial de projetos de lei cuja decisão do plenário foi localizada nas atas oficiais de 2024 a 2026. <strong>O resultado coletivo não confirma automaticamente o voto individual de cada vereador.</strong></p>
  <div class="vote-method">
   <div><span class="vote-method-icon" aria-hidden="true">✓</span><strong>Resultado oficial</strong><p>O que a ata registra sobre a deliberação do plenário.</p></div>
   <div><span class="vote-method-icon" aria-hidden="true">◷</span><strong>Voto individual em conferência</strong><p>Favorável, contrário, abstenção, ausência ou não votou serão informados somente quando comprovados.</p></div>
@@ -53,15 +53,19 @@
  </div>
 </section>
 <section class="section" id="registros" aria-labelledby="vote-list-title">
- <span class="section-kicker">REGISTROS DOCUMENTADOS</span><h2 class="section-heading" id="vote-list-title">Decisões de 2025 e 2026.</h2>
+ <span class="section-kicker">REGISTROS DOCUMENTADOS</span><h2 class="section-heading" id="vote-list-title">Decisões de 2024 a 2026.</h2>
  <p class="section-lead">Pesquise pelo número do PL, pelo nome ou pelo assunto; combine os filtros de ano, área e resultado. Os registros serão ampliados à medida que as votações nominais forem verificadas.</p>
+ <nav class="vote-featured-links" aria-label="Projetos em destaque">
+  <a href="#pl-027-2025"><span class="vote-featured-icon" aria-hidden="true">⚡</span><span><strong>Iluminação pública · CIP</strong><small>PL 27/2025 · Cobrança e atualização da contribuição</small></span><span aria-hidden="true">↗</span></a>
+  <a href="#pl-003-2024"><span class="vote-featured-icon" aria-hidden="true">▣</span><span><strong>Remuneração dos secretários</strong><small>PLs 3 e 5/2024 · Proposta rejeitada e nova aprovação</small></span><span aria-hidden="true">↗</span></a>
+ </nav>
  <div class="vote-controls">
  <label class="vote-search-label" for="vote-search">Número, nome ou palavra do projeto
    <input type="search" id="vote-search" placeholder="Ex.: 19/2025, fumicultura, tabaco" autocomplete="off" spellcheck="false" aria-describedby="vote-search-help">
  </label>
  <div class="vote-secondary-filters">
   <label class="vote-select-label" for="vote-topic">Assunto
-    <select id="vote-topic"><option value="todos">Todos os assuntos</option><option value="agricultura">Agricultura</option><option value="administracao">Administração</option><option value="educacao">Educação</option><option value="legislacao">Legislação</option><option value="meio ambiente">Meio ambiente</option><option value="orcamento">Orçamento</option><option value="patrimonio municipal">Patrimônio municipal</option></select>
+    <select id="vote-topic"><option value="todos">Todos os assuntos</option><option value="agricultura">Agricultura</option><option value="administracao">Administração</option><option value="educacao">Educação</option><option value="legislacao">Legislação</option><option value="meio ambiente">Meio ambiente</option><option value="iluminacao publica">Iluminação pública</option><option value="remuneracao">Remuneração</option><option value="orcamento">Orçamento</option><option value="patrimonio municipal">Patrimônio municipal</option></select>
   </label>
   <label class="vote-select-label" for="vote-result">Resultado do plenário
     <select id="vote-result"><option value="todos">Todos os resultados</option><option value="aprovado">Aprovado</option><option value="rejeitado">Rejeitado</option></select>
@@ -71,11 +75,12 @@
   <button type="button" data-year-filter="todos" aria-pressed="true">Todos os anos</button>
   <button type="button" data-year-filter="2026" aria-pressed="false">2026</button>
   <button type="button" data-year-filter="2025" aria-pressed="false">2025</button>
+  <button type="button" data-year-filter="2024" aria-pressed="false">2024</button>
  </div>
  <p id="vote-search-help" class="vote-search-help">Busque pelo número (19/2025 ou 019/2025), por nome ou por termos como “fumo” e “resíduos”. Os votos individuais seguem em conferência.</p>
  <button id="vote-clear" type="button" class="vote-clear-button">Limpar filtros</button>
 </div>
- <p id="vote-count" class="vote-count" role="status" aria-live="polite">8 registros documentados nesta seleção.</p>
+ <p id="vote-count" class="vote-count" role="status" aria-live="polite">11 registros documentados nesta seleção.</p>
  <div class="vote-grid" id="vote-grid"><article class="vote-card" id="pl-027-2026" data-year="2026" data-topic="administração" data-number="27/2026" data-result="aprovado" data-search="quadro de cargos e atribuições da prefeitura pl nº 27/2026 proposta do executivo para criar cargos e alterar nomenclaturas e disposições da lei municipal nº 1.476/2019. administração 37ª sessão ordinária de 2026 servidores cargos prefeitura recursos humanos administracao">
  <div class="vote-card-head"><span class="vote-date">13/10/2026</span><span class="vote-topic">Administração</span></div>
  <p class="vote-number">PL nº 27/2026</p><h3>Quadro de cargos e atribuições da Prefeitura</h3>
@@ -136,6 +141,20 @@
  </div>
  <div class="vote-card-bottom"><p>Fonte: 32ª Sessão Ordinária de 2026</p><a href="https://www.cmcristal.rs.gov.br/atas/sessao_ordinaria/0/1/0/911" target="_blank" rel="noopener noreferrer">Consultar ata oficial da Câmara ↗</a></div>
 </article>
+<article class="vote-card" id="pl-027-2025" data-year="2025" data-topic="iluminação pública" data-number="27/2025" data-result="aprovado" data-search="pl 27 2025 projeto lei contribuicao para custeio da iluminacao publica cip cobranca taxa iluminacao energia eletrica poste fatura conta luz lei municipal 913/2005 1689/2025 alteracao anexo tabela valores">
+ <div class="vote-card-head"><span class="vote-date">24/11/2025</span><span class="vote-topic">Iluminação pública</span></div>
+ <p class="vote-number">PL nº 27/2025 · Executivo</p><h3>Alteração da cobrança da CIP — iluminação pública</h3>
+ <p class="vote-description">O projeto alterou o anexo da Lei Municipal nº 913/2005, relativo à Contribuição para Custeio da Iluminação Pública (CIP). A Câmara registrou aprovação por 5 votos favoráveis e 3 contrários. A matéria resultou na Lei Municipal nº 1.689/2025, de 25/11/2025.</p>
+ <div class="vote-info">
+  <div class="vote-info-row"><span>Resultado do plenário</span><strong class="vote-plenary"><span aria-hidden="true">●</span> Aprovado · 5 a 3</strong></div>
+  <div class="vote-info-row"><span>Meu voto individual</span><strong class="vote-check"><span aria-hidden="true">◷</span> Aguardando registro nominal</strong></div>
+ </div>
+ <div class="vote-card-bottom"><p>Fonte: 43ª Sessão Ordinária de 2025 · Lei nº 1.689/2025</p>
+ <a href="https://www.cmcristal.rs.gov.br/atas/sessao_ordinaria/2025/1/0/828" target="_blank" rel="noopener noreferrer">Consultar ata oficial da Câmara ↗</a>
+ <a href="https://www.cmcristal.rs.gov.br/proposicoes/Projetos-de-Leis-Ordinarias---Executivo/2025/1/0/1622" target="_blank" rel="noopener noreferrer">Consultar projeto original ↗</a>
+ <a href="https://www.cristal.rs.gov.br/leis-municipais?page=2&amp;tipo=LEI%20ORDIN%C3%81RIA" target="_blank" rel="noopener noreferrer">Consultar Lei nº 1.689/2025 na Prefeitura ↗</a>
+ </div>
+</article>
 <article class="vote-card" id="pl-018-2025" data-year="2025" data-topic="patrimônio municipal" data-number="18/2025" data-result="aprovado" data-search="autorização para aquisição de imóvel pl nº 18/2025 projeto do executivo que autoriza o município a adquirir bem imóvel, conforme ata da sessão. patrimônio municipal 29ª sessão ordinária de 2025 compra terreno aquisicao imovel area escola">
  <div class="vote-card-head"><span class="vote-date">18/08/2025</span><span class="vote-topic">Patrimônio municipal</span></div>
  <p class="vote-number">PL nº 18/2025</p><h3>Autorização para aquisição de imóvel</h3>
@@ -156,6 +175,35 @@
  </div>
  <div class="vote-card-bottom"><p>Fonte: 29ª Sessão Ordinária de 2025</p><a href="https://www.cmcristal.rs.gov.br/atas/sessao_ordinaria/2025/1/0/800" target="_blank" rel="noopener noreferrer">Consultar ata oficial da Câmara ↗</a></div>
 </article></div>
+ <article class="vote-card" id="pl-005-2024" data-year="2024" data-topic="remuneração" data-number="5/2024" data-result="aprovado" data-search="pl 5 2024 projeto lei salario salarios aumento remuneracao subsídio subsidio secretario secretarios municipais fixacao vencimentos 5627,29 5627.29 valor reais legislatura 2025 a 2028 lei 1649/2024 1663/2025 gratificacao">
+ <div class="vote-card-head"><span class="vote-date">22/07/2024</span><span class="vote-topic">Remuneração</span></div>
+ <p class="vote-number">PL nº 5/2024 · Legislativo</p><h3>Subsídio dos secretários municipais — nova proposta aprovada</h3>
+ <p class="vote-description">A proposta fixou em <strong>R$ 5.627,29</strong> o subsídio mensal dos secretários municipais para o período de 2025 a 2028, além de tratar de gratificação natalina e férias. Aprovada por unanimidade, resultou na Lei Municipal nº 1.649/2024. O art. 5º dessa lei foi posteriormente revogado pela Lei nº 1.663/2025.</p>
+ <div class="vote-info">
+  <div class="vote-info-row"><span>Resultado do plenário</span><strong class="vote-plenary"><span aria-hidden="true">●</span> Aprovado por unanimidade</strong></div>
+  <div class="vote-info-row"><span>Meu voto individual</span><strong class="vote-check"><span aria-hidden="true">◷</span> Aguardando registro nominal</strong></div>
+ </div>
+ <div class="vote-card-bottom"><p>Fonte: 25ª Sessão Ordinária de 2024 · Leis nº 1.649/2024 e nº 1.663/2025</p>
+ <a href="https://www.cmcristal.rs.gov.br/atas/plenaria/2024/2/0/705" target="_blank" rel="noopener noreferrer">Consultar ata oficial da Câmara ↗</a>
+ <a href="https://www.cmcristal.rs.gov.br/proposicoes/Projetos-de-Leis-ordinarias-Legislativo/2024/1/0/1308" target="_blank" rel="noopener noreferrer">Consultar projeto original ↗</a>
+ <a href="https://www.cristal.rs.gov.br/leis-municipais/detalhes/11403" target="_blank" rel="noopener noreferrer">Consultar Lei nº 1.649/2024 ↗</a>
+ <a href="https://www.cristal.rs.gov.br/leis-municipais/detalhes/11462" target="_blank" rel="noopener noreferrer">Consultar alteração de 2025 ↗</a>
+ </div>
+</article>
+<article class="vote-card" id="pl-003-2024" data-year="2024" data-topic="remuneração" data-number="3/2024" data-result="rejeitado" data-search="pl 3 2024 projeto lei aumento salario salarios remuneracao subsídio subsidio secretario secretarios municipais fixacao vencimentos 6900,00 6900.00 valor seis mil e novecentos reais rejeitado contra">
+ <div class="vote-card-head"><span class="vote-date">24/06/2024</span><span class="vote-topic">Remuneração</span></div>
+ <p class="vote-number">PL nº 3/2024 · Legislativo</p><h3>Subsídio dos secretários municipais — proposta inicial rejeitada</h3>
+ <p class="vote-description">Projeto que propunha subsídio mensal de <strong>R$ 6.900,00</strong> aos secretários municipais para o período de 2025 a 2028. Foi rejeitado por <strong>5 votos contrários e 3 favoráveis</strong>. Uma nova proposta, o PL nº 5/2024, foi apresentada e votada posteriormente.</p>
+ <div class="vote-info">
+  <div class="vote-info-row"><span>Resultado do plenário</span><strong class="vote-plenary vote-plenary-rejected"><span aria-hidden="true">●</span> Rejeitado · 3 a 5</strong></div>
+  <div class="vote-info-row"><span>Meu voto individual</span><strong class="vote-check"><span aria-hidden="true">◷</span> Aguardando registro nominal</strong></div>
+ </div>
+ <div class="vote-card-bottom"><p>Fonte: 21ª Sessão Ordinária de 2024</p>
+ <a href="https://www.cmcristal.rs.gov.br/atas/plenaria/2024/2/0/697" target="_blank" rel="noopener noreferrer">Consultar ata oficial da Câmara ↗</a>
+ <a href="https://www.cmcristal.rs.gov.br/proposicoes/Projetos-de-Leis-ordinarias-Legislativo/2024/1/0/1232" target="_blank" rel="noopener noreferrer">Consultar projeto original ↗</a>
+ </div>
+</article>
+
  <p class="vote-empty" id="vote-empty" hidden>Nenhum projeto corresponde à pesquisa. Experimente outro assunto ou ano.</p>
 </section>
 <section class="section" aria-labelledby="vote-next-title">
