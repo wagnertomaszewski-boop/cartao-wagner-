@@ -70,6 +70,30 @@ test('cliente da API candidata normaliza telefones historicos e bloqueia entrada
  assert.deepEqual(JSON.parse(chamadas[0].opt.body),{protocolo:'LEGADO/2025/10',telefone:'+555188887777'});
  assert.equal(chamadas[0].opt.headers.Authorization,undefined);
 });
+test('HTTP e cliente do painel sinalizam destino WhatsApp legado sem vazar para acesso publico',async()=>{
+ let execucoes=0;
+ const repositorio={
+  limitarEntrada:async()=>true,
+  emitir:async()=>{execucoes++;throw Object.assign(Error('Destino nao confirmado'),{status:409,codigo:'WHATSAPP_LEGADO_SEM_DESTINO'});}
+ };
+ const handler=criarHandlerProducao({
+  repositorio,origemApi:'https://api.exemplo.org',
+  resolverAdminMfa:async()=>({usuarioId:uid,mfaRecente:true})
+ });
+ const s=http.createServer(async(req,res)=>{if(!await handler(req,res)){res.writeHead(404);res.end();}});
+ await new Promise(resolve=>s.listen(0,'127.0.0.1',resolve));
+ try{
+  const url='http://127.0.0.1:'+s.address().port+'/api/v1/admin/recuperacao/emitir';
+  const fazer=token=>fetch(url,{method:'POST',headers:{Origin:'https://api.exemplo.org','Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify({pedidoId:'sintetico'})});
+  const semToken=await fazer(null);assert.equal(semToken.status,401);assert.equal((await semToken.json()).codigo,undefined);assert.equal(execucoes,0);
+  const comToken=await fazer('token-sintetico');assert.equal(comToken.status,409);
+  const data=await comToken.json();assert.equal(data.codigo,'WHATSAPP_LEGADO_SEM_DESTINO');
+  assert.match(data.erro,/regulariza/i);assert.equal(execucoes,1);
+ }finally{await new Promise(resolve=>s.close(resolve));}
+ const cfg={ambiente:'producao',projeto:'pmmsdjozyyxkbuqlkfpb',apiBase:'https://api.exemplo.org',versao:'a'.repeat(40)};
+ const cliente=criarClienteWeb(cfg,async()=>new Response(JSON.stringify({codigo:'WHATSAPP_LEGADO_SEM_DESTINO',erro:'Contato antigo'}),{status:409,headers:{'Content-Type':'application/json'}}));
+ await assert.rejects(cliente.admin('emitir',{pedidoId:'sintetico'},'token-sintetico'),/regularize o numero|regularize o número/i);
+});
 test('cadastro no formato produtivo preserva coordenadas, isola cidadãos e reflete status/histórico do Painel',async()=>{const a=await ambiente();try{const p=await a.repo.cadastrar(dados());const repetido=await a.repo.cadastrar(dados());assert.equal(p.protocolo,repetido.protocolo);assert.equal(p.chaveInicial,repetido.chaveInicial);assert.equal((await a.db.query('SELECT count(*) AS n FROM public.solicitacoes')).rows[0].n,1);
 assert.equal((await a.repo.consultar({protocolo:p.protocolo})).encontrado,false);const outro=await a.repo.cadastrar(dados('00000000-0000-4000-8000-000000000003'));assert.equal((await a.repo.consultar({protocolo:outro.protocolo,chave:p.chaveInicial})).encontrado,false);
 await a.db.query("UPDATE public.solicitacoes SET status='Em análise',anotacao_interna='NÃO EXPOR' WHERE protocolo=$1",[p.protocolo]);await a.db.query("INSERT INTO public.solicitacoes_status_historico(solicitacao_id,status) SELECT id,status FROM public.solicitacoes WHERE protocolo=$1",[p.protocolo]);const consulta=await a.repo.consultar({protocolo:p.protocolo,chave:p.chaveInicial});assert.equal(consulta.status,'Em análise');assert.equal(consulta.historico.length,1);assert.equal(JSON.stringify(consulta).includes('NÃO EXPOR'),false);assert.equal(Object.hasOwn(consulta,'latitude'),false);const coord=(await a.db.query('SELECT latitude::text,longitude::text,localizacao_origem FROM public.solicitacoes WHERE protocolo=$1',[p.protocolo])).rows[0];assert.equal(coord.latitude,String(dados().latitude));assert.equal(coord.longitude,String(dados().longitude));await assert.rejects(a.repo.cadastrar({...dados(),p_descricao:'alterada'}),e=>e.status===409);
