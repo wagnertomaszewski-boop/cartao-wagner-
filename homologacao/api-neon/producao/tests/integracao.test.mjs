@@ -59,11 +59,14 @@ test('telefone legado em dez e doze digitos registra pedido mas impede envio Wha
 test('regularizacao de contato legado exige MFA e evidência de servidor, sem alterar cadastro',async()=>{
  const instante=Date.now();
  let modoEvidencia='negada';
- const a=await ambiente({validarRegularizacaoContato:async ({pedidoId,operadorId,telefoneNovo})=>({
+ const a=await ambiente({validarRegularizacaoContato:async ({pedidoId,solicitacaoId,operadorId,telefoneOriginal,telefoneNovo})=>({
    validado:modoEvidencia!=='negada',
    evidenciaId:'00000000-0000-4000-8000-000000000099',
    verificadoEm:new Date(modoEvidencia==='expirada'?instante-360000:instante).toISOString(),
    operadorId:modoEvidencia==='outro-operador'?'00000000-0000-4000-8000-000000000080':operadorId,
+   pedidoId:modoEvidencia==='outro-pedido'?'00000000-0000-4000-8000-000000000088':pedidoId,
+   solicitacaoId:modoEvidencia==='outra-solicitacao'?'12345':solicitacaoId,
+   telefoneOriginal:modoEvidencia==='outro-original'?'+555188887770':telefoneOriginal,
    telefoneNovo:modoEvidencia==='outro-telefone'?'+5551999997788':telefoneNovo
  })});
  try{
@@ -76,7 +79,7 @@ test('regularizacao de contato legado exige MFA e evidência de servidor, sem al
   await assert.rejects(a.repo.regularizarContato(regularizar,{...op,mfaRecente:false}),e=>e.status===403);
   await assert.rejects(a.repo.regularizarContato({...regularizar,contatoVerificado:false},op),e=>e.status===403);
   await assert.rejects(a.repo.regularizarContato({...regularizar,telefoneConfirmado:'51999997778'},op),e=>e.status===400);
-  for(const modo of ['negada','expirada','outro-operador','outro-telefone']){
+  for(const modo of ['negada','expirada','outro-operador','outro-telefone','outro-pedido','outra-solicitacao','outro-original']){
    modoEvidencia=modo;
    await assert.rejects(a.repo.regularizarContato(regularizar,op),e=>e.status===403&&/evidência/i.test(e.message));
    assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.contatos_regularizados')).rows[0].n,0);
