@@ -18,7 +18,7 @@ export function criarClienteWeb(config,buscar=fetch){
  consultar:d=>{if(!/^[A-Za-z0-9_-]{43}$/.test(d.chave||'')||!d.protocolo)throw Error('Informe protocolo e chave de acompanhamento.');return enviar('solicitacoes/consultar',d);},
  anexar:d=>enviar('arquivos/anexar',d),baixar:d=>enviar('arquivos/baixar',d),
  solicitar:d=>enviar('recuperacao/solicitar',{...d,telefone:normalizarTelefoneRecuperacao(d?.telefone)}),validar:d=>enviar('recuperacao/validar',d),
- admin:(acao,d,token)=>{if(!['listar','decidir','emitir','confirmar-envio'].includes(acao)||!token)throw Error('Sessão administrativa obrigatória.');return enviar('admin/recuperacao/'+acao,d,token);}
+ admin:(acao,d,token)=>{if(!['listar','decidir','regularizar-contato','emitir','confirmar-envio'].includes(acao)||!token)throw Error('Sessão administrativa obrigatória.');return enviar('admin/recuperacao/'+acao,d,token);}
  };
 }
 
