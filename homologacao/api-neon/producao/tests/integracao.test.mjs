@@ -5,7 +5,7 @@ import {criarStoragePrivado} from '../storage.mjs';
 import {criarRepositorio} from '../repositorio.mjs';import {validarConfiguracaoPublica,validarConfiguracaoServidor} from '../configuracao.mjs';import {criarClienteWeb,criarContratoRecuperacaoCidadao,normalizarTelefoneRecuperacao} from '../web/cliente.mjs';import {criarHandlerProducao} from '../http.mjs';import http from 'node:http';
 const segredoChaves='segredo-de-chaves-preexistente-ficticio-v1';
 const uid='00000000-0000-4000-8000-000000000001',op={usuarioId:uid,mfaRecente:true};
-async function ambiente(){const db=new PGlite();await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE mandato_api_privada;CREATE SCHEMA auth;CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;CREATE SEQUENCE public.protocolo_seq;
+async function ambiente({validarRegularizacaoContato=null}={}){const db=new PGlite();await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE mandato_api_privada;CREATE SCHEMA auth;CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;CREATE SEQUENCE public.protocolo_seq;
 CREATE TABLE public.solicitacoes(id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,protocolo text DEFAULT '2026-'||lpad(nextval('protocolo_seq')::text,6,'0'),nome text NOT NULL,whatsapp text NOT NULL,localidade text NOT NULL,assunto text NOT NULL,descricao text NOT NULL,status text NOT NULL DEFAULT 'Recebida',anexos text[],latitude numeric,longitude numeric,criado_em timestamptz DEFAULT now(),atualizado_em timestamptz DEFAULT now(),anotacao_interna text);
 CREATE TABLE public.solicitacoes_status_historico(id bigint GENERATED ALWAYS AS IDENTITY,solicitacao_id bigint REFERENCES public.solicitacoes(id),status text,criado_em timestamptz DEFAULT now());
 CREATE TABLE public.respostas_solicitacoes(id bigint GENERATED ALWAYS AS IDENTITY,solicitacao_id bigint REFERENCES public.solicitacoes(id),mensagem text,anexos jsonb DEFAULT '[]',criado_em timestamptz DEFAULT now());
@@ -24,7 +24,7 @@ await db.exec(await readFile(new URL('../sql/estrutura-candidata.sql',import.met
 await db.exec(await readFile(new URL('../sql/contatos-legados-candidata.sql',import.meta.url),'utf8'));
 const pool={query:(q,p)=>q.includes('pg_advisory_xact_lock')?Promise.resolve({rows:[]}):db.query(q,p),connect:async()=>({query:(q,p)=>q.includes('pg_advisory_xact_lock')?Promise.resolve({rows:[]}):db.query(q,p),release(){}})};
 let tempo=Date.now();const objetos=new Map(),storage={enviar:async(p,b)=>objetos.set(p,Buffer.from(b)),baixar:async p=>objetos.get(p)};
-const repo=criarRepositorio({pool,segredo:'segredo-sintetico-de-teste-independente-32',segredoChaves,storage,agora:()=>tempo});return {db,repo,avancar:ms=>{tempo+=ms;},objetos};}
+const repo=criarRepositorio({pool,segredo:'segredo-sintetico-de-teste-independente-32',segredoChaves,storage,agora:()=>tempo,validarRegularizacaoContato});return {db,repo,avancar:ms=>{tempo+=ms;},objetos};}
 const dados=(id='00000000-0000-4000-8000-000000000002')=>({operacaoId:id,p_nome:'Pessoa fictícia',p_whatsapp:'+5551999999999',p_localidade:'Local de teste',p_assunto:'Iluminação fictícia',p_descricao:'Ensaio isolado, sem cidadão real.',latitude:-31.004570880073523,longitude:-52.04360961914063,localizacaoOrigem:'mapa',localizacaoAutorizada:true});
 test('solicitação antiga mantém protocolo e resposta, recebe chave por recuperação e anexo continua privado',async()=>{const a=await ambiente();try{await a.db.query("INSERT INTO public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,status,protocolo) VALUES('Legado fictício','5551999999999','Teste','Histórico preservado','Descrição original','Em andamento','LEGADO/2025/2')");await a.db.query("INSERT INTO public.respostas_solicitacoes(solicitacao_id,mensagem,anexos) SELECT id,'Resposta antiga',$1 FROM public.solicitacoes WHERE protocolo='LEGADO/2025/2'",[JSON.stringify([{nome:'resposta.pdf',url:'https://pmmsdjozyyxkbuqlkfpb.supabase.co/storage/v1/object/public/documentos-respostas/legado/resposta.pdf'}])]);a.objetos.set('legado/resposta.pdf',Buffer.from('%PDF-TESTE'));const r=await a.repo.solicitarRecuperacao({protocolo:'LEGADO/2025/2',telefone:dados().p_whatsapp});await a.repo.decidir({pedidoId:r.pedidoId,decisao:'aprovar',justificativa:'Identidade fictícia conferida.',identidadeConferida:true},op);const e=await a.repo.emitir({pedidoId:r.pedidoId,telefoneConfirmado:dados().p_whatsapp},op),v=await a.repo.validarCodigo({...r,codigo:e.codigo}),consulta=await a.repo.consultar({protocolo:v.protocolo,chave:v.novaChave});assert.equal(consulta.status,'Em andamento');assert.equal(consulta.respostas[0].mensagem,'Resposta antiga');assert.equal(JSON.stringify(consulta).includes('/object/public/'),false);assert.equal(consulta.anexos.length,1);assert.equal((await a.repo.baixar({protocolo:v.protocolo,chave:v.novaChave,arquivoId:consulta.anexos[0].id})).base64,Buffer.from('%PDF-TESTE').toString('base64'));assert.equal((await a.db.query('SELECT count(*) AS n FROM public.solicitacoes')).rows[0].n,1);}finally{await a.db.close();}});
 test('telefone legado em dez e doze digitos registra pedido mas impede envio WhatsApp sem destino movel confirmado',async()=>{
@@ -56,8 +56,14 @@ test('telefone legado em dez e doze digitos registra pedido mas impede envio Wha
   }finally{await a.db.close();}
  }
 });
-test('regularizacao de contato legado exige MFA, audita destino e restaura primeira chave sem alterar cadastro',async()=>{
- const a=await ambiente();
+test('regularizacao de contato legado exige MFA e evidência de servidor, sem alterar cadastro',async()=>{
+ const instante=Date.now();
+ let evidenciaHabilitada=false;
+ const a=await ambiente({validarRegularizacaoContato:async ({pedidoId,operadorId,telefoneNovo})=>({
+   validado:evidenciaHabilitada,
+   evidenciaId:'00000000-0000-4000-8000-000000000099',
+   verificadoEm:new Date(instante).toISOString(),operadorId,telefoneNovo
+ })});
  try{
   const protocolo='LEGADO/REGULARIZAR/2025',numeroOriginal='5188887777',novo='51999997777';
   await a.db.query("INSERT INTO public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,status,protocolo) VALUES('Pessoa fictícia',$1,'Local fictício','Pedido antigo','Somente teste','Recebida',$2)",[numeroOriginal,protocolo]);
@@ -68,10 +74,14 @@ test('regularizacao de contato legado exige MFA, audita destino e restaura prime
   await assert.rejects(a.repo.regularizarContato(regularizar,{...op,mfaRecente:false}),e=>e.status===403);
   await assert.rejects(a.repo.regularizarContato({...regularizar,contatoVerificado:false},op),e=>e.status===403);
   await assert.rejects(a.repo.regularizarContato({...regularizar,telefoneConfirmado:'51999997778'},op),e=>e.status===400);
+  await assert.rejects(a.repo.regularizarContato(regularizar,op),e=>e.status===403&&/evidência/i.test(e.message));
+  assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.contatos_regularizados')).rows[0].n,0);
+  evidenciaHabilitada=true;
   const result=await a.repo.regularizarContato(regularizar,op);
   assert.equal(result.regularizado,true);
   assert.equal((await a.db.query('SELECT whatsapp FROM public.solicitacoes WHERE protocolo=$1',[protocolo])).rows[0].whatsapp,numeroOriginal);
   assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.contatos_regularizados')).rows[0].n,1);
+  assert.equal((await a.db.query('SELECT evidencia_id FROM mandato_privado.contatos_regularizados')).rows[0].evidencia_id,'00000000-0000-4000-8000-000000000099');
   assert.equal((await a.db.query("SELECT count(*) AS n FROM mandato_privado.auditoria_recuperacao WHERE evento='contato_legado_regularizado'")).rows[0].n,1);
   await assert.rejects(a.repo.emitir({pedidoId:pedido.pedidoId,telefoneConfirmado:'(51) 8888-7777'},op),e=>e.status===403);
   const emissao=await a.repo.emitir({pedidoId:pedido.pedidoId,telefoneConfirmado:novo},op);
