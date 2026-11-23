@@ -6,7 +6,10 @@ import {validarArquivoBinario} from '../validacao-arquivo-hml.mjs';
 import {anexosLegados} from './anexos-legados.mjs';
 const falha=(status,m)=>Object.assign(Error(m),{status});
 const uuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x);
-const telefone=x=>{let s=String(x||'').replace(/\D/g,'');if(s.length===11)s='55'+s;if(!/^55[1-9]\d{10}$/.test(s))throw falha(400,'Telefone inválido.');return s;};
+// Normaliza os números históricos sem acrescentar um nono dígito por suposição.
+// Oito ou nove dígitos locais, sempre com DDD; opcional prefixo brasileiro 55.
+// A coincidência do telefone nunca substitui MFA e conferência humana na recuperação.
+const telefone=x=>{let s=String(x||'').replace(/\D/g,'');if(s.length===10||s.length===11)s='55'+s;if(!/^55[1-9]\d{9,10}$/.test(s))throw falha(400,'Telefone inválido.');return s;};
 const texto=(x,max)=>{if(typeof x!=='string'||!x.trim()||x.length>max)throw falha(400,'Dados inválidos.');return x.trim();};
 export function criarRepositorio({pool,segredo,segredoChaves,storage,agora=()=>Date.now()}){
  if(!pool||typeof segredo!=='string'||segredo.length<32)throw Error('Backend privado não configurado.');
