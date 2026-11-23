@@ -9,6 +9,11 @@ const E164MOVEL=/^\+55[1-9]\d{10}$/;
 const B64=/^[A-Za-z0-9_-]+$/;
 const CAMPOS=['conferenteId','evidenciaId','finalidade','metodo','operadorId','pedidoId','solicitacaoId','telefoneNovo','telefoneOriginal','v','verificadoEm'];
 
+/**
+ * @param {{chavePublicaConferente?: any, conferentesPermitidos?: string[],
+ * buscarAtestado?: (contexto: {pedidoId:string, solicitacaoId:string})=>Promise<any>,
+ * relogio?: ()=>number, validadeMaximaMs?:number}} config
+ */
 export function criarVerificadorContatoIndependente({
  chavePublicaConferente,conferentesPermitidos,buscarAtestado,relogio=()=>Date.now(),
  validadeMaximaMs=300000
