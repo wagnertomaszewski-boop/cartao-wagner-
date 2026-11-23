@@ -33,7 +33,7 @@ test('envio via WhatsApp Verify usa código customizado e URL HTTPS fixa, sem re
  assert.equal(op.redirect,'error');
  assert.equal(op.headers['Content-Type'],'application/x-www-form-urlencoded');
  assert.match(op.headers.Authorization,/^Basic /);
- assert.equal(JSON.parse(JSON.stringify(op)).includes(apiKeySecret),false);
+ assert.equal(JSON.stringify(op).includes(apiKeySecret),false);
  assert.deepEqual(Object.fromEntries(new URLSearchParams(op.body)),{
   To:novo,Channel:'whatsapp',CustomCode:'123456'
  });
