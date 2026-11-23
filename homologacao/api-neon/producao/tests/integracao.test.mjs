@@ -151,6 +151,22 @@ test('fluxo PostgreSQL com atestado assinado externo libera contato legado sem m
   assert.equal((await a.repo.validarCodigo({...pedido,codigo:emissao.codigo})).validado,true);
   assert.equal((await a.repo.validarCodigo({...pedido,codigo:emissao.codigo})).validado,false);
   assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.contatos_regularizados')).rows[0].n,1);
+  // Mesmo um recibo validamente assinado não pode autorizar outra regularização
+  // se reutilizar o identificador de evidência consumido na primeira.
+  const segundo=await a.repo.solicitarRecuperacao({protocolo,telefone:numeroOriginal});
+  await a.repo.decidir({pedidoId:segundo.pedidoId,decisao:'aprovar',
+   identidadeConferida:true,justificativa:'Segunda identidade sintética conferida.'},op);
+  const novoContexto={...contexto,pedidoId:segundo.pedidoId};
+  const novoReciboDados={...reciboDados,pedidoId:segundo.pedidoId};
+  const novoReciboBytes=Buffer.from(JSON.stringify(novoReciboDados));
+  const novoRecibo={payload:novoReciboBytes.toString('base64url'),
+   assinatura:sign(null,Buffer.concat([Buffer.from('mandato-posse-contato-v1\0'),novoReciboBytes]),
+    verificadorPosse.privateKey).toString('base64url')};
+  comprovante=emissor({recibo:novoRecibo,contexto:novoContexto});
+  assert.equal(typeof comprovante?.assinatura,'string');
+  await assert.rejects(a.repo.regularizarContato({...entrada,pedidoId:segundo.pedidoId},op),
+   err=>err.code==='23505'||/duplicate key|unique/i.test(err.message));
+  assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.contatos_regularizados')).rows[0].n,1);
  }finally{await a.db.close();}
 });
 test('cliente da API candidata normaliza telefones historicos e bloqueia entradas invalidas',async()=>{
