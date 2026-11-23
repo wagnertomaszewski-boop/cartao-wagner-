@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import {rea
 import {PGlite} from '@electric-sql/pglite';
 import {verificadorHmac} from '../../preproducao/segredos-privados.mjs';
 import {criarStoragePrivado} from '../storage.mjs';
-import {criarRepositorio} from '../repositorio.mjs';import {validarConfiguracaoPublica,validarConfiguracaoServidor} from '../configuracao.mjs';import {criarClienteWeb} from '../web/cliente.mjs';import {criarHandlerProducao} from '../http.mjs';import http from 'node:http';
+import {criarRepositorio} from '../repositorio.mjs';import {validarConfiguracaoPublica,validarConfiguracaoServidor} from '../configuracao.mjs';import {criarClienteWeb,normalizarTelefoneRecuperacao} from '../web/cliente.mjs';import {criarHandlerProducao} from '../http.mjs';import http from 'node:http';
 const segredoChaves='segredo-de-chaves-preexistente-ficticio-v1';
 const uid='00000000-0000-4000-8000-000000000001',op={usuarioId:uid,mfaRecente:true};
 async function ambiente(){const db=new PGlite();await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE mandato_api_privada;CREATE SCHEMA auth;CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;CREATE SEQUENCE public.protocolo_seq;
@@ -26,7 +26,7 @@ let tempo=Date.now();const objetos=new Map(),storage={enviar:async(p,b)=>objetos
 const repo=criarRepositorio({pool,segredo:'segredo-sintetico-de-teste-independente-32',segredoChaves,storage,agora:()=>tempo});return {db,repo,avancar:ms=>{tempo+=ms;},objetos};}
 const dados=(id='00000000-0000-4000-8000-000000000002')=>({operacaoId:id,p_nome:'Pessoa fictícia',p_whatsapp:'+5551999999999',p_localidade:'Local de teste',p_assunto:'Iluminação fictícia',p_descricao:'Ensaio isolado, sem cidadão real.',latitude:-31.004570880073523,longitude:-52.04360961914063,localizacaoOrigem:'mapa',localizacaoAutorizada:true});
 test('solicitação antiga mantém protocolo e resposta, recebe chave por recuperação e anexo continua privado',async()=>{const a=await ambiente();try{await a.db.query("INSERT INTO public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,status,protocolo) VALUES('Legado fictício','5551999999999','Teste','Histórico preservado','Descrição original','Em andamento','LEGADO/2025/2')");await a.db.query("INSERT INTO public.respostas_solicitacoes(solicitacao_id,mensagem,anexos) SELECT id,'Resposta antiga',$1 FROM public.solicitacoes WHERE protocolo='LEGADO/2025/2'",[JSON.stringify([{nome:'resposta.pdf',url:'https://pmmsdjozyyxkbuqlkfpb.supabase.co/storage/v1/object/public/documentos-respostas/legado/resposta.pdf'}])]);a.objetos.set('legado/resposta.pdf',Buffer.from('%PDF-TESTE'));const r=await a.repo.solicitarRecuperacao({protocolo:'LEGADO/2025/2',telefone:dados().p_whatsapp});await a.repo.decidir({pedidoId:r.pedidoId,decisao:'aprovar',justificativa:'Identidade fictícia conferida.',identidadeConferida:true},op);const e=await a.repo.emitir({pedidoId:r.pedidoId,telefoneConfirmado:dados().p_whatsapp},op),v=await a.repo.validarCodigo({...r,codigo:e.codigo}),consulta=await a.repo.consultar({protocolo:v.protocolo,chave:v.novaChave});assert.equal(consulta.status,'Em andamento');assert.equal(consulta.respostas[0].mensagem,'Resposta antiga');assert.equal(JSON.stringify(consulta).includes('/object/public/'),false);assert.equal(consulta.anexos.length,1);assert.equal((await a.repo.baixar({protocolo:v.protocolo,chave:v.novaChave,arquivoId:consulta.anexos[0].id})).base64,Buffer.from('%PDF-TESTE').toString('base64'));assert.equal((await a.db.query('SELECT count(*) AS n FROM public.solicitacoes')).rows[0].n,1);}finally{await a.db.close();}});
-test('telefone legado em dez e doze digitos: recuperacao manual cria primeira chave sem inferir nono digito',async()=>{
+test('telefone legado em dez e doze digitos registra pedido mas impede envio WhatsApp sem destino movel confirmado',async()=>{
  for(const [armazenado,entrada,protocolo] of [
   ['5188887777','555188887777','LEGADO/2025/10'],
   ['555188887777','5188887777','LEGADO/2025/12']
@@ -36,26 +36,39 @@ test('telefone legado em dez e doze digitos: recuperacao manual cria primeira ch
    await a.db.query("INSERT INTO public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,status,protocolo) VALUES('Pessoa ficticia',$1,'Local ficticio','Assunto sintetico','Somente teste','Recebida',$2)",[armazenado,protocolo]);
    assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.chaves_acompanhamento')).rows[0].n,0);
    assert.equal((await a.repo.consultar({protocolo,chave:'chave-inexistente'})).encontrado,false);
-   // Nem mesmo o número que parece uma conversão automática de 8 para 9 dígitos é aceito.
+   // Nao inferir o nono digito e nao permitir pedido para telefone nao correspondente.
    const neutro=await a.repo.solicitarRecuperacao({protocolo,telefone:'51988887777'});
    assert.ok(neutro.pedidoId && neutro.recibo);
    assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.pedidos_recuperacao')).rows[0].n,0);
    const pedido=await a.repo.solicitarRecuperacao({protocolo,telefone:entrada});
    assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.pedidos_recuperacao')).rows[0].n,1);
    await assert.rejects(a.repo.decidir({pedidoId:pedido.pedidoId,decisao:'aprovar',identidadeConferida:true,justificativa:'Conferencia sintetica.'},{...op,mfaRecente:false}),e=>e.status===403);
-   await a.repo.decidir({pedidoId:pedido.pedidoId,decisao:'aprovar',identidadeConferida:true,justificativa:'Conferencia manual de identidade sintetica.'},op);
-   const emissao=await a.repo.emitir({pedidoId:pedido.pedidoId,telefoneConfirmado:entrada},op);
-   assert.equal(emissao.telefone,'+555188887777');
-   assert.equal((await a.repo.confirmarEnvio({pedidoId:pedido.pedidoId,envioConfirmado:true},op)).entregaComprovada,false);
-   const resultado=await a.repo.validarCodigo({...pedido,codigo:emissao.codigo});
-   assert.equal(resultado.validado,true);
-   assert.equal(resultado.protocolo,protocolo);
-   assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.chaves_acompanhamento WHERE revogada_em IS NULL')).rows[0].n,1);
-   assert.equal((await a.repo.consultar({protocolo,chave:resultado.novaChave})).encontrado,true);
-   assert.equal((await a.repo.validarCodigo({...pedido,codigo:emissao.codigo})).validado,false);
+   await a.repo.decidir({pedidoId:pedido.pedidoId,decisao:'aprovar',identidadeConferida:true,justificativa:'Conferencia manual sintetica.'},op);
+   await assert.rejects(a.repo.emitir({pedidoId:pedido.pedidoId,telefoneConfirmado:entrada},op),e=>e.status===409&&/regulariza/i.test(e.message));
+   assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.codigos_recuperacao')).rows[0].n,0);
+   assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.chaves_acompanhamento')).rows[0].n,0);
+   assert.equal((await a.db.query('SELECT estado FROM mandato_privado.pedidos_recuperacao')).rows[0].estado,'aprovado');
    assert.equal((await a.db.query('SELECT count(*) AS n FROM public.solicitacoes')).rows[0].n,1);
   }finally{await a.db.close();}
  }
+});
+test('cliente da API candidata normaliza telefones historicos e bloqueia entradas invalidas',async()=>{
+ const pares=[
+  ['(51) 8888-7777','+555188887777'],
+  ['+55 51 8888-7777','+555188887777'],
+  ['(51) 98888-7777','+5551988887777'],
+  ['+55 51 98888-7777','+5551988887777']
+ ];
+ for(const [entrada,esperado] of pares)assert.equal(normalizarTelefoneRecuperacao(entrada),esperado);
+ for(const invalido of ['',null,'88887777','0000000000000','+1 212 555 0100'])assert.throws(()=>normalizarTelefoneRecuperacao(invalido));
+ const chamadas=[],cfg={ambiente:'producao',projeto:'pmmsdjozyyxkbuqlkfpb',apiBase:'https://api.exemplo.org',versao:'a'.repeat(40)};
+ const api=criarClienteWeb(cfg,async(url,opt)=>{chamadas.push({url,opt});return {ok:true,json:async()=>({pedidoId:'sintetico',recibo:'sintetico'})};});
+ await api.solicitar({protocolo:'LEGADO/2025/10',telefone:'(51) 8888-7777'});
+ assert.equal(chamadas.length,1);
+ assert.equal(new URL(chamadas[0].url).search,'');
+ assert.equal(chamadas[0].opt.credentials,'omit');
+ assert.deepEqual(JSON.parse(chamadas[0].opt.body),{protocolo:'LEGADO/2025/10',telefone:'+555188887777'});
+ assert.equal(chamadas[0].opt.headers.Authorization,undefined);
 });
 test('cadastro no formato produtivo preserva coordenadas, isola cidadãos e reflete status/histórico do Painel',async()=>{const a=await ambiente();try{const p=await a.repo.cadastrar(dados());const repetido=await a.repo.cadastrar(dados());assert.equal(p.protocolo,repetido.protocolo);assert.equal(p.chaveInicial,repetido.chaveInicial);assert.equal((await a.db.query('SELECT count(*) AS n FROM public.solicitacoes')).rows[0].n,1);
 assert.equal((await a.repo.consultar({protocolo:p.protocolo})).encontrado,false);const outro=await a.repo.cadastrar(dados('00000000-0000-4000-8000-000000000003'));assert.equal((await a.repo.consultar({protocolo:outro.protocolo,chave:p.chaveInicial})).encontrado,false);
