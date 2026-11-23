@@ -30,6 +30,9 @@ test('a interface candidata oferece regularização isolada sem token de prova e
  assert.match(painel,/regularizar-contato/);
  assert.match(painel,/Regularizar celular antigo \(prova independente\)/);
  assert.match(painel,/contato_regularizado/);
+ assert.match(painel,/regularizacao_configurada===true/);
+ assert.match(painel,/r\.estado==='aprovado'&&\(!numeroHistoricoSemNonoDigito\(r\.whatsapp\)\|\|r\.contato_regularizado===true\)/);
+ assert.match(painel,/a regularização ainda depende de um verificador independente habilitado/);
  assert.equal(painel.includes('chavePrivadaConferente'),false);
  assert.equal(painel.includes('assinatura:'),false);
  const edge=await readFile(new URL('../supabase/functions/mandato-privado/index.ts',import.meta.url),'utf8');
