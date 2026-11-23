@@ -2,7 +2,7 @@
 import {ORIGEM_WEB} from './configuracao.mjs';
 export function criarHandlerProducao({repositorio,resolverAdminMfa,origemApi}){
  if(typeof resolverAdminMfa!=='function'||!repositorio||!origemApi)throw Error('Configuração privada incompleta.');
- const rotas={'admin/sessao/validar':'validarSessao','solicitacoes/cadastrar':'cadastrar','solicitacoes/consultar':'consultar','arquivos/anexar':'anexar','arquivos/baixar':'baixar','recuperacao/solicitar':'solicitarRecuperacao','recuperacao/validar':'validarCodigo','admin/recuperacao/listar':'listarRecuperacoes','admin/recuperacao/decidir':'decidir','admin/recuperacao/emitir':'emitir','admin/recuperacao/confirmar-envio':'confirmarEnvio'};
+ const rotas={'admin/sessao/validar':'validarSessao','solicitacoes/cadastrar':'cadastrar','solicitacoes/consultar':'consultar','arquivos/anexar':'anexar','arquivos/baixar':'baixar','recuperacao/solicitar':'solicitarRecuperacao','recuperacao/validar':'validarCodigo','admin/recuperacao/listar':'listarRecuperacoes','admin/recuperacao/decidir':'decidir','admin/recuperacao/regularizar-contato':'regularizarContato','admin/recuperacao/emitir':'emitir','admin/recuperacao/confirmar-envio':'confirmarEnvio'};
  return async function handler(req,res){
   if(!req.url?.startsWith('/api/v1/'))return false;
   // CORS protege navegadores, mas não é autenticação. Clientes Android/nativos
