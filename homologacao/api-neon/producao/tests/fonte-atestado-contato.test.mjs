@@ -23,6 +23,25 @@ test('a fonte de comprovantes lê somente o pedido vinculado sem executar escrit
  assert.throws(()=>criarFonteAtestadoContato({}),/Conexão privada/);
 });
 
+test('consulta de atestado reutiliza a transação existente no pool com max=1',async()=>{
+ let abriuSegundaConexao=0,consultasTransacionais=0;
+ const fonte=criarFonteAtestadoContato({pool:{query:async()=>{
+  abriuSegundaConexao++;throw Error('A segunda conexão ficaria bloqueada');
+ }}});
+ const executorConsulta={query:async(sql,args)=>{
+  consultasTransacionais++;
+  assert.match(sql,/^SELECT payload,assinatura/);
+  assert.deepEqual(args,[pedidoId,'123']);
+  return {rows:[{payload:'assinatura-sintetica',assinatura:'teste'}]};
+ }};
+ assert.deepEqual(await fonte({pedidoId,solicitacaoId:'123'},executorConsulta),
+  {payload:'assinatura-sintetica',assinatura:'teste'});
+ assert.equal(abriuSegundaConexao,0);
+ assert.equal(consultasTransacionais,1);
+ assert.equal(await fonte({pedidoId,solicitacaoId:'123'},{}),null);
+ assert.equal(abriuSegundaConexao,0);
+});
+
 test('a interface candidata oferece regularização isolada sem token de prova enviado pelo navegador',async()=>{
  const caminho=fileURLToPath(new URL('../web/painel.mjs',import.meta.url));
  execFileSync(process.execPath,['--check',caminho]);
