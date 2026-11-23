@@ -68,13 +68,41 @@ export function criarRepositorio({pool,segredo,segredoChaves,storage,agora=()=>D
  });return {pedidoId:id,recibo};},
  async listarRecuperacoes(op){if(!op?.usuarioId)throw falha(403,'Administrador obrigatório.');return (await pool.query(`SELECT r.id,CASE WHEN r.estado='aprovado' AND EXISTS (SELECT 1 FROM mandato_privado.codigos_recuperacao k WHERE k.pedido_id=r.id) THEN 'emitido' ELSE r.estado END AS estado,r.criado_em,s.protocolo,s.whatsapp FROM mandato_privado.pedidos_recuperacao r JOIN public.solicitacoes s ON s.id=r.solicitacao_id WHERE r.recibo_hash IS NOT NULL ORDER BY r.criado_em DESC LIMIT 50`)).rows;},
  async decidir(d,op){if(!op?.mfaRecente||!op.usuarioId||!uuid(d.pedidoId)||!['aprovar','rejeitar'].includes(d.decisao)||d.identidadeConferida!==true)throw falha(403,'MFA recente e conferência de identidade obrigatórios.');const justificativa=texto(d.justificativa,1000);return tx(async c=>{const r=(await c.query('SELECT * FROM mandato_privado.pedidos_recuperacao WHERE id=$1 FOR UPDATE',[d.pedidoId])).rows[0];if(!r?.recibo_hash||r.estado!=='pendente')throw falha(409,'Pedido não está pendente.');const estado=d.decisao==='aprovar'?'aprovado':'rejeitado';await c.query('UPDATE mandato_privado.pedidos_recuperacao SET estado=$2,justificativa=$3,conferente_id=$4,decidido_em=now() WHERE id=$1',[r.id,estado,justificativa,op.usuarioId]);await auditar(c,'recuperacao_'+estado,r.solicitacao_id,op.usuarioId,r.id);return {estado};});},
+ async regularizarContato(d,op){
+  if(!op?.mfaRecente||!op.usuarioId||!uuid(d.pedidoId)||d.identidadeConferida!==true||d.contatoVerificado!==true)
+   throw falha(403,'MFA recente e conferência presencial do contato obrigatórios.');
+  const justificativa=texto(d.justificativa,1000);
+  if(justificativa.length<20)throw falha(400,'Justificativa de pelo menos 20 caracteres obrigatória.');
+  const novo=telefone(d.telefoneNovo),confirmado=telefone(d.telefoneConfirmado);
+  if(novo!==confirmado||!/^55[1-9]\d{10}$/.test(novo))throw falha(400,'Confirmação de celular brasileiro inválida.');
+  return tx(async c=>{
+   const {rows:[r]}=await c.query('SELECT p.*,s.whatsapp FROM mandato_privado.pedidos_recuperacao p JOIN public.solicitacoes s ON s.id=p.solicitacao_id WHERE p.id=$1 FOR UPDATE OF p',[d.pedidoId]);
+   if(!r?.recibo_hash||r.estado!=='aprovado'||r.conferente_id!==op.usuarioId)throw falha(403,'Aprovação administrativa vinculada obrigatória.');
+   const antigo=telefone(r.whatsapp);
+   if(/^55[1-9]\d{10}$/.test(antigo))throw falha(409,'Contato já está no formato de celular.');
+   if(!r.telefone_confirmado_verificador||!timingSafeEqual(Buffer.from(r.telefone_confirmado_verificador),h('telefone:'+r.id,antigo)))throw falha(403,'Contato original não corresponde ao pedido.');
+   // Não altera public.solicitacoes.whatsapp e não reatribui a solicitação.
+   // O destino fica vinculado exclusivamente a este pedido, ao conferente MFA e ao HMAC.
+   await c.query('INSERT INTO mandato_privado.contatos_regularizados(pedido_id,telefone_e164,telefone_verificador,justificativa,operador_id) VALUES($1,$2,$3,$4,$5)',
+    [r.id,'+'+novo,h('contato-regularizado:'+r.id,novo),justificativa,op.usuarioId]);
+   await auditar(c,'contato_legado_regularizado',r.solicitacao_id,op.usuarioId,r.id);
+   return {regularizado:true,destinoMascarado:'+55 ** *****'+novo.slice(-4)};
+  });
+ },
  async emitir(d,op){
   if(!op?.mfaRecente||!op.usuarioId||!uuid(d.pedidoId))throw falha(403,'MFA recente obrigatório.');
   return tx(async c=>{
    const {rows:[r]}=await c.query('SELECT p.*,s.whatsapp FROM mandato_privado.pedidos_recuperacao p JOIN public.solicitacoes s ON s.id=p.solicitacao_id WHERE p.id=$1 FOR UPDATE OF p',[d.pedidoId]);
    if(!r||r.estado!=='aprovado'||!r.recibo_hash)throw falha(409,'Aprovação necessária.');
-   const destinatario=telefone(r.whatsapp);
-   if(r.conferente_id!==op.usuarioId||telefone(d.telefoneConfirmado)!==destinatario||!r.telefone_confirmado_verificador||!timingSafeEqual(Buffer.from(r.telefone_confirmado_verificador),h('telefone:'+r.id,destinatario)))throw falha(403,'Conferência do destinatário necessária.');
+   const telefoneOriginal=telefone(r.whatsapp);
+   const {rows:[regularizacao]}=await c.query('SELECT telefone_e164,telefone_verificador,operador_id FROM mandato_privado.contatos_regularizados WHERE pedido_id=$1',[r.id]);
+   const destinatario=regularizacao?telefone(regularizacao.telefone_e164):telefoneOriginal;
+   const originalConferido=r.telefone_confirmado_verificador&&timingSafeEqual(Buffer.from(r.telefone_confirmado_verificador),h('telefone:'+r.id,telefoneOriginal));
+   const destinoConferido=!regularizacao||(regularizacao.operador_id===op.usuarioId&&
+    timingSafeEqual(Buffer.from(regularizacao.telefone_verificador),h('contato-regularizado:'+r.id,destinatario))&&
+    !/^55[1-9]\d{10}$/.test(telefoneOriginal));
+   if(r.conferente_id!==op.usuarioId||telefone(d.telefoneConfirmado)!==destinatario||!originalConferido||!destinoConferido)
+    throw falha(403,'Conferência do destinatário necessária.');
    // O cadastro histórico pode conter DDD + apenas 8 dígitos. Não presumir o 9
    // nem liberar código/URI de WhatsApp a um destino ainda não comprovado.
    // A regularização do contato requer um fluxo separado com validação humana e MFA.
