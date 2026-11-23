@@ -1,5 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';
 import {PGlite} from '@electric-sql/pglite';
+import {generateKeyPairSync,sign} from 'node:crypto';
+import {criarVerificadorContatoIndependente} from '../verificador-contato-independente.mjs';
 import {verificadorHmac} from '../../preproducao/segredos-privados.mjs';
 import {criarStoragePrivado} from '../storage.mjs';
 import {criarRepositorio} from '../repositorio.mjs';import {validarConfiguracaoPublica,validarConfiguracaoServidor} from '../configuracao.mjs';import {criarClienteWeb,criarContratoRecuperacaoCidadao,normalizarTelefoneRecuperacao} from '../web/cliente.mjs';import {criarHandlerProducao} from '../http.mjs';import http from 'node:http';
@@ -101,6 +103,41 @@ test('regularizacao de contato legado exige MFA e evidência de servidor, sem al
   assert.equal((await a.repo.consultar({protocolo,chave:v.novaChave})).encontrado,true);
   assert.equal((await a.repo.validarCodigo({...pedido,codigo:emissao.codigo})).validado,false);
   assert.equal((await a.db.query('SELECT whatsapp FROM public.solicitacoes WHERE protocolo=$1',[protocolo])).rows[0].whatsapp,numeroOriginal);
+ }finally{await a.db.close();}
+});
+test('fluxo PostgreSQL com atestado assinado externo libera contato legado sem mudar número histórico',async()=>{
+ const {publicKey,privateKey}=generateKeyPairSync('ed25519');
+ const conferenteId='00000000-0000-4000-8000-000000000013';
+ const evidenciaId='00000000-0000-4000-8000-000000000014';
+ const instante=Date.now();let comprovante=null;
+ const validar=criarVerificadorContatoIndependente({
+  chavePublicaConferente:publicKey,conferentesPermitidos:[conferenteId],
+  buscarAtestado:async()=>comprovante,relogio:()=>instante
+ });
+ const a=await ambiente({validarRegularizacaoContato:validar});
+ try{
+  const protocolo='LEGADO/SIGN/2025',numeroOriginal='5188887777';
+  await a.db.query("INSERT INTO public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,status,protocolo) VALUES('Pessoa sintética',$1,'Local sintético','Prova de telefone','Dados fictícios','Recebida',$2)",[numeroOriginal,protocolo]);
+  const pedido=await a.repo.solicitarRecuperacao({protocolo,telefone:numeroOriginal});
+  await a.repo.decidir({pedidoId:pedido.pedidoId,decisao:'aprovar',identidadeConferida:true,justificativa:'Identidade independente fictícia conferida.'},op);
+  const entrada={pedidoId:pedido.pedidoId,telefoneNovo:'+5551999997777',
+   telefoneConfirmado:'+5551999997777',identidadeConferida:true,contatoVerificado:true,
+   justificativa:'Desafio de posse confirmado por fonte fictícia independente.'};
+  await assert.rejects(a.repo.regularizarContato(entrada,op),e=>e.status===403);
+  const solicitacaoId=(await a.db.query('SELECT id FROM public.solicitacoes WHERE protocolo=$1',[protocolo])).rows[0].id;
+  const payload=Buffer.from(JSON.stringify({v:1,finalidade:'regularizacao-whatsapp-legado',
+   metodo:'desafio-independente-de-posse',evidenciaId,conferenteId,
+   pedidoId:pedido.pedidoId,solicitacaoId:String(solicitacaoId),operadorId:uid,
+   telefoneOriginal:'+555188887777',telefoneNovo:'+5551999997777',
+   verificadoEm:new Date(instante-1000).toISOString()}));
+  comprovante={payload:payload.toString('base64url'),assinatura:sign(null,payload,privateKey).toString('base64url')};
+  assert.equal((await a.repo.regularizarContato(entrada,op)).regularizado,true);
+  assert.equal((await a.db.query('SELECT whatsapp FROM public.solicitacoes WHERE protocolo=$1',[protocolo])).rows[0].whatsapp,numeroOriginal);
+  const emissao=await a.repo.emitir({pedidoId:pedido.pedidoId,telefoneConfirmado:'+5551999997777'},op);
+  assert.equal(emissao.telefone,'+5551999997777');
+  assert.equal((await a.repo.validarCodigo({...pedido,codigo:emissao.codigo})).validado,true);
+  assert.equal((await a.repo.validarCodigo({...pedido,codigo:emissao.codigo})).validado,false);
+  assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.contatos_regularizados')).rows[0].n,1);
  }finally{await a.db.close();}
 });
 test('cliente da API candidata normaliza telefones historicos e bloqueia entradas invalidas',async()=>{
