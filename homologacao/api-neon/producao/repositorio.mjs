@@ -11,6 +11,11 @@ const uuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab]
 // A coincidência do telefone nunca substitui MFA e conferência humana na recuperação.
 const telefone=x=>{const bruto=String(x||'').trim();if(bruto.startsWith('+')&&!bruto.startsWith('+55'))throw falha(400,'Telefone inválido.');let s=bruto.replace(/\D/g,'');if(s.length===10||s.length===11)s='55'+s;if(!/^55[1-9]\d{9,10}$/.test(s))throw falha(400,'Telefone inválido.');return s;};
 const texto=(x,max)=>{if(typeof x!=='string'||!x.trim()||x.length>max)throw falha(400,'Dados inválidos.');return x.trim();};
+/**
+ * @param {{pool:any, segredo:string, segredoChaves:string,storage:any,
+ * agora?:()=>number,
+ * validarRegularizacaoContato?: ((contexto:any)=>Promise<any>)|null}} config
+ */
 export function criarRepositorio({pool,segredo,segredoChaves,storage,agora=()=>Date.now(),validarRegularizacaoContato=null}){
  if(!pool||typeof segredo!=='string'||segredo.length<32)throw Error('Backend privado não configurado.');
  verificarSegredoServidor(segredoChaves);
