@@ -2,6 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import {rea
 import {PGlite} from '@electric-sql/pglite';
 import {generateKeyPairSync,sign} from 'node:crypto';
 import {criarVerificadorContatoIndependente} from '../verificador-contato-independente.mjs';
+import {criarEmissorExternoPorRecibo} from '../conferente-externo/emitir-atestado-por-recibo.mjs';
 import {verificadorHmac} from '../../preproducao/segredos-privados.mjs';
 import {criarStoragePrivado} from '../storage.mjs';
 import {criarRepositorio} from '../repositorio.mjs';import {validarConfiguracaoPublica,validarConfiguracaoServidor} from '../configuracao.mjs';import {criarClienteWeb,criarContratoRecuperacaoCidadao,normalizarTelefoneRecuperacao} from '../web/cliente.mjs';import {criarHandlerProducao} from '../http.mjs';import http from 'node:http';
@@ -106,8 +107,10 @@ test('regularizacao de contato legado exige MFA e evidência de servidor, sem al
  }finally{await a.db.close();}
 });
 test('fluxo PostgreSQL com atestado assinado externo libera contato legado sem mudar número histórico',async()=>{
- const {publicKey,privateKey}=generateKeyPairSync('ed25519');
+ const conferente=generateKeyPairSync('ed25519'),verificadorPosse=generateKeyPairSync('ed25519');
+ const publicKey=conferente.publicKey;
  const conferenteId='00000000-0000-4000-8000-000000000013';
+ const verificadorId='00000000-0000-4000-8000-000000000015';
  const evidenciaId='00000000-0000-4000-8000-000000000014';
  const instante=Date.now();let comprovante=null;
  const validar=criarVerificadorContatoIndependente({
@@ -125,12 +128,22 @@ test('fluxo PostgreSQL com atestado assinado externo libera contato legado sem m
    justificativa:'Desafio de posse confirmado por fonte fictícia independente.'};
   await assert.rejects(a.repo.regularizarContato(entrada,op),e=>e.status===403);
   const solicitacaoId=(await a.db.query('SELECT id FROM public.solicitacoes WHERE protocolo=$1',[protocolo])).rows[0].id;
-  const payload=Buffer.from(JSON.stringify({v:1,finalidade:'regularizacao-whatsapp-legado',
-   metodo:'desafio-independente-de-posse',evidenciaId,conferenteId,
-   pedidoId:pedido.pedidoId,solicitacaoId:String(solicitacaoId),operadorId:uid,
-   telefoneOriginal:'+555188887777',telefoneNovo:'+5551999997777',
-   verificadoEm:new Date(instante-1000).toISOString()}));
-  comprovante={payload:payload.toString('base64url'),assinatura:sign(null,payload,privateKey).toString('base64url')};
+  const contexto={pedidoId:pedido.pedidoId,solicitacaoId:String(solicitacaoId),
+   operadorId:uid,telefoneOriginal:'+555188887777',telefoneNovo:'+5551999997777'};
+  const reciboDados={v:1,finalidade:'posse-independente-whatsapp',
+   metodo:'desafio-confirmado-no-destino',evidenciaId,verificadorId,...contexto,
+   confirmadoEm:new Date(instante-1000).toISOString()};
+  const reciboBytes=Buffer.from(JSON.stringify(reciboDados));
+  const recibo={payload:reciboBytes.toString('base64url'),assinatura:sign(null,
+   Buffer.concat([Buffer.from('mandato-posse-contato-v1\0'),reciboBytes]),
+   verificadorPosse.privateKey).toString('base64url')};
+  const emissor=criarEmissorExternoPorRecibo({
+   chavePrivadaConferente:conferente.privateKey,
+   chavePublicaVerificador:verificadorPosse.publicKey,
+   conferenteId,verificadoresPermitidos:[verificadorId],relogio:()=>instante
+  });
+  comprovante=emissor({recibo,contexto});
+  assert.equal(typeof comprovante?.assinatura,'string');
   assert.equal((await a.repo.regularizarContato(entrada,op)).regularizado,true);
   assert.equal((await a.db.query('SELECT whatsapp FROM public.solicitacoes WHERE protocolo=$1',[protocolo])).rows[0].whatsapp,numeroOriginal);
   const emissao=await a.repo.emitir({pedidoId:pedido.pedidoId,telefoneConfirmado:'+5551999997777'},op);
