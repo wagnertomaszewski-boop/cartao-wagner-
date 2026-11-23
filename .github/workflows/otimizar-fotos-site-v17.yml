@@ -1,0 +1,65 @@
+name: Otimizar fotografias do site oficial (V17)
+on:
+  push:
+    branches:
+      - site-v17-otimizacao-webp-seo
+    paths:
+      - .github/workflows/otimizar-fotos-site-v17.yml
+permissions:
+  contents: write
+jobs:
+  converter-jpg-webp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout da versão de trabalho
+        uses: actions/checkout@v4
+        with:
+          ref: site-v17-otimizacao-webp-seo
+          persist-credentials: true
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar Pillow para conversão local
+        run: python -m pip install Pillow==11.3.0
+      - name: Gerar fotografias WebP responsivas e manter JPG originais
+        run: python scripts/otimizar-imagens-site.py
+      - name: Validar arquivos e fontes de imagem
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          site=Path('site-vereador')
+          photos=['ubs-xavier-tomaszewski', 'equipamento-carreta-prancha', 'equipamento-trator-solis-90', 'equipamento-trator-john-deere-5070e']
+          webps=[]
+          for photo in photos:
+              src=site/'assets'/f'{photo}.jpg'
+              assert src.is_file(), f'Original missing {src}'
+              entries=list((site/'assets').glob(photo+'-*w.webp'))
+              assert len(entries)>=2, f'Less than 2 variants for {photo}'
+              for entry in entries:
+                  with Image.open(entry) as im:
+                      assert im.format=='WEBP' and im.width>0
+              webps+=entries
+          for page in (site/'index.html',site/'projetos'/'index.html'):
+              html=page.read_text()
+              assert html.count('<picture class="photo-picture">')==4
+              assert 'alt=' in html and '.jpg' in html
+          assert len(webps)>=8, 'Responsive WebP variants missing'
+          print('Checked',len(webps),'WebP files and 8 photo tags with JPG fallback')
+          PY
+      - name: Commit somente das otimizações de imagens do site
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site-vereador/assets/*.webp
+          git add site-vereador/index.html site-vereador/projetos/index.html site-vereador/styles.css site-vereador/paginas.css site-vereador/sitemap.xml
+          if ! git diff --cached --quiet; then
+            git commit -m "Site: fotos WebP responsivas com JPG original preservado e sitemap atualizado"
+            git push origin HEAD:site-v17-otimizacao-webp-seo
+          else
+            echo "Nenhuma alteracao pendente"
+          fi
