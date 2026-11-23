@@ -24,7 +24,12 @@ export function criarHandlerProducao({repositorio,resolverAdminMfa,origemApi}){
    if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']||'')){send(415,{erro:'Envie JSON.'});return true;}
    const partes=[];let n=0;for await(const b of req){n+=b.length;if(n>(nome==='anexar'?1500000:20000))throw Object.assign(Error(),{status:413});partes.push(b);}let d;try{d=JSON.parse(Buffer.concat(partes));}catch{throw Object.assign(Error(),{status:400});}if(!d||typeof d!=='object'||Array.isArray(d))throw Object.assign(Error(),{status:400});
    const resposta=nome==='validarSessao'?{autenticado:true,mfaRecente:true}:nome==='listarRecuperacoes'?await repositorio[nome](op):await repositorio[nome](d,op);send(200,resposta);
-  }catch(e){send([400,403,409,413,429].includes(e.status)?e.status:503,{erro:'Operação não concluída.'});}
+  }catch(e){
+   const pendenciaContato=rota==='admin/recuperacao/emitir'&&e.status===409&&e.codigo==='WHATSAPP_LEGADO_SEM_DESTINO';
+   send([400,403,409,413,429].includes(e.status)?e.status:503,pendenciaContato
+    ?{erro:'O cadastro antigo não tem destino de WhatsApp confirmado. A regularização exige conferência de identidade e autorização administrativa.',codigo:'WHATSAPP_LEGADO_SEM_DESTINO'}
+    :{erro:'Operação não concluída.'});
+  }
   return true;
  };
 }
