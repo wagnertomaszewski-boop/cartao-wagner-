@@ -57,8 +57,9 @@ export function criarVerificadorPossePorDesafio({
   typeof registrarReciboPrivado!=='function'||!persistencia||
   ['criar','verificar','revogar'].some(n=>typeof persistencia[n]!=='function'))
   throw Error('Verificador independente incompleto');
+ if(chavePrivadaVerificador?.type==='public')throw Error('Chave privada Ed25519 obrigatória');
  const privada=chavePrivada(chavePrivadaVerificador);
- if(privada.asymmetricKeyType!=='ed25519')throw Error('Assinatura Ed25519 obrigatória');
+ if(privada.asymmetricKeyType!=='ed25519')throw Error('Chave privada Ed25519 obrigatória');
 
  return Object.freeze({
   async iniciar({pedidoId,operadorId}={}){
