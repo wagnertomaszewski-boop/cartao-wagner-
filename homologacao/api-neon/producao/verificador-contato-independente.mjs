@@ -4,7 +4,8 @@
 import {createPublicKey,verify} from 'node:crypto';
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const E164=/^\+55[1-9]\d{10}$/;
+const E164LEGADO=/^\+55[1-9]\d{9,10}$/;
+const E164MOVEL=/^\+55[1-9]\d{10}$/;
 const B64=/^[A-Za-z0-9_-]+$/;
 const CAMPOS=['conferenteId','evidenciaId','finalidade','metodo','operadorId','pedidoId','solicitacaoId','telefoneNovo','telefoneOriginal','v','verificadoEm'];
 
@@ -25,7 +26,7 @@ export function criarVerificadorContatoIndependente({
   const {pedidoId,solicitacaoId,operadorId,telefoneOriginal,telefoneNovo}=contexto;
   if(!UUID.test(pedidoId||'')||!UUID.test(operadorId||'')||
      !/^[1-9]\d{0,15}$/.test(String(solicitacaoId))||
-     !E164.test(telefoneOriginal||'')||!E164.test(telefoneNovo||''))return null;
+     !E164LEGADO.test(telefoneOriginal||'')||!E164MOVEL.test(telefoneNovo||''))return null;
   try{
    // Somente o backend acessa esta fonte privada, nunca o navegador.
    const atestado=await buscarAtestado({pedidoId,solicitacaoId:String(solicitacaoId)});
