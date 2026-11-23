@@ -92,7 +92,9 @@ export function criarRepositorio({pool,segredo,segredoChaves,storage,agora=()=>D
    });
    const instante=Date.parse(prova?.verificadoEm);
    if(prova?.validado!==true||!uuid(prova.evidenciaId)||
-      prova.operadorId!==op.usuarioId||prova.telefoneNovo!=='+'+novo||
+      prova.operadorId!==op.usuarioId||prova.pedidoId!==r.id||
+      String(prova.solicitacaoId)!==String(r.solicitacao_id)||
+      prova.telefoneOriginal!=='+'+antigo||prova.telefoneNovo!=='+'+novo||
       !Number.isFinite(instante)||instante>agora()||agora()-instante>300000)
     throw falha(403,'Falta evidência recente e vinculada à conferência do destino.');
    await c.query('INSERT INTO mandato_privado.contatos_regularizados(pedido_id,telefone_e164,telefone_verificador,justificativa,operador_id,evidencia_id,evidencia_verificada_em) VALUES($1,$2,$3,$4,$5,$6,$7)',
