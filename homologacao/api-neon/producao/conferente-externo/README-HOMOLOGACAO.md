@@ -30,6 +30,24 @@
 - Os testes usam uma caixa de saída fictícia em memória no lugar do WhatsApp. Portanto, comprovam o comportamento do software, **não** a entrega a um aparelho nem a posse verdadeira do número.
 - Para o funcionamento real falta uma integração com provedor de envio/validação e um serviço externo com credenciais, isolamento, autenticação, auditoria, rotação de chaves, limpeza e retenção. Não existe endpoint público habilitado aqui.
 
+## Transporte WhatsApp oficial (adaptador preparado; não ativado)
+
+Foi acrescentado `transporte-whatsapp-twilio-verify.mjs` como opção de entrega real por **Twilio Verify, canal WhatsApp**. O serviço de verificação gera o código local, protege-o por HMAC e usa `CustomCode` para solicitar ao provedor o envio do mesmo código, sem expô-lo ao navegador. O adaptador exige resposta de solicitação `pending`, número e canal corretos; isso **não equivale à confirmação de entrega**. A posse só é confirmada quando o código válido é informado ao verificador externo, dentro de cinco minutos, com consumo único.
+
+Pré-requisitos externos **não disponíveis no repositório**:
+- Conta Twilio ativa, Verify Service `VA...`, API Key `SK...` e API Secret guardados somente no serviço externo;
+- Em **Verify > Services > General**, habilitar **Custom Verification Code**;
+- Número remetente WhatsApp Business registrado/liberado para o canal Verify e verificações permitidas para o destino;
+- Revisar eventuais cobranças por verificação/mensagem, limites, conformidade e consentimento; em conta Trial, confirmar restrições;
+- Hospedar o verificador em infraestrutura realmente independente, com autenticação forte, permissões limitadas, persistência privada, auditoria e política de retenção. **Não copiar segredos para a API de homologação Render.**
+- Executar um teste em celular cujo dono tenha autorizado a mensagem. **Nenhum envio real foi realizado.**
+
+Referências oficiais para configuração:
+- https://www.twilio.com/docs/verify/whatsapp
+- https://www.twilio.com/docs/verify/api/customization-options
+
+O envio é opcional e desativado até existir configuração segura, consentimento e autorização específica para testes. O caminho histórico de envio manual do código de recuperação permanece separado e preservado.
+
 ## Situação de implantação
 
 - O emissor de atestado e o verificador de posse existem apenas como **bibliotecas testáveis**; não expõem endpoints e não recebem mensagens diretamente de cidadãos.
