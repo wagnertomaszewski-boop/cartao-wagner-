@@ -16,8 +16,31 @@ validarMfa.onclick=()=>executar(async()=>{validarMfa.disabled=true;try{const r=a
 addEventListener('pagehide',()=>{if(dialogo.open)dialogo.close();limparMfa();});
 async function executar(fn){try{await fn();}catch(e){tokenMfa=null;$('estadoRecPrivada').textContent=e.message;}}
 function botao(nome,acao){const b=document.createElement('button');b.type='button';b.textContent=nome;b.onclick=()=>executar(acao);return b;}
+function numeroHistoricoSemNonoDigito(s){
+ const digitos=String(s||'').replace(/\D/g,'');
+ return digitos.length===10||(digitos.startsWith('55')&&digitos.length===12);
+}
+async function regularizarTelefoneHistorico(pedido){
+ if(!confirm('Este número histórico não permite presumir o nono dígito. Você já verificou a identidade e solicitou uma comprovação independente da posse do NOVO WhatsApp?'))return;
+ const telefoneNovo=prompt('Digite o novo celular com DDD e nono dígito, preferencialmente +55:');
+ if(!telefoneNovo)return;
+ const telefoneConfirmado=prompt('Redigite o novo celular completo para conferir o destinatário:');
+ if(!telefoneConfirmado)return;
+ const justificativa=prompt('Registre como a identidade foi conferida (mínimo de 20 caracteres; sem documentos, códigos ou outros dados pessoais):');
+ if(!justificativa||justificativa.trim().length<20)throw Error('Justificativa de pelo menos 20 caracteres obrigatória.');
+ const resultado=await api.admin('regularizar-contato',{
+  pedidoId:pedido.id,telefoneNovo,telefoneConfirmado,justificativa,
+  identidadeConferida:true,contatoVerificado:true
+ },await token());
+ // O servidor exige prova Ed25519 independente: estas declarações não a substituem.
+ if(resultado?.regularizado!==true)throw Error('Regularização não confirmada pelo servidor.');
+ $('estadoRecPrivada').textContent='Comprovante independente aceito para este pedido. Destino: '+resultado.destinoMascarado+'. Atualize a lista antes de gerar o código.';
+}
+
 $('atualizarRecPrivada').onclick=()=>executar(async()=>{emissao=null;linkAtivo?.removeAttribute('href');$('listaRecPrivada').replaceChildren();const rows=await api.admin('listar',{},await token());for(const r of rows){const item=document.createElement('article'),titulo=document.createElement('p');titulo.textContent=r.protocolo+' — '+r.whatsapp+' — '+r.estado;item.append(titulo);
  if(r.estado==='pendente')for(const decisao of ['aprovar','rejeitar'])item.append(botao(decisao==='aprovar'?'Aprovar recuperação':'Rejeitar recuperação',async()=>{if(!confirm('Você conferiu a identidade do solicitante e o telefone cadastrado?'))return;const justificativa=prompt('Informe a justificativa da decisão:');if(!justificativa?.trim())return;await api.admin('decidir',{pedidoId:r.id,decisao,identidadeConferida:true,justificativa},await token());$('estadoRecPrivada').textContent='Decisão registrada. Atualize a lista.';}));
+ if(r.estado==='aprovado'&&numeroHistoricoSemNonoDigito(r.whatsapp)&&r.contato_regularizado!==true)item.append(botao('Regularizar celular antigo (prova independente)',()=>regularizarTelefoneHistorico(r)));
+ if(r.estado==='aprovado'&&r.contato_regularizado===true){const info=document.createElement('p');info.textContent='Contato histórico regularizado com comprovante verificado neste pedido.';item.append(info);}
  if(r.estado==='aprovado')item.append(botao('Gerar código temporário',async()=>{const telefoneConfirmado=prompt('Confirme o telefone cadastrado, com DDD, antes de gerar o código:');if(!telefoneConfirmado)return;emissao=await api.admin('emitir',{pedidoId:r.id,telefoneConfirmado},await token());const e=emissao,link=document.createElement('a');link.textContent='Enviar código pelo WhatsApp';link.setAttribute('rel','noreferrer');link.href='whatsapp://send?phone='+encodeURIComponent(e.telefone.slice(1))+'&text='+encodeURIComponent(e.mensagem);link.onclick=ev=>{if(!emissao||Date.now()>=Date.parse(e.expiraEm)||!confirm('Confira o destinatário '+e.telefone+'. A abertura não confirma envio nem entrega.')){ev.preventDefault();link.removeAttribute('href');}else $('estadoRecPrivada').textContent='Confirme o destinatário no WhatsApp e toque em Enviar.';};linkAtivo=link;item.append(link,botao('Confirmar que enviei manualmente',async()=>{if(!confirm('Você tocou em Enviar na conversa do destinatário correto?'))return;await api.admin('confirmar-envio',{pedidoId:r.id,envioConfirmado:true},await token());link.removeAttribute('href');emissao=null;$('estadoRecPrivada').textContent='Envio manual declarado pelo administrador. A entrega não foi comprovada automaticamente.';}));setTimeout(()=>{link.removeAttribute('href');emissao=null;},Math.max(0,Date.parse(e.expiraEm)-Date.now()));}));$('listaRecPrivada').append(item);}});
 addEventListener('pagehide',()=>{tokenMfa=null;emissao=null;linkAtivo?.removeAttribute('href');$('listaRecPrivada').replaceChildren();});
 // Documentos antigos passam por sessão administrativa; nunca reabrir URL pública.
