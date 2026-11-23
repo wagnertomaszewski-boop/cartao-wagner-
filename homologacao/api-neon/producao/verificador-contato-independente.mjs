@@ -19,7 +19,7 @@ export function criarVerificadorContatoIndependente({
    !conferentesPermitidos.every(x=>typeof x==='string'&&UUID.test(x)))
    throw Error('Identidades de conferentes independentes obrigatórias');
  const permitidos=new Set(conferentesPermitidos);
- const chave=createPublicKey(chavePublicaConferente);
+ const chave=chavePublicaConferente?.type==='public' ? chavePublicaConferente : createPublicKey(chavePublicaConferente);
  if(chave.asymmetricKeyType!=='ed25519')throw Error('Chave pública Ed25519 obrigatória');
 
  return async function validarRegularizacaoContato(contexto={}){
