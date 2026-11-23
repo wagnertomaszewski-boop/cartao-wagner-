@@ -48,7 +48,7 @@ export function criarRepositorio({pool,segredo,segredoChaves,storage,agora=()=>D
   const anexos=(await c.query('SELECT id,nome,mime,caminho FROM mandato_privado.arquivos WHERE solicitacao_id=$1 ORDER BY criado_em,id',[s.id])).rows;
   await auditar(c,'consulta_privada_validada',s.id);
   const legados=anexosLegados(s,respostas,segredo).filter(l=>!anexos.some(a=>a.caminho===l.caminho&&l.bucket==='anexos-solicitacoes'));
-  return {encontrado:true,protocolo:s.protocolo,assunto:s.assunto,descricao:s.descricao,status:s.status,criadoEm:s.criado_em,atualizadoEm:s.atualizado_em,historico,respostas:respostas.map(({mensagem,criado_em})=>({mensagem,criado_em})),anexos:[...anexos.map(({id,nome,mime})=>({id,nome,mime})),...legados.map(({id,nome,mime})=>({id,nome,mime}))]};
+  return {encontrado:true,protocolo:s.protocolo,assunto:s.assunto,descricao:s.descricao,localidade:s.localidade,status:s.status,criadoEm:s.criado_em,atualizadoEm:s.atualizado_em,historico,respostas:respostas.map(({mensagem,criado_em})=>({mensagem,criado_em})),anexos:[...anexos.map(({id,nome,mime})=>({id,nome,mime})),...legados.map(({id,nome,mime})=>({id,nome,mime}))]};
  });},
  async anexar(d){if(!storage)throw falha(503,'Armazenamento privado indisponível.');const f=validarArquivoBinario(d);return tx(async c=>{
   const s=await autorizado(c,d);if(!s)throw falha(403,'Acesso privado inválido.');await c.query('SELECT id FROM public.solicitacoes WHERE id=$1 FOR UPDATE',[s.id]);
