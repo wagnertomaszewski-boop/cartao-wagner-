@@ -133,6 +133,57 @@ test('contenção real de privilégios protege quatro RPCs e documentos, preserv
  assert.equal((await a.db.query("SELECT count(*)::int n FROM storage.objects WHERE bucket_id='documentos-respostas'")).rows[0].n,1);
  for(const role of ['anon','authenticated'])for(const f of ['consulta_publica_protocolo','consulta_publica_historico_protocolo','consulta_publica_respostas_protocolo','consultar_protocolo']){assert.equal((await a.db.query('SELECT has_function_privilege($1,$2,\'EXECUTE\') AS permitido',[role,'public.'+f+'(text)'])).rows[0].permitido,false);}assert.equal((await a.db.query("SELECT public FROM storage.buckets WHERE id='documentos-respostas'")).rows[0].public,false);assert.equal((await a.db.query("SELECT public FROM storage.buckets WHERE id='conteudos-mandato'")).rows[0].public,true);assert.equal((await a.db.query("SELECT has_table_privilege('mandato_api_privada','mandato_privado.auditoria_recuperacao','UPDATE') AS permitido")).rows[0].permitido,false);}finally{await a.db.close();}});
 test('configuração e cliente de produção não aceitam homologação, segredos ou protocolo isolado',async()=>{const c={ambiente:'producao',projeto:'pmmsdjozyyxkbuqlkfpb',apiBase:'https://api.exemplo.org',versao:'a'.repeat(40)};assert.throws(()=>validarConfiguracaoPublica({...c,apiBase:'https://mandato-neon-homologacao.onrender.com'}));assert.throws(()=>validarConfiguracaoPublica({...c,secret:'nao-publicar'}));assert.throws(()=>validarConfiguracaoServidor({}));let chamadas=0;const api=criarClienteWeb(c,async(url,o)=>{chamadas++;assert.equal(new URL(url).search,'');assert.equal(o.credentials,'omit');assert.equal(o.cache,'no-store');return {ok:true,json:async()=>({encontrado:false})};});assert.throws(()=>api.consultar({protocolo:'2026-000001'}));await api.consultar({protocolo:'2026-000001',chave:'a'.repeat(43)});assert.equal(chamadas,1);});
+test('cliente browser e API candidata completam recuperacao de protocolo legado sem chave, com HTTP e banco isolados',async()=>{
+ const a=await ambiente();
+ const protocolo='LEGADO/E2E/2025';
+ const telefone='5551999997777',chaveFalsa=Buffer.alloc(32,3).toString('base64url');
+ await a.db.query("INSERT INTO public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,status,protocolo) VALUES('Cidadão fictício',$1,'Local fictício','Pedido antigo','Descrição fictícia','Em andamento',$2)",[telefone,protocolo]);
+ await a.db.query("INSERT INTO public.solicitacoes_status_historico(solicitacao_id,status) SELECT id,'Em andamento' FROM public.solicitacoes WHERE protocolo=$1",[protocolo]);
+ await a.db.query("INSERT INTO public.respostas_solicitacoes(solicitacao_id,mensagem) SELECT id,'Resposta fictícia preservada' FROM public.solicitacoes WHERE protocolo=$1",[protocolo]);
+ const handler=criarHandlerProducao({repositorio:a.repo,origemApi:'https://api.exemplo.org',resolverAdminMfa:async token=>token==='admin-token-ficticio'?op:null});
+ const servidor=http.createServer(async(req,res)=>{if(!await handler(req,res)){res.writeHead(404);res.end();}});
+ await new Promise(resolve=>servidor.listen(0,'127.0.0.1',resolve));
+ let requisicoes=0;
+ try{
+  const destino='http://127.0.0.1:'+servidor.address().port;
+  const buscar=(url,opt)=>{
+   assert.equal(new URL(url).origin,'https://api.exemplo.org');
+   assert.equal(opt.credentials,'omit');assert.equal(opt.cache,'no-store');assert.equal(opt.redirect,'error');
+   assert.equal(opt.method,'POST');requisicoes++;
+   return fetch(destino+new URL(url).pathname,{...opt,headers:{...opt.headers,Origin:'https://wagnertomaszewski-boop.github.io'}});
+  };
+  const cfg={ambiente:'producao',projeto:'pmmsdjozyyxkbuqlkfpb',apiBase:'https://api.exemplo.org',versao:'a'.repeat(40)};
+  const api=criarClienteWeb(cfg,buscar);
+  assert.throws(()=>api.consultar({protocolo}),/protocolo e chave/i);
+  const desconhecido=await api.consultar({protocolo,chave:chaveFalsa});
+  assert.equal(desconhecido.encontrado,false);
+  const pedido=await api.solicitar({protocolo,telefone:'(51) 99999-7777'});
+  assert.match(pedido.pedidoId,/^[0-9a-f-]{36}$/);assert.match(pedido.recibo,/^[A-Za-z0-9_-]{43}$/);
+  const antes=await api.admin('listar',{},'admin-token-ficticio');
+  assert.equal(antes.filter(x=>x.id===pedido.pedidoId).length,1);
+  await api.admin('decidir',{pedidoId:pedido.pedidoId,decisao:'aprovar',identidadeConferida:true,justificativa:'Identidade conferida em teste fictício.'},'admin-token-ficticio');
+  const emissao=await api.admin('emitir',{pedidoId:pedido.pedidoId,telefoneConfirmado:'+5551999997777'},'admin-token-ficticio');
+  assert.match(emissao.codigo,/^\d{6}$/);
+  assert.equal(emissao.telefone,'+5551999997777');
+  assert.equal(emissao.envioPermitido,true);
+  const confirmacao=await api.admin('confirmar-envio',{pedidoId:pedido.pedidoId,envioConfirmado:true},'admin-token-ficticio');
+  assert.equal(confirmacao.entregaComprovada,false);
+  const validado=await api.validar({...pedido,codigo:emissao.codigo});
+  assert.equal(validado.validado,true);assert.equal(validado.protocolo,protocolo);
+  assert.match(validado.novaChave,/^[A-Za-z0-9_-]{43}$/);
+  const acompanhamento=await api.consultar({protocolo,chave:validado.novaChave});
+  assert.equal(acompanhamento.encontrado,true);
+  assert.equal(acompanhamento.status,'Em andamento');
+  assert.equal(acompanhamento.historico.length,1);
+  assert.equal(acompanhamento.respostas[0].mensagem,'Resposta fictícia preservada');
+  assert.equal(JSON.stringify(acompanhamento).includes('Cidadão fictício'),false);
+  assert.equal((await api.validar({...pedido,codigo:emissao.codigo})).validado,false);
+  assert.equal((await a.db.query('SELECT count(*) AS n FROM public.solicitacoes')).rows[0].n,1);
+  assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.chaves_acompanhamento')).rows[0].n,1);
+  assert.equal((await a.db.query("SELECT count(*) AS n FROM mandato_privado.auditoria_recuperacao WHERE evento='codigo_validado_chave_renovada'")).rows[0].n,1);
+  assert.ok(requisicoes>=8);
+ }finally{await new Promise(resolve=>servidor.close(resolve));await a.db.close();}
+});
 test('handler HTTP bloqueia origens, credenciais ausentes e MFA inválido antes de executar administrador',async()=>{let execucoes=0;const repo={limitarEntrada:async()=>true,decidir:async()=>{execucoes++;return {};}};const handler=criarHandlerProducao({repositorio:repo,resolverAdminMfa:async()=>({usuarioId:uid,mfaRecente:false}),origemApi:'https://api.exemplo.org'}),s=http.createServer(async(q,r)=>{if(!await handler(q,r)){r.writeHead(404);r.end();}});await new Promise(r=>s.listen(0,'127.0.0.1',r));try{const url='http://127.0.0.1:'+s.address().port+'/api/v1/admin/recuperacao/decidir';const req=(origin,token)=>fetch(url,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:'{}'});assert.equal((await req('https://intruso.invalid')).status,403);assert.equal((await req('https://wagnertomaszewski-boop.github.io')).status,401);assert.equal((await req('https://wagnertomaszewski-boop.github.io','sintetico')).status,403);assert.equal(execucoes,0);}finally{await new Promise(r=>s.close(r));}});
 
 test('transporte de anexos usa a rota autenticada e recusa URLs públicas como entrada',async()=>{
