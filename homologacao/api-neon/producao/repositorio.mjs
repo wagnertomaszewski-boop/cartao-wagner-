@@ -93,7 +93,8 @@ export function criarRepositorio({pool,segredo,segredoChaves,storage,agora=()=>D
    // O destino fica vinculado exclusivamente a este pedido, ao conferente MFA e ao HMAC.
    const prova=await validarRegularizacaoContato({
     pedidoId:r.id,solicitacaoId:r.solicitacao_id,operadorId:op.usuarioId,
-    telefoneOriginal:'+'+antigo,telefoneNovo:'+'+novo
+    telefoneOriginal:'+'+antigo,telefoneNovo:'+'+novo,
+    executorConsulta:c // Usa a mesma transação: pool max=1 na candidata Edge.
    });
    const instante=Date.parse(prova?.verificadoEm);
    if(prova?.validado!==true||!uuid(prova.evidenciaId)||
