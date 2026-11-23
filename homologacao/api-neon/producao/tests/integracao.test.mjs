@@ -21,6 +21,7 @@ CREATE FUNCTION public.consultar_protocolo(text) RETURNS text LANGUAGE sql SECUR
 SET mandato.migracao_autorizada='sim';`);
 await db.exec(await readFile(new URL('../../sql/rascunhos/20261115_estrutura_privada_recuperacao_producao.sql',import.meta.url),'utf8'));
 await db.exec(await readFile(new URL('../sql/estrutura-candidata.sql',import.meta.url),'utf8'));
+await db.exec(await readFile(new URL('../sql/contatos-legados-candidata.sql',import.meta.url),'utf8'));
 const pool={query:(q,p)=>q.includes('pg_advisory_xact_lock')?Promise.resolve({rows:[]}):db.query(q,p),connect:async()=>({query:(q,p)=>q.includes('pg_advisory_xact_lock')?Promise.resolve({rows:[]}):db.query(q,p),release(){}})};
 let tempo=Date.now();const objetos=new Map(),storage={enviar:async(p,b)=>objetos.set(p,Buffer.from(b)),baixar:async p=>objetos.get(p)};
 const repo=criarRepositorio({pool,segredo:'segredo-sintetico-de-teste-independente-32',segredoChaves,storage,agora:()=>tempo});return {db,repo,avancar:ms=>{tempo+=ms;},objetos};}
