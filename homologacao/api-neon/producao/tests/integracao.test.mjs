@@ -40,6 +40,9 @@ test('telefone legado em dez e doze digitos registra pedido mas impede envio Wha
    const neutro=await a.repo.solicitarRecuperacao({protocolo,telefone:'51988887777'});
    assert.ok(neutro.pedidoId && neutro.recibo);
    assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.pedidos_recuperacao')).rows[0].n,0);
+   const estrangeiro=await a.repo.solicitarRecuperacao({protocolo,telefone:'+1 212 555 0100'});
+   assert.ok(estrangeiro.pedidoId && estrangeiro.recibo);
+   assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.pedidos_recuperacao')).rows[0].n,0);
    const pedido=await a.repo.solicitarRecuperacao({protocolo,telefone:entrada});
    assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.pedidos_recuperacao')).rows[0].n,1);
    await assert.rejects(a.repo.decidir({pedidoId:pedido.pedidoId,decisao:'aprovar',identidadeConferida:true,justificativa:'Conferencia sintetica.'},{...op,mfaRecente:false}),e=>e.status===403);
