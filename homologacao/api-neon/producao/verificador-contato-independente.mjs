@@ -11,7 +11,7 @@ const CAMPOS=['conferenteId','evidenciaId','finalidade','metodo','operadorId','p
 
 /**
  * @param {{chavePublicaConferente?: any, conferentesPermitidos?: string[],
- * buscarAtestado?: (contexto: {pedidoId:string, solicitacaoId:string})=>Promise<any>,
+ * buscarAtestado?: (contexto: {pedidoId:string, solicitacaoId:string},executor?:any)=>Promise<any>,
  * relogio?: ()=>number, validadeMaximaMs?:number}} config
  */
 export function criarVerificadorContatoIndependente({
@@ -28,13 +28,13 @@ export function criarVerificadorContatoIndependente({
  if(chave.asymmetricKeyType!=='ed25519')throw Error('Chave pública Ed25519 obrigatória');
 
  return async function validarRegularizacaoContato(contexto={}){
-  const {pedidoId,solicitacaoId,operadorId,telefoneOriginal,telefoneNovo}=contexto;
+  const {pedidoId,solicitacaoId,operadorId,telefoneOriginal,telefoneNovo,executorConsulta}=contexto;
   if(!UUID.test(pedidoId||'')||!UUID.test(operadorId||'')||
      !/^[1-9]\d{0,15}$/.test(String(solicitacaoId))||
      !E164LEGADO.test(telefoneOriginal||'')||!E164MOVEL.test(telefoneNovo||''))return null;
   try{
    // Somente o backend acessa esta fonte privada, nunca o navegador.
-   const atestado=await buscarAtestado({pedidoId,solicitacaoId:String(solicitacaoId)});
+   const atestado=await buscarAtestado({pedidoId,solicitacaoId:String(solicitacaoId)},executorConsulta);
    if(!atestado||typeof atestado!=='object'||Array.isArray(atestado)||
      typeof atestado.payload!=='string'||atestado.payload.length>2048||
      typeof atestado.assinatura!=='string'||atestado.assinatura.length>128||
