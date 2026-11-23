@@ -217,6 +217,30 @@ test('cliente browser e API candidata completam recuperacao de protocolo legado 
   assert.ok(requisicoes>=8);
  }finally{await new Promise(resolve=>servidor.close(resolve));await a.db.close();}
 });
+test('rota administrativa de regularizacao exige autenticação e MFA recente',async()=>{
+ const entradas=[];
+ const repo={
+  limitarEntrada:async()=>true,
+  regularizarContato:async (dados,op)=>{entradas.push({dados,op});return {regularizado:true,destinoMascarado:'+55 ** *****7777'};}
+ };
+ const handler=criarHandlerProducao({repositorio:repo,origemApi:'https://api.exemplo.org',resolverAdminMfa:async token=>token==='autenticado'?{usuarioId:uid,mfaRecente:true}:{usuarioId:uid,mfaRecente:false}});
+ const servidor=http.createServer(async(req,res)=>{if(!await handler(req,res)){res.writeHead(404);res.end();}});
+ await new Promise(resolve=>servidor.listen(0,'127.0.0.1',resolve));
+ try{
+  const destino='http://127.0.0.1:'+servidor.address().port+'/api/v1/admin/recuperacao/regularizar-contato';
+  const enviar=(token,origin='https://wagnertomaszewski-boop.github.io')=>fetch(destino,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify({pedidoId:'synthetic'})});
+  assert.equal((await enviar(null)).status,401);
+  assert.equal((await enviar('sem-mfa')).status,403);
+  assert.equal((await enviar('autenticado','https://intruso.invalid')).status,403);
+  assert.equal(entradas.length,0);
+  const retorno=await enviar('autenticado');
+  assert.equal(retorno.status,200);
+  assert.equal((await retorno.json()).regularizado,true);
+  assert.equal(entradas.length,1);
+  assert.equal(entradas[0].op.usuarioId,uid);
+  assert.equal(entradas[0].dados.pedidoId,'synthetic');
+ }finally{await new Promise(resolve=>servidor.close(resolve));}
+});
 test('handler HTTP bloqueia origens, credenciais ausentes e MFA inválido antes de executar administrador',async()=>{let execucoes=0;const repo={limitarEntrada:async()=>true,decidir:async()=>{execucoes++;return {};}};const handler=criarHandlerProducao({repositorio:repo,resolverAdminMfa:async()=>({usuarioId:uid,mfaRecente:false}),origemApi:'https://api.exemplo.org'}),s=http.createServer(async(q,r)=>{if(!await handler(q,r)){r.writeHead(404);r.end();}});await new Promise(r=>s.listen(0,'127.0.0.1',r));try{const url='http://127.0.0.1:'+s.address().port+'/api/v1/admin/recuperacao/decidir';const req=(origin,token)=>fetch(url,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:'{}'});assert.equal((await req('https://intruso.invalid')).status,403);assert.equal((await req('https://wagnertomaszewski-boop.github.io')).status,401);assert.equal((await req('https://wagnertomaszewski-boop.github.io','sintetico')).status,403);assert.equal(execucoes,0);}finally{await new Promise(r=>s.close(r));}});
 
 test('transporte de anexos usa a rota autenticada e recusa URLs públicas como entrada',async()=>{
