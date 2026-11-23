@@ -58,11 +58,13 @@ test('telefone legado em dez e doze digitos registra pedido mas impede envio Wha
 });
 test('regularizacao de contato legado exige MFA e evidência de servidor, sem alterar cadastro',async()=>{
  const instante=Date.now();
- let evidenciaHabilitada=false;
+ let modoEvidencia='negada';
  const a=await ambiente({validarRegularizacaoContato:async ({pedidoId,operadorId,telefoneNovo})=>({
-   validado:evidenciaHabilitada,
+   validado:modoEvidencia!=='negada',
    evidenciaId:'00000000-0000-4000-8000-000000000099',
-   verificadoEm:new Date(instante).toISOString(),operadorId,telefoneNovo
+   verificadoEm:new Date(modoEvidencia==='expirada'?instante-360000:instante).toISOString(),
+   operadorId:modoEvidencia==='outro-operador'?'00000000-0000-4000-8000-000000000080':operadorId,
+   telefoneNovo:modoEvidencia==='outro-telefone'?'+5551999997788':telefoneNovo
  })});
  try{
   const protocolo='LEGADO/REGULARIZAR/2025',numeroOriginal='5188887777',novo='51999997777';
@@ -74,9 +76,12 @@ test('regularizacao de contato legado exige MFA e evidência de servidor, sem al
   await assert.rejects(a.repo.regularizarContato(regularizar,{...op,mfaRecente:false}),e=>e.status===403);
   await assert.rejects(a.repo.regularizarContato({...regularizar,contatoVerificado:false},op),e=>e.status===403);
   await assert.rejects(a.repo.regularizarContato({...regularizar,telefoneConfirmado:'51999997778'},op),e=>e.status===400);
-  await assert.rejects(a.repo.regularizarContato(regularizar,op),e=>e.status===403&&/evidência/i.test(e.message));
-  assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.contatos_regularizados')).rows[0].n,0);
-  evidenciaHabilitada=true;
+  for(const modo of ['negada','expirada','outro-operador','outro-telefone']){
+   modoEvidencia=modo;
+   await assert.rejects(a.repo.regularizarContato(regularizar,op),e=>e.status===403&&/evidência/i.test(e.message));
+   assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.contatos_regularizados')).rows[0].n,0);
+  }
+  modoEvidencia='valida';
   const result=await a.repo.regularizarContato(regularizar,op);
   assert.equal(result.regularizado,true);
   assert.equal((await a.db.query('SELECT whatsapp FROM public.solicitacoes WHERE protocolo=$1',[protocolo])).rows[0].whatsapp,numeroOriginal);
