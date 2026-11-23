@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {criarConsultaSegura} from '../../v2/seguranca/consulta-segura.mjs';
+import {normalizarTelefone as normalizarTelefoneHml} from './telas/v2/seguranca/cliente-recuperacao-manual.mjs';
 
 test('cliente rejeita API HTTP e URL com credenciais ou parâmetros',()=>{
  for(const url of ['http://exemplo.invalid/','https://usuario:senha@exemplo.invalid/','https://exemplo.invalid/caminho','https://exemplo.invalid/?chave=segredo']){
@@ -39,4 +40,13 @@ test('cliente bloqueia chaves curtas e telefones inválidos antes de enviar',asy
  await assert.rejects(()=>api.consultar({protocolo:'TESTE-000006',chave:'curta'}));
  await assert.rejects(()=>api.pedirRecuperacao({protocolo:'TESTE-000006',whatsapp:'123'}));
  assert.equal(chamadas,0);
+});
+
+test('telefone historico nao ganha nono digito e exige verificacao manual, sem alterar fluxo celular aprovado',()=>{
+ assert.equal(normalizarTelefoneHml('(51) 99999-7777'),'+5551999997777');
+ assert.equal(normalizarTelefoneHml('+55 (51) 99999-7777'),'+5551999997777');
+ assert.throws(()=>normalizarTelefoneHml('(51) 8888-7777'),/telefone antigo.*oito dígitos/i);
+ assert.throws(()=>normalizarTelefoneHml('+55 51 8888-7777'),/telefone antigo.*oito dígitos/i);
+ assert.throws(()=>normalizarTelefoneHml('+1 212 555 0100'),/telefone brasileiro/i);
+ assert.throws(()=>normalizarTelefoneHml('12345'),/telefone cadastrado/i);
 });
