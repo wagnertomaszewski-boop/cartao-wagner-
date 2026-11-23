@@ -96,12 +96,12 @@ for page in PAGES:
     page.write_text(new_text, encoding="utf-8")
     print(f"Updated responsive images in {page.relative_to(ROOT)}: {count}")
 
-style_path = SITE / "styles.css"
-css = style_path.read_text(encoding="utf-8")
 marker = "/* V17: imagens responsivas WebP com JPG original como fallback e zoom */"
-if marker not in css:
-    css += "\n" + marker + "\n.photo-picture{display:block;width:100%}\n.photo-picture>img{display:block;max-width:100%}\n"
-    style_path.write_text(css, encoding="utf-8")
+for style_path in (SITE / "styles.css", SITE / "paginas.css"):
+    css = style_path.read_text(encoding="utf-8")
+    if marker not in css:
+        css += "\n" + marker + "\n.photo-picture{display:block;width:100%}\n.photo-picture>img{display:block;max-width:100%}\n"
+        style_path.write_text(css, encoding="utf-8")
 
 sitemap = SITE / "sitemap.xml"
 xml = sitemap.read_text(encoding="utf-8")
