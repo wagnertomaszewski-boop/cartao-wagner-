@@ -21,3 +21,33 @@ export function criarClienteWeb(config,buscar=fetch){
  admin:(acao,d,token)=>{if(!['listar','decidir','emitir','confirmar-envio'].includes(acao)||!token)throw Error('Sessão administrativa obrigatória.');return enviar('admin/recuperacao/'+acao,d,token);}
  };
 }
+
+/**
+ * Contrato de RECUPERAÇÃO para a futura tela do cidadão.
+ * Não altera a entrada HML nem executa solicitações sem uma API privada configurada.
+ * QR, biometria, confirmação de leitura e o Painel exigem integrações separadas.
+ */
+export function criarContratoRecuperacaoCidadao(cliente){
+ if(!cliente||!['consultar','solicitar','validar'].every(k=>typeof cliente[k]==='function'))throw Error('API de recuperação privada indisponível.');
+ return Object.freeze({
+  solicitar:entrada=>cliente.solicitar(entrada),
+  validar:async entrada=>{
+   const r=await cliente.validar(entrada);
+   if(r?.validado!==true)return {confirmado:false};
+   if(typeof r.protocolo!=='string'||!r.protocolo||typeof r.novaChave!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(r.novaChave))throw Error('Resposta privada inválida. Confira o atendimento.');
+   return {confirmado:true,protocolo:r.protocolo,novaChave:r.novaChave};
+  },
+  consultar:async entrada=>{
+   const r=await cliente.consultar(entrada);
+   if(r?.encontrado!==true)return {encontrado:false};
+   return {
+    encontrado:true,protocolo:r.protocolo,assunto:r.assunto,
+    descricao:r.descricao,localidade:r.localidade,status:r.status,
+    criadoEm:r.criadoEm,atualizadoEm:r.atualizadoEm,
+    historico:Array.isArray(r.historico)?r.historico.map(x=>({status:x.status,criadoEm:x.criadoEm||x.criado_em})):[],
+    respostas:Array.isArray(r.respostas)?r.respostas.map(x=>({mensagem:x.mensagem,criadoEm:x.criadoEm||x.criado_em,anexos:[]})):[],
+    anexos:Array.isArray(r.anexos)?r.anexos:[]
+   };
+  }
+ });
+}
