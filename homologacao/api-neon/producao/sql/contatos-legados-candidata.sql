@@ -17,6 +17,16 @@ CREATE TABLE IF NOT EXISTS mandato_privado.contatos_regularizados (
  operador_id uuid NOT NULL,
  criado_em timestamptz NOT NULL DEFAULT now()
 );
+-- Evidência recebida exclusivamente do verificador do servidor.
+-- Falha se houver linhas antigas sem prova; nunca aprovar dados por omissão.
+ALTER TABLE mandato_privado.contatos_regularizados
+ ADD COLUMN IF NOT EXISTS evidencia_id uuid,
+ ADD COLUMN IF NOT EXISTS evidencia_verificada_em timestamptz;
+ALTER TABLE mandato_privado.contatos_regularizados
+ ALTER COLUMN evidencia_id SET NOT NULL,
+ ALTER COLUMN evidencia_verificada_em SET NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS contatos_regularizados_evidencia_idx
+ ON mandato_privado.contatos_regularizados(evidencia_id);
 REVOKE ALL ON TABLE mandato_privado.contatos_regularizados FROM PUBLIC,anon,authenticated;
 ALTER TABLE mandato_privado.contatos_regularizados ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mandato_privado.contatos_regularizados FORCE ROW LEVEL SECURITY;
