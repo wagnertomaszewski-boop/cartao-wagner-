@@ -2,7 +2,9 @@ import {validarConfiguracaoPublica} from './configuracao.mjs';
 // Formatos históricos: DDD + 8/9 dígitos, com ou sem o prefixo +55.
 // Não deduz um novo número a partir de oito dígitos; o servidor controla a emissão.
 export function normalizarTelefoneRecuperacao(valor){
- const digitos=String(valor??'').replace(/\D/g,'');
+ const bruto=String(valor??'').trim();
+ if(bruto.startsWith('+')&&!bruto.startsWith('+55'))throw Error('Informe um número brasileiro com DDD.');
+ const digitos=bruto.replace(/\D/g,'');
  const comPais=digitos.length===10||digitos.length===11?'55'+digitos:digitos;
  if(!/^55[1-9]\d{9,10}$/.test(comPais))throw Error('Informe o telefone cadastrado com DDD.');
  return '+'+comPais;
