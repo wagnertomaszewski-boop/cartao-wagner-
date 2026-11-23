@@ -56,6 +56,35 @@ test('telefone legado em dez e doze digitos registra pedido mas impede envio Wha
   }finally{await a.db.close();}
  }
 });
+test('regularizacao de contato legado exige MFA, audita destino e restaura primeira chave sem alterar cadastro',async()=>{
+ const a=await ambiente();
+ try{
+  const protocolo='LEGADO/REGULARIZAR/2025',numeroOriginal='5188887777',novo='51999997777';
+  await a.db.query("INSERT INTO public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,status,protocolo) VALUES('Pessoa fictícia',$1,'Local fictício','Pedido antigo','Somente teste','Recebida',$2)",[numeroOriginal,protocolo]);
+  const pedido=await a.repo.solicitarRecuperacao({protocolo,telefone:'(51) 8888-7777'});
+  await a.repo.decidir({pedidoId:pedido.pedidoId,decisao:'aprovar',identidadeConferida:true,justificativa:'Identidade fictícia conferida manualmente.'},op);
+  await assert.rejects(a.repo.emitir({pedidoId:pedido.pedidoId,telefoneConfirmado:'(51) 8888-7777'},op),e=>e.status===409&&e.codigo==='WHATSAPP_LEGADO_SEM_DESTINO');
+  const regularizar={pedidoId:pedido.pedidoId,telefoneNovo:novo,telefoneConfirmado:novo,identidadeConferida:true,contatoVerificado:true,justificativa:'Contato atualizado com conferência manual no ensaio fictício.'};
+  await assert.rejects(a.repo.regularizarContato(regularizar,{...op,mfaRecente:false}),e=>e.status===403);
+  await assert.rejects(a.repo.regularizarContato({...regularizar,contatoVerificado:false},op),e=>e.status===403);
+  await assert.rejects(a.repo.regularizarContato({...regularizar,telefoneConfirmado:'51999997778'},op),e=>e.status===400);
+  const result=await a.repo.regularizarContato(regularizar,op);
+  assert.equal(result.regularizado,true);
+  assert.equal((await a.db.query('SELECT whatsapp FROM public.solicitacoes WHERE protocolo=$1',[protocolo])).rows[0].whatsapp,numeroOriginal);
+  assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.contatos_regularizados')).rows[0].n,1);
+  assert.equal((await a.db.query("SELECT count(*) AS n FROM mandato_privado.auditoria_recuperacao WHERE evento='contato_legado_regularizado'")).rows[0].n,1);
+  await assert.rejects(a.repo.emitir({pedidoId:pedido.pedidoId,telefoneConfirmado:'(51) 8888-7777'},op),e=>e.status===403);
+  const emissao=await a.repo.emitir({pedidoId:pedido.pedidoId,telefoneConfirmado:novo},op);
+  assert.equal(emissao.telefone,'+5551999997777');
+  assert.match(emissao.codigo,/^\d{6}$/);
+  const v=await a.repo.validarCodigo({...pedido,codigo:emissao.codigo});
+  assert.equal(v.validado,true);
+  assert.equal(v.protocolo,protocolo);
+  assert.equal((await a.repo.consultar({protocolo,chave:v.novaChave})).encontrado,true);
+  assert.equal((await a.repo.validarCodigo({...pedido,codigo:emissao.codigo})).validado,false);
+  assert.equal((await a.db.query('SELECT whatsapp FROM public.solicitacoes WHERE protocolo=$1',[protocolo])).rows[0].whatsapp,numeroOriginal);
+ }finally{await a.db.close();}
+});
 test('cliente da API candidata normaliza telefones historicos e bloqueia entradas invalidas',async()=>{
  const pares=[
   ['(51) 8888-7777','+555188887777'],
