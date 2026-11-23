@@ -75,6 +75,10 @@ export function criarRepositorio({pool,segredo,segredoChaves,storage,agora=()=>D
    if(!r||r.estado!=='aprovado'||!r.recibo_hash)throw falha(409,'Aprovação necessária.');
    const destinatario=telefone(r.whatsapp);
    if(r.conferente_id!==op.usuarioId||telefone(d.telefoneConfirmado)!==destinatario||!r.telefone_confirmado_verificador||!timingSafeEqual(Buffer.from(r.telefone_confirmado_verificador),h('telefone:'+r.id,destinatario)))throw falha(403,'Conferência do destinatário necessária.');
+   // O cadastro histórico pode conter DDD + apenas 8 dígitos. Não presumir o 9
+   // nem liberar código/URI de WhatsApp a um destino ainda não comprovado.
+   // A regularização do contato requer um fluxo separado com validação humana e MFA.
+   if(!/^55[1-9]\\d{10}$/.test(destinatario))throw falha(409,'Contato antigo exige regularização autorizada antes do envio.');
    const {rows:[anterior]}=await c.query('SELECT id FROM mandato_privado.codigos_recuperacao WHERE pedido_id=$1',[r.id]);
    if(anterior)throw falha(409,'Código já emitido. Confira a auditoria ou solicite nova recuperação.');
    const codigo=String(randomInt(1000000)).padStart(6,'0'),id=randomUUID();
