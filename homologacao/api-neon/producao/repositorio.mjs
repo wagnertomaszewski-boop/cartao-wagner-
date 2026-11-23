@@ -11,7 +11,7 @@ const uuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab]
 // A coincidência do telefone nunca substitui MFA e conferência humana na recuperação.
 const telefone=x=>{const bruto=String(x||'').trim();if(bruto.startsWith('+')&&!bruto.startsWith('+55'))throw falha(400,'Telefone inválido.');let s=bruto.replace(/\D/g,'');if(s.length===10||s.length===11)s='55'+s;if(!/^55[1-9]\d{9,10}$/.test(s))throw falha(400,'Telefone inválido.');return s;};
 const texto=(x,max)=>{if(typeof x!=='string'||!x.trim()||x.length>max)throw falha(400,'Dados inválidos.');return x.trim();};
-export function criarRepositorio({pool,segredo,segredoChaves,storage,agora=()=>Date.now()}){
+export function criarRepositorio({pool,segredo,segredoChaves,storage,agora=()=>Date.now(),validarRegularizacaoContato=null}){
  if(!pool||typeof segredo!=='string'||segredo.length<32)throw Error('Backend privado não configurado.');
  verificarSegredoServidor(segredoChaves);
  const verificarChave=chave=>hashChavePrivada(chave)?verificadorHmac('key',chave,segredoChaves):null;
@@ -71,6 +71,9 @@ export function criarRepositorio({pool,segredo,segredoChaves,storage,agora=()=>D
  async regularizarContato(d,op){
   if(!op?.mfaRecente||!op.usuarioId||!uuid(d.pedidoId)||d.identidadeConferida!==true||d.contatoVerificado!==true)
    throw falha(403,'MFA recente e conferência presencial do contato obrigatórios.');
+  // Aprovação por checkbox no navegador não serve como comprovação de posse do destino.
+  // A evidência deve vir de um verificador independente integrado apenas no servidor.
+  if(typeof validarRegularizacaoContato!=='function')throw falha(503,'Validação confiável do destino indisponível.');
   const justificativa=texto(d.justificativa,1000);
   if(justificativa.length<20)throw falha(400,'Justificativa de pelo menos 20 caracteres obrigatória.');
   const novo=telefone(d.telefoneNovo),confirmado=telefone(d.telefoneConfirmado);
@@ -83,8 +86,17 @@ export function criarRepositorio({pool,segredo,segredoChaves,storage,agora=()=>D
    if(!r.telefone_confirmado_verificador||!timingSafeEqual(Buffer.from(r.telefone_confirmado_verificador),h('telefone:'+r.id,antigo)))throw falha(403,'Contato original não corresponde ao pedido.');
    // Não altera public.solicitacoes.whatsapp e não reatribui a solicitação.
    // O destino fica vinculado exclusivamente a este pedido, ao conferente MFA e ao HMAC.
-   await c.query('INSERT INTO mandato_privado.contatos_regularizados(pedido_id,telefone_e164,telefone_verificador,justificativa,operador_id) VALUES($1,$2,$3,$4,$5)',
-    [r.id,'+'+novo,h('contato-regularizado:'+r.id,novo),justificativa,op.usuarioId]);
+   const prova=await validarRegularizacaoContato({
+    pedidoId:r.id,solicitacaoId:r.solicitacao_id,operadorId:op.usuarioId,
+    telefoneOriginal:'+'+antigo,telefoneNovo:'+'+novo
+   });
+   const instante=Date.parse(prova?.verificadoEm);
+   if(prova?.validado!==true||!uuid(prova.evidenciaId)||
+      prova.operadorId!==op.usuarioId||prova.telefoneNovo!=='+'+novo||
+      !Number.isFinite(instante)||instante>agora()||agora()-instante>300000)
+    throw falha(403,'Falta evidência recente e vinculada à conferência do destino.');
+   await c.query('INSERT INTO mandato_privado.contatos_regularizados(pedido_id,telefone_e164,telefone_verificador,justificativa,operador_id,evidencia_id,evidencia_verificada_em) VALUES($1,$2,$3,$4,$5,$6,$7)',
+    [r.id,'+'+novo,h('contato-regularizado:'+r.id,novo),justificativa,op.usuarioId,prova.evidenciaId,prova.verificadoEm]);
    await auditar(c,'contato_legado_regularizado',r.solicitacao_id,op.usuarioId,r.id);
    return {regularizado:true,destinoMascarado:'+55 ** *****'+novo.slice(-4)};
   });
