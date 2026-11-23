@@ -1,6 +1,6 @@
 export const ORIGEM_HML='https://mandato-neon-homologacao.onrender.com';
 const uuid=/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
-export function normalizarTelefone(valor){let n=String(valor||'').replace(/[^0-9]/g,'');if(n.length===11)n='55'+n;if(!/^55[1-9][0-9]{10}$/.test(n))throw Error('Informe o telefone cadastrado com DDD.');return '+'+n;}
+export function normalizarTelefone(valor){const original=String(valor??'').trim();if(original.startsWith('+')&&!original.startsWith('+55'))throw Error('Informe um telefone brasileiro com DDD.');let n=original.replace(/[^0-9]/g,'');if(n.length===10||(n.length===12&&n.startsWith('55')))throw Error('O cadastro possui um telefone antigo com oito dígitos. A equipe precisa conferir e regularizar o contato antes do envio por WhatsApp.');if(n.length===11)n='55'+n;if(!/^55[1-9][0-9]{10}$/.test(n))throw Error('Informe o telefone cadastrado com DDD.');return '+'+n;}
 export function criarClienteRecuperacaoManual({origem,buscar=globalThis.fetch}={}){
  if(origem!==ORIGEM_HML)throw Error('Recuperação disponível somente na homologação.');
  async function enviar(path,data,admin=false){
