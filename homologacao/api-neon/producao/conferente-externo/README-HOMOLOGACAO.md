@@ -5,7 +5,7 @@
 ## Separação de funções
 
 1. O administrador do Painel, autenticado e com MFA recente, confere a identidade e aprova o pedido. Ele **não comprova sozinho** a posse de outro WhatsApp.
-2. Um **verificador de posse independente** deve gerar e enviar um desafio específico ao NOVO número e confirmar sua resposta por um canal confiável. Somente após a confirmação, assina com **sua chave Ed25519 privada** um recibo contendo: pedido, solicitação, operador, número antigo, número novo, identificador único de evidência e horário. A função de envio/validação real desse desafio **ainda não existe** neste repositório.
+2. Um **verificador de posse independente** deve gerar e enviar um desafio específico ao NOVO número e confirmar sua resposta por um canal confiável. Somente após a confirmação, assina com **sua chave Ed25519 privada** um recibo contendo: pedido, solicitação, operador, número antigo, número novo, identificador único de evidência e horário. Existe somente uma simulação de geração e conferência do desafio; o serviço de envio/validação **real** ainda não existe neste repositório.
 3. Um **conferente externo separado** valida a assinatura e os vínculos do recibo. Apenas nessa condição, o módulo `emitir-atestado-por-recibo.mjs` gera um atestado Ed25519 de regularização, com a **segunda chave privada** (diferente da primeira).
 4. A API candidata valida somente a **chave pública do conferente**, o ID do conferente, o pedido, o operador, os telefones e prazo de cinco minutos. Consulta o atestado **do servidor**, não do navegador. A evidência não pode ser reutilizada em outra regularização (índice UNIQUE previsto em `contatos-legados-candidata.sql`).
 5. Só após as verificações o administrador pode gerar o código temporário e abrir o WhatsApp manualmente. O cadastro histórico `public.solicitacoes.whatsapp` **não é editado**.
@@ -20,9 +20,19 @@
 - **Atenção:** assinatura válida significa que a autoridade que assinou declarou a verificação. A segurança real ainda depende da operação confiável do desafio independente; os testes sintéticos não provam posse de um WhatsApp verdadeiro.
 - Evitar reuso da prova: a inserção da regularização deve continuar transacional e sujeita à unicidade de `evidencia_id`; a fonte externa deverá registrar revogação e trilha de auditoria.
 
+## Novo protótipo de desafio independente (somente simulação)
+
+- `verificador-posse-por-desafio.mjs`: inicia um desafio de seis dígitos, válido por cinco minutos. O código vai **somente** ao transporte privado injetado; a resposta ao administrador contém apenas um identificador e vencimento. No armazenamento permanece HMAC, sem o código puro. Cinco erros encerram as tentativas.
+- A função de autorização inicial é obrigatoriamente injetada pelo serviço independente e **precisa comprovar no servidor** o operador autenticado com MFA recente, o pedido aprovado e o vínculo do telefone. Não usar nenhum valor ou confirmação fornecida diretamente pelo navegador para isso.
+- A confirmação correta consome atomicamente o desafio, assina um **recibo de posse Ed25519** e o envia a uma função privada de registro. O recibo não é devolvido ao navegador. O conferente separado continua validando esse recibo antes de emitir o atestado final.
+- `persistencia-posse-postgres.mjs`: adaptador transacional para PostgreSQL independente; limita a três desafios por número em uma hora, não permite mais de um desafio por pedido e exige consumo único. Requer uma role e um banco próprios, ainda **não configurados**.
+- `sql/laboratorio-desafios-posse-NAO-EXECUTAR.sql`: esquema descartável para a suíte PGlite. Não executar no Supabase ou Neon. Não contém credenciais, permissões de API ou migrações produtivas.
+- Os testes usam uma caixa de saída fictícia em memória no lugar do WhatsApp. Portanto, comprovam o comportamento do software, **não** a entrega a um aparelho nem a posse verdadeira do número.
+- Para o funcionamento real falta uma integração com provedor de envio/validação e um serviço externo com credenciais, isolamento, autenticação, auditoria, rotação de chaves, limpeza e retenção. Não existe endpoint público habilitado aqui.
+
 ## Situação de implantação
 
-- O emissor de atestado existe apenas como **biblioteca testável**; não expõe endpoint de emissão e não recebe comprovantes diretamente do cidadão.
+- O emissor de atestado e o verificador de posse existem apenas como **bibliotecas testáveis**; não expõem endpoints e não recebem mensagens diretamente de cidadãos.
 - Nenhuma chave privada foi criada ou configurada em serviço conectado.
 - A fonte de dados `mandato_privado.atestados_regularizacao` está apenas **proposta** em `../sql/atestados-regularizacao-NAO-EXECUTAR.sql`. Nenhuma mudança de papel, permissão, banco ou bucket é autorizada por esta documentação.
 - Sem `MANDATO_CONFERENTE_ED25519_PUBLIC_KEY` e `MANDATO_CONFERENTES_EXTERNOS` válidos, a API candidata **não habilita** regularização de contato legado; o Painel mostra o bloqueio.
