@@ -310,3 +310,7 @@
 .vote-plenary-rejected{color:#9d3e35}
 .vote-card-bottom a+a{margin-top:2px}
 @media(max-width:760px){.vote-featured-links{grid-template-columns:1fr}.vote-featured-links a{padding:13px}}
+
+/* V17: imagens responsivas WebP com JPG original como fallback e zoom */
+.photo-picture{display:block;width:100%}
+.photo-picture>img{display:block;max-width:100%}

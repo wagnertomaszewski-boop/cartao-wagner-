@@ -284,3 +284,7 @@ a:focus-visible,button:focus-visible{outline:3px solid #c48d0a;outline-offset:4p
   }
   .equipment-gallery .equipment-compact h3{font-size:21px}
 }
+
+/* V17: imagens responsivas WebP com JPG original como fallback e zoom */
+.photo-picture{display:block;width:100%}
+.photo-picture>img{display:block;max-width:100%}
