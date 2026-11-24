@@ -1,434 +1,106 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Acompanhar Solicitação | Wagner Tomaszewski</title>
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0868bd">
+<title>Acompanhar solicitação | Mandato em Ação</title>
 <style>
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: linear-gradient(180deg, #071a32, #0b3555);
-  color: white;
-  min-height: 100vh;
-  padding: 25px 18px;
-}
-
-.container {
-  max-width: 650px;
-  margin: auto;
-}
-
-h1 {
-  text-align: center;
-  font-size: 34px;
-  margin-bottom: 10px;
-}
-
-.subtitulo {
-  text-align: center;
-  font-size: 19px;
-  line-height: 1.5;
-  margin-bottom: 30px;
-  color: #e4eaf0;
-}
-
-.card {
-  background: white;
-  color: #14263a;
-  border-radius: 28px;
-  padding: 30px 24px;
-}
-
-label {
-  display: block;
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-
-input {
-  width: 100%;
-  padding: 18px;
-  font-size: 18px;
-  border: 2px solid #d4dce3;
-  border-radius: 15px;
-  margin-bottom: 20px;
-}
-
-button {
-  width: 100%;
-  border: none;
-  border-radius: 15px;
-  background: #159947;
-  color: white;
-  font-size: 20px;
-  font-weight: bold;
-  padding: 18px;
-  cursor: pointer;
-}
-
-button:active {
-  transform: scale(0.98);
-}
-
-#resultado {
-  display: none;
-  margin-top: 25px;
-  padding: 22px;
-  border-radius: 18px;
-  background: #eaf8ef;
-  border: 2px solid #9ed9b2;
-  color: #176b39;
-}
-
-#resultado h2 {
-  margin-top: 0;
-}
-
-.protocolo {
-  font-size: 23px;
-  font-weight: bold;
-  word-break: break-word;
-}
-
-.status {
-  display: inline-block;
-  margin-top: 8px;
-  padding: 10px 16px;
-  background: #159947;
-  color: white;
-  border-radius: 20px;
-  font-weight: bold;
-}
-
-.info {
-  margin-top: 18px;
-  font-size: 17px;
-  line-height: 1.5;
-}
-
-#erro {
-  display: none;
-  margin-top: 20px;
-  padding: 18px;
-  border-radius: 15px;
-  background: #ffecec;
-  color: #a12222;
-  font-weight: bold;
-}
-
-#blocoRespostas {
-  margin-top: 22px;
-}
-
-.resposta-item {
-  margin-top: 12px;
-  padding: 14px;
-  border-radius: 14px;
-  background: #ffffff;
-  border: 1px solid #b9dec7;
-  color: #173d2a;
-}
-
-.resposta-data {
-  font-size: 13px;
-  color: #5f6b64;
-  margin-bottom: 7px;
-}
-
-.resposta-texto {
-  white-space: pre-wrap;
-  line-height: 1.5;
-}
-
-.anexos-resposta {
-  margin-top: 10px;
-}
-
-.anexos-resposta a {
-  display: block;
-  margin-top: 7px;
-  color: #075985;
-  font-weight: bold;
-  text-decoration: none;
-}
-
-.sem-resposta {
-  margin-top: 10px;
-  color: #5f6b64;
-}
-
-.voltar {
-  display: block;
-  text-align: center;
-  margin-top: 25px;
-  color: white;
-  text-decoration: none;
-  font-size: 18px;
-}
-
-footer {
-  text-align: center;
-  margin-top: 35px;
-  line-height: 1.6;
-  color: #e4eaf0;
-}
+:root{color-scheme:light;--azul:#0868bd;--escuro:#103457;--fundo:#f1f5f9;--linha:#dbe4ed}
+*{box-sizing:border-box}body{margin:0;background:var(--fundo);color:#14304a;font:16px/1.5 Arial,Helvetica,sans-serif}
+.cabecalho{background:linear-gradient(160deg,#1174c7,#06467e);color:white;padding:24px 18px 32px;border-radius:0 0 28px 28px}
+.cabecalho div,.conteudo{max-width:650px;margin:0 auto}
+.cabecalho a{color:#fff;text-decoration:none;font-size:15px}
+.cabecalho h1{margin:18px 0 5px;font-size:28px}
+.cabecalho p{margin:0;color:#e8f4ff}
+.conteudo{padding:18px 14px 42px}
+.cartao{background:#fff;padding:22px 18px;margin-bottom:14px;border-radius:19px;box-shadow:0 7px 22px #102d4d0d}
+h2{font-size:20px;margin:2px 0 10px}h3{font-size:17px;margin:16px 0 4px}
+p{margin:8px 0 14px}
+label{display:block;margin:13px 0 5px;font-weight:700}
+input{width:100%;padding:14px 12px;border:1.5px solid var(--linha);border-radius:11px;font-size:16px;color:#153047;background:#fff}
+button{cursor:pointer;border:0;border-radius:11px;padding:14px 16px;font-size:16px;font-weight:700;background:var(--azul);color:#fff}
+button:disabled{opacity:.55;cursor:not-allowed}
+.form-botao{width:100%;margin:18px 0 4px}
+.secundario{background:#e8f2fc;color:var(--escuro);width:100%;margin-top:10px}
+.link-arquivo{background:#e8f2fc;color:#06467e;text-align:left;margin:4px 0;padding:9px 12px;font-size:14px}
+.alerta{padding:14px 16px;margin:12px 0;border:1px solid #b4d4ef;background:#eef7ff;border-radius:11px;color:#174a76}
+.alerta.erro{background:#fff1f1;border-color:#efbcbc;color:#8a2828}
+.man{border-left:5px solid #df9c23;background:#fff8e7;padding:15px 16px;border-radius:10px}
+.muted{font-size:14px;color:#53677a}
+.resultado{margin-top:15px}
+.resultado strong{overflow-wrap:anywhere}li{padding:5px 0;overflow-wrap:anywhere}
+[hidden]{display:none!important}
 </style>
 </head>
-
 <body>
+<header class="cabecalho"><div>
+<a href="./index.html">‹ Voltar ao aplicativo</a>
+<h1>Acompanhar solicitação</h1>
+<p>Mandato em Ação · Vereador Wagner Tomaszewski</p>
+</div></header>
+<main class="conteudo">
+<section id="manutencao" class="cartao" role="status">
+<h2>Consulta temporariamente em manutenção</h2>
+<p class="man">Estamos concluindo a proteção das informações dos cidadãos. A consulta será liberada com <strong>protocolo e chave individual</strong>. Suas solicitações continuam registradas.</p>
+<p class="muted">O sistema não libera detalhes somente com o protocolo. Caso precise de atendimento, utilize os canais habituais do mandato.</p>
+</section>
 
-<div class="container">
-
-<h1>Acompanhar Solicitação</h1>
-
-<div class="subtitulo">
-Consulte o andamento da sua solicitação enviada ao mandato do
-Vereador Wagner Tomaszewski.
-</div>
-
-<div class="card">
-
+<section id="funcional" class="cartao" hidden>
+<h2>Consultar andamento</h2>
+<p class="muted">A chave é pessoal. Não a compartilhe. O protocolo sozinho não permite abrir sua solicitação.</p>
+<form id="consulta" autocomplete="off">
 <label for="protocolo">Número do protocolo</label>
-
-<input
-  id="protocolo"
-  type="text"
-  placeholder="Ex.: 2026-000002"
->
-
-<button type="button" onclick="consultarSolicitacao()" style="background:#64748b">INFORMAÇÕES SOBRE O ACOMPANHAMENTO</button>
-<p role="status" style="font-size:17px;line-height:1.5;color:#334155">Por segurança, estamos atualizando o acesso às solicitações. O acompanhamento exigirá protocolo e chave individual. Seus pedidos continuam registrados.</p>
-
-<div id="resultado">
-  <h2>Solicitação encontrada</h2>
-
-  <div>Protocolo:</div>
-  <div class="protocolo" id="rProtocolo"></div>
-
-  <div class="info">
-    <strong>Status atual:</strong><br>
-    <span class="status" id="rStatus"></span>
-  </div>
-
-  <div class="info">
-    <strong>Assunto:</strong><br>
-    <span id="rAssunto"></span>
-  </div>
-
-  <div class="info">
-    <strong>Localidade:</strong><br>
-    <span id="rLocalidade"></span>
-  </div>
-
-  <div class="info" id="blocoRespostas">
-    <strong>Respostas do mandato:</strong>
-    <div id="rRespostas"></div>
-  </div>
-</div>
-
-<div id="erro" role="status">
-Protocolo não encontrado. Confira o número e tente novamente.
-</div>
-
-</div>
-
-<a class="voltar" href="solicitacao.html">
-← Fazer uma nova solicitação
-</a>
-
-<footer>
-Wagner Tomaszewski<br>
-Vereador de Cristal/RS<br><br>
-Seu pedido, nossa voz na Câmara.
-</footer>
-
-</div>
-
-<script>
-
-const SUPABASE_URL =
-"https://pmmsdjozyyxkbuqlkfpb.supabase.co";
-
-const SUPABASE_KEY =
-"sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
-
-function formatarData(v) {
-  if (!v) return "";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString("pt-BR");
-}
-
-function normalizarAnexos(v) {
-  if (Array.isArray(v)) return v;
-  if (!v) return [];
-  try {
-    const p = JSON.parse(v);
-    return Array.isArray(p) ? p : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-async function carregarRespostasPublicas(protocolo) {
-  const alvo = document.getElementById("rRespostas");
-  alvo.innerHTML = "";
-
-  try {
-    const resposta = await fetch(
-      SUPABASE_URL + "/rest/v1/rpc/consulta_publica_respostas_protocolo",
-      {
-        method: "POST",
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": "Bearer " + SUPABASE_KEY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ p_protocolo: protocolo })
-      }
-    );
-
-    if (!resposta.ok) {
-      alvo.innerHTML = '<div class="sem-resposta">As respostas ainda não estão disponíveis.</div>';
-      return;
-    }
-
-    const dados = await resposta.json();
-
-    if (!Array.isArray(dados) || dados.length === 0) {
-      alvo.innerHTML = '<div class="sem-resposta">Ainda não há resposta registrada. Acompanhe o status da solicitação por aqui.</div>';
-      return;
-    }
-
-    dados.forEach(r => {
-      const item = document.createElement("div");
-      item.className = "resposta-item";
-
-      if (r.criado_em) {
-        const data = document.createElement("div");
-        data.className = "resposta-data";
-        data.textContent = formatarData(r.criado_em);
-        item.appendChild(data);
-      }
-
-      if (r.mensagem) {
-        const texto = document.createElement("div");
-        texto.className = "resposta-texto";
-        texto.textContent = r.mensagem;
-        item.appendChild(texto);
-      }
-
-      const anexos = normalizarAnexos(r.anexos);
-      if (anexos.length) {
-        const bloco = document.createElement("div");
-        bloco.className = "anexos-resposta";
-
-        anexos.forEach(a => {
-          if (!a || !a.url) return;
-          const link = document.createElement("a");
-          link.href = a.url;
-          link.target = "_blank";
-          link.rel = "noopener";
-          link.textContent = "📎 " + (a.nome || "Abrir documento");
-          bloco.appendChild(link);
-        });
-
-        item.appendChild(bloco);
-      }
-
-      alvo.appendChild(item);
-    });
-
-  } catch (e) {
-    console.error("Erro ao carregar respostas:", e);
-    alvo.innerHTML = '<div class="sem-resposta">Não foi possível carregar as respostas agora.</div>';
-  }
-}
-
-async function consultarSolicitacao() {
-  const avisoDeManutencao=document.getElementById("erro");
-  if(avisoDeManutencao){avisoDeManutencao.textContent="Acompanhamento em manutenção para proteger os dados dos cidadãos.";avisoDeManutencao.style.display="block";}
-  return;
-
-
-  const protocolo =
-    document.getElementById("protocolo").value.trim();
-
-  const resultado = document.getElementById("resultado");
-  const erro = document.getElementById("erro");
-
-  resultado.style.display = "none";
-  erro.style.display = "none";
-
-  if (!protocolo) {
-    erro.innerText = "Digite o número do protocolo.";
-    erro.style.display = "block";
-    return;
-  }
-
-  try {
-
-    const resposta = await fetch(
-  SUPABASE_URL + "/rest/v1/rpc/consulta_publica_protocolo",
-  {
-    method: "POST",
-    headers: {
-      "apikey": SUPABASE_KEY,
-      "Authorization": "Bearer " + SUPABASE_KEY,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      p_protocolo: protocolo
-    })
-  }
-);
-
-    if (!resposta.ok) {
-    const detalhe = await resposta.text();
-    throw new Error(detalhe);
-    }
-
-    const dados = await resposta.json();
-
-    if (dados.length === 0) {
-      erro.innerText =
-        "Protocolo não encontrado. Confira o número e tente novamente.";
-      erro.style.display = "block";
-      return;
-    }
-
-    const s = dados[0];
-
-    document.getElementById("rProtocolo").innerText =
-      s.protocolo || protocolo;
-
-    document.getElementById("rStatus").innerText =
-      s.status || "Recebida";
-
-    document.getElementById("rAssunto").innerText =
-      s.assunto || "Não informado";
-
-    document.getElementById("rLocalidade").innerText =
-      s.localidade || "Não informada";
-
-    resultado.style.display = "block";
-    await carregarRespostasPublicas(s.protocolo || protocolo);
-
-  } catch (e) {
-    erro.innerText = "Erro: " + e.message;
-    erro.style.display = "block";
-  }
-}
-
-</script>
-
-</body>
-</html>
+<input id="protocolo" name="protocolo" required maxlength="80" autocomplete="off" placeholder="Ex.: 2026-000002">
+<label for="chave">Chave individual de acompanhamento</label>
+<input id="chave" name="chave" type="password" required maxlength="43" autocomplete="off" spellcheck="false" autocapitalize="none">
+<button type="submit" class="form-botao" data-acao="consultar">Consultar com segurança</button>
+</form>
+<button id="abrirPrimeiroAcesso" type="button" class="secundario">Primeiro acesso ou perdi minha chave</button>
+<section id="primeiroAcesso" hidden>
+<h3>Solicitar primeiro acesso ou recuperação</h3>
+<p class="muted">Informe o WhatsApp cadastrado. A equipe verificará sua identidade antes de enviar manualmente um código. Se o número mudou, será necessário regularizá-lo de forma segura.</p>
+<form id="solicitar" autocomplete="off">
+<label for="protocoloRecuperacao">Número do protocolo</label>
+<input id="protocoloRecuperacao" required maxlength="80" autocomplete="off">
+<label for="telefone">WhatsApp cadastrado com DDD</label>
+<input id="telefone" type="tel" inputmode="tel" required autocomplete="off" placeholder="(51) 99999-9999">
+<button type="submit" class="form-botao" data-acao="solicitar">Solicitar análise da equipe</button>
+</form>
+<section id="codigoArea" hidden>
+<h3>Confirmar código recebido</h3>
+<p class="muted">Mantenha esta tela aberta. Após a aprovação, o código enviado manualmente vale cinco minutos e pode ser usado uma vez.</p>
+<form id="validar" autocomplete="off">
+<label for="codigo">Código recebido por WhatsApp</label>
+<input id="codigo" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required>
+<button type="submit" class="form-botao" data-acao="validar">Validar código e obter chave</button>
+</form>
+</section>
+<section id="novaChaveArea" hidden>
+<h3>Chave individual emitida</h3>
+<p>Guarde a chave em local seguro. Se havia uma chave anterior, ela foi invalidada.</p>
+<label for="novaChave">Sua chave de acompanhamento</label>
+<input id="novaChave" readonly autocomplete="off">
+<button id="copiarChave" type="button" class="secundario" data-acao="copiar">Copiar chave</button>
+<button id="consultarNova" type="button" class="secundario">Utilizar esta chave</button>
+</section>
+</section>
+<p id="aviso" class="alerta" role="status" aria-live="polite" hidden></p>
+<section id="resultado" class="resultado" hidden>
+<h2>Minha solicitação</h2>
+<p><strong>Protocolo:</strong> <span id="rProtocolo"></span></p>
+<p><strong>Situação:</strong> <span id="rStatus"></span></p>
+<p><strong>Assunto:</strong> <span id="rAssunto"></span></p>
+<p><strong>Descrição:</strong> <span id="rDescricao"></span></p>
+<p><strong>Localidade:</strong> <span id="rLocalidade"></span></p>
+<h3>Histórico</h3><ol id="historico"></ol>
+<h3>Respostas do mandato</h3><ul id="respostas"></ul>
+<h3>Documentos e anexos privados</h3><ul id="anexos"></ul>
+<p class="muted">Os arquivos só são solicitados ao servidor após validar a chave individual.</p>
+</section>
+</section>
+</main>
+<noscript>Ative o JavaScript para verificar a disponibilidade do acompanhamento. Nenhum pedido é consultado apenas com protocolo.</noscript>
+<script type="module" src="./seguranca/consulta-app-ui.mjs"></script>
+</body></html>
