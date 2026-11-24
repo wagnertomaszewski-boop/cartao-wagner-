@@ -31,6 +31,11 @@ test('simula ponta a ponta com envio WhatsApp aceito, prova única no PostgreSQL
   const enviar=criarTransporteWhatsAppTwilioVerify({
    serviceSid,apiKeySid:'SK'+'b'.repeat(32),apiKeySecret:'SEGREDO-FICTICIO-SEM-CREDENCIAL-REAL',
    requisitar:async(url,op)=>{
+    if(op.method==='GET'){
+     assert.equal(url,'https://verify.twilio.com/v2/Services/'+serviceSid);
+     return {ok:true,status:200,json:async()=>({sid:serviceSid,custom_code_enabled:true,
+      whatsapp:{msg_service_sid:'MG'+'d'.repeat(32),from:'whatsapp:+5551999997777'}})};
+    }
     assert.equal(url,'https://verify.twilio.com/v2/Services/'+serviceSid+'/Verifications');
     envios.push(Object.fromEntries(new URLSearchParams(op.body)));
     return {ok:true,status:201,json:async()=>({
