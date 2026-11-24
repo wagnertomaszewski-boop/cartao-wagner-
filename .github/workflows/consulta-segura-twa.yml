@@ -1,0 +1,27 @@
+name: Consulta segura TWA - testes isolados
+on:
+  push:
+    branches:
+      - feature/consulta-segura-twa-20261124
+    paths:
+      - 'acompanhar.html'
+      - 'seguranca/consulta-app-*.mjs'
+      - 'seguranca/config-consulta-publica.json'
+      - 'testes/consulta-app.test.mjs'
+      - '.github/workflows/consulta-segura-twa.yml'
+  workflow_dispatch:
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Testar cliente do cidadão sem banco, segredos ou produção
+        run: node --test testes/consulta-app.test.mjs
+      - name: Verificar que a integração permanece desligada
+        run: |
+          node -e "const c=require('./seguranca/config-consulta-publica.json'); if(c.ativo!==false||c.apiBase!=='')process.exit(1)"
