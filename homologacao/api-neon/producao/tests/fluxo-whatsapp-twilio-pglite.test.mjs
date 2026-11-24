@@ -30,6 +30,7 @@ test('simula ponta a ponta com envio WhatsApp aceito, prova única no PostgreSQL
   const envios=[],recibos=[];
   const enviar=criarTransporteWhatsAppTwilioVerify({
    serviceSid,apiKeySid:'SK'+'b'.repeat(32),apiKeySecret:'SEGREDO-FICTICIO-SEM-CREDENCIAL-REAL',
+   habilitarEnvioTeste:true,telefonesTestePermitidos:[ctx.telefoneNovo],
    requisitar:async(url,op)=>{
     if(op.method==='GET'){
      assert.equal(url,'https://verify.twilio.com/v2/Services/'+serviceSid);
