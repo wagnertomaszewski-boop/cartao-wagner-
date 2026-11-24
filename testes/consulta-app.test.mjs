@@ -119,3 +119,18 @@ test('página TWA não contém RPC antiga, consulta por protocolo puro nem URLs 
  }
  assert.doesNotMatch(ui,/\.innerHTML\s*=/);
 });
+
+test('V2 oferece caminho para a tela segura do aplicativo, sem trocar o app Android', async()=>{
+  for(const path of ['v2/index.html','v2/acompanhar.html']){
+    const h=await readFile(new URL('../'+path,import.meta.url),'utf8');
+    assert.match(h,/href="\.\.\/acompanhar\.html"/);
+    assert.match(h,/Acompanhamento temporariamente em manutenção/);
+  }
+});
+test('a interface referência apenas elementos existentes na tela TWA',async()=>{
+  const h=await readFile(new URL('../acompanhar.html',import.meta.url),'utf8');
+  const js=await readFile(new URL('../seguranca/consulta-app-ui.mjs',import.meta.url),'utf8');
+  for(const m of js.matchAll(/\$\('([^']+)'\)/g)){
+    assert.ok(h.includes('id="'+m[1]+'"'),'Elemento ausente no HTML: '+m[1]);
+  }
+});
