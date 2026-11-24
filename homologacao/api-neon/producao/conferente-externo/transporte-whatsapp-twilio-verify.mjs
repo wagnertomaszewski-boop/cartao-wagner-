@@ -1,3 +1,4 @@
+import {criarVerificadorPreparacaoTwilioVerify} from './verificar-preparacao-twilio-verify.mjs';
 // Adaptador OPCIONAL de envio real pelo canal WhatsApp do Twilio Verify.
 // NÃO é ativado automaticamente, não conecta a serviços durante a importação,
 // nem pode acessar o banco Mandato/Supabase ou as chaves Ed25519.
@@ -28,6 +29,7 @@ export function criarTransporteWhatsAppTwilioVerify({
   timeoutMs<1000||timeoutMs>30000)
   throw Error('Twilio Verify privado não configurado.');
  const endpoint='https://verify.twilio.com/v2/Services/'+serviceSid+'/Verifications';
+ const preparacaoPronta=criarVerificadorPreparacaoTwilioVerify({serviceSid,apiKeySid,apiKeySecret,requisitar,timeoutMs});
  // Basic Auth apenas no servidor. Não registrar config, headers ou resposta bruta.
  const autorizacao='Basic '+Buffer.from(apiKeySid+':'+apiKeySecret).toString('base64');
  return async function enviarDesafio({desafioId,telefoneNovo,codigo,expiraEm}={}){
@@ -35,6 +37,8 @@ export function criarTransporteWhatsAppTwilioVerify({
    !CELULAR.test(telefoneNovo||'')||!CODIGO.test(codigo||'')||
    typeof expiraEm!=='string'||!Number.isFinite(Date.parse(expiraEm)))
    return false;
+  // Revalida a configuração diretamente na Twilio antes de qualquer POST.
+  if(!await preparacaoPronta())return false;
   const corpo=new URLSearchParams({To:telefoneNovo,Channel:'whatsapp',CustomCode:codigo});
   try{
    const resposta=await requisitar(endpoint,{
