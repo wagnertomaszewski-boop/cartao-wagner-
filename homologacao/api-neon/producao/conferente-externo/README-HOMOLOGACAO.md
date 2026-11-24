@@ -48,6 +48,27 @@ Referências oficiais para configuração:
 - https://www.twilio.com/docs/verify/whatsapp
 - https://www.twilio.com/docs/verify/api/customization-options
 
+### Bloqueio de envios acidentais
+
+O transporte agora exige **dois requisitos adicionais** antes de tentar se comunicar com a Twilio:
+
+1. `habilitarEnvioTeste: true`, habilitado explicitamente no serviço independente.
+2. `telefonesTestePermitidos: ['+55DDDNUMERO']`, com apenas números de testadores que autorizaram a mensagem (máximo 20).
+
+Sem qualquer um dos requisitos, o transporte retorna `false` **antes de qualquer GET ou POST** à Twilio. Não inserir credenciais ou telefones reais no repositório. A configuração padrão usa `habilitarEnvioTeste: false` e lista vazia.
+
+Esta candidata NÃO oferece modo para disparar mensagens indiscriminadamente a cidadãos. A passagem para operação real exige revisão de autorização, privacidade, custos, mitigação de abuso e aprovação própria.
+
+**O GET não comprova** entrega, autorização definitiva do remetente pela Meta nem ausência de cobrança. A verificação operacional exige confirmar o código recebido no aparelho de teste autorizado.
+
+### Para realizar o primeiro teste real com segurança
+
+- Criar/configurar a conta Twilio e um Verify Service independente, com WhatsApp Sender associado a Messaging Service e CustomCode habilitado.
+- Separar as credenciais do provedor e as chaves Ed25519, guardadas apenas em serviços privados distintos, nunca no Painel ou GitHub.
+- Escolher um celular de teste autorizado e confirmar previamente eventuais custos e restrições da conta.
+- Implementar a autenticação e autorização da instância independente, armazenamento externo e entrega auditada dos recibos ao conferente: as bibliotecas isoladas ainda não oferecem endpoints prontos.
+- Testar a entrega e a digitação do código recebido. A ativação para cidadãos e Android exige análise e autorização separadas.
+
 O envio é opcional e desativado até existir configuração segura, consentimento e autorização específica para testes. O caminho histórico de envio manual do código de recuperação permanece separado e preservado.
 
 ## Situação de implantação
