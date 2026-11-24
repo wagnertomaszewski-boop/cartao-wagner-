@@ -94,7 +94,7 @@ test('código validado emite chave forte; resposta inválida não é aceita',asy
 });
 test('download exige UUID e chave, sem caminhos ou URLs públicas',async()=>{
  const {cliente,calls}=simular({base64:'JVBERi0=',mime:'application/pdf',nome:'resposta.pdf'});
- await assert.rejects(cliente.baixar({...dados,arquivoId:'https://example.com/arquivo.pdf'}),/Arquivo privado/);
+ assert.throws(()=>cliente.baixar({...dados,arquivoId:'https://example.com/arquivo.pdf'}),/Arquivo privado/);
  assert.equal(calls.length,0);
  await cliente.baixar({...dados,arquivoId:uuid});
  assert.match(calls[0].url,/\/api\/v1\/arquivos\/baixar$/);
