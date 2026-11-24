@@ -76,6 +76,35 @@ test('configuração inválida ou telefone incompleto não gera qualquer requisi
  assert.equal(chamadas,0);
 });
 
+test('envio real fica desligado por padrão, inclusive com credenciais válidas',async()=>{
+ let consultas=0;
+ const enviar=criarTransporteWhatsAppTwilioVerify({
+  serviceSid,apiKeySid,apiKeySecret,
+  requisitar:async()=>{consultas++;throw Error('Não deveria haver rede');}
+ });
+ assert.equal(await enviar(entrada),false);
+ assert.equal(consultas,0);
+});
+
+test('habilitação só permite destinatário explicitamente autorizado para teste',async()=>{
+ let consultas=0;
+ const enviar=criarTransporteWhatsAppTwilioVerify({
+  ...config,requisitar:async()=>{consultas++;throw Error('Não deveria enviar');}
+ });
+ const outroNumero={...entrada,telefoneNovo:'+5551999988887'};
+ assert.equal(await enviar(outroNumero),false);
+ assert.equal(consultas,0);
+ assert.throws(()=>criarTransporteWhatsAppTwilioVerify({
+  ...config,telefonesTestePermitidos:[]
+ }),/Lista restrita/);
+ assert.throws(()=>criarTransporteWhatsAppTwilioVerify({
+  ...config,telefonesTestePermitidos:['+555188887777']
+ }),/Lista restrita/);
+ assert.throws(()=>criarTransporteWhatsAppTwilioVerify({
+  ...config,habilitarEnvioTeste:'true'
+ }),/Lista restrita/);
+});
+
 test('inicia desafio com provedor, mas não confirma posse sem receber código correto no servidor',async()=>{
  let agora=Date.parse('2026-11-23T21:00:00.000Z');
  const chave=generateKeyPairSync('ed25519');
