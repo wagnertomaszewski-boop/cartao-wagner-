@@ -204,7 +204,7 @@ Vereador Wagner Tomaszewski.
   placeholder="Ex.: 2026-000002"
 >
 
-<button type="button" disabled aria-disabled="true" style="background:#64748b;cursor:not-allowed">CONSULTA TEMPORARIAMENTE EM MANUTENÇÃO</button>
+<button type="button" onclick="consultarSolicitacao()" style="background:#64748b">INFORMAÇÕES SOBRE O ACOMPANHAMENTO</button>
 <p role="status" style="font-size:17px;line-height:1.5;color:#334155">Por segurança, estamos atualizando o acesso às solicitações. O acompanhamento exigirá protocolo e chave individual. Seus pedidos continuam registrados.</p>
 
 <div id="resultado">
@@ -234,7 +234,7 @@ Vereador Wagner Tomaszewski.
   </div>
 </div>
 
-<div id="erro">
+<div id="erro" role="status">
 Protocolo não encontrado. Confira o número e tente novamente.
 </div>
 
