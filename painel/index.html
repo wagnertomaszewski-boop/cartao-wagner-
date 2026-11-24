@@ -1163,11 +1163,6 @@ function normalizarAnexos(v) {
   }
 }
 
-function caminhoPublicoStorage(bucket, caminho) {
-  const partes = String(caminho || "").split("/").filter(Boolean).map(encodeURIComponent);
-  return SUPABASE_URL + "/storage/v1/object/public/" + encodeURIComponent(bucket) + "/" + partes.join("/");
-}
-
 function fecharAnexoModal(){
   const modal=document.getElementById("anexoModal");
   const conteudo=document.getElementById("anexoModalConteudo");
@@ -1192,6 +1187,43 @@ function mostrarAnexoNoPainel(url, caminho){
     ? '<img src="'+url+'" alt="Anexo recebido">'
     : '<iframe src="'+url+'" title="Anexo recebido"></iframe>';
   modal.classList.add("aberto");
+}
+
+// Documentos enviados pelo mandato: apenas link assinado após login administrativo.
+// Os caminhos históricos continuam no JSON, mas os URLs públicos não são usados.
+async function abrirDocumentoResposta(caminho, botao) {
+  if (!/^[0-9]+\/[A-Za-z0-9._\/-]+$/.test(String(caminho || "")) || String(caminho).includes("..")) {
+    alert("Caminho de documento inválido.");
+    return;
+  }
+  const textoOriginal = botao?.textContent || "Abrir documento";
+  if (botao) { botao.disabled = true; botao.textContent = "Abrindo..."; }
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+    const codificado = String(caminho).split("/").map(encodeURIComponent).join("/");
+    const resposta = await requisicao(
+      SUPABASE_URL + "/storage/v1/object/sign/documentos-respostas/" + codificado,
+      {method:"POST",headers:{
+        apikey:SUPABASE_KEY,
+        Authorization:"Bearer " + sessao.access_token,
+        "Content-Type":"application/json"
+      },body:JSON.stringify({expiresIn:300})}
+    );
+    const dados = await resposta.json().catch(() => ({}));
+    if (!resposta.ok) throw new Error("Acesso ao documento não autorizado.");
+    let url = dados.signedURL || dados.signedUrl || "";
+    if (url.startsWith("/")) url = SUPABASE_URL + "/storage/v1" + url;
+    const validado = new URL(url);
+    if (validado.origin !== new URL(SUPABASE_URL).origin ||
+      !validado.pathname.startsWith("/storage/v1/object/sign/documentos-respostas/"))
+      throw new Error("Link de documento inválido.");
+    mostrarAnexoNoPainel(validado.href, caminho);
+  } catch(e) {
+    alert(mensagemDeErro(e));
+  } finally {
+    if (botao) { botao.disabled = false; botao.textContent = textoOriginal; }
+  }
 }
 
 async function abrirAnexoCidadao(caminho, botao) {
@@ -2012,8 +2044,11 @@ async function carregarSolicitacoes() {
             const links = anexos.length
               ? '<div class="anexos">' + anexos.map(a => {
                   const nome = esc(a.nome || "Documento");
-                  const url = esc(a.url || "");
-                  return url ? '<a href="' + url + '" target="_blank" rel="noopener">📎 ' + nome + '</a>' : "";
+                  const caminho = String(a.caminho || "");
+                  // Não usar URL pública persistida em anexos antigos.
+                  return caminho ? '<button type="button" class="btn-anexo-cidadao" ' +
+                    'data-caminho="' + escCampo(caminho) + '" ' +
+                    'onclick="abrirDocumentoResposta(this.dataset.caminho, this)">📎 ' + nome + '</button>' : "";
                 }).join("") + '</div>'
               : "";
             return '<div class="resposta-item">' +
@@ -2279,8 +2314,7 @@ async function enviarResposta(id) {
       anexos.push({
         nome: arquivo.name,
         tipo: arquivo.type || "",
-        caminho: caminho,
-        url: caminhoPublicoStorage("documentos-respostas", caminho)
+        caminho: caminho
       });
     }
 
