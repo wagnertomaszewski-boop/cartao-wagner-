@@ -18,7 +18,7 @@ const sucesso={ok:true,status:201,json:async()=>({
 })};
 const preparacao={ok:true,status:200,json:async()=>({sid:serviceSid,custom_code_enabled:true,whatsapp:{msg_service_sid:'MG'+'d'.repeat(32),from:'whatsapp:+5551999997777'}})};
 const entrada={desafioId,telefoneNovo:novo,codigo:'123456',expiraEm:'2026-11-24T20:00:00.000Z'};
-const config={serviceSid,apiKeySid,apiKeySecret};
+const config={serviceSid,apiKeySid,apiKeySecret,habilitarEnvioTeste:true,telefonesTestePermitidos:[novo]};
 
 test('envio via WhatsApp Verify usa código customizado e URL HTTPS fixa, sem retornar dados sensíveis',async()=>{
  const chamadas=[];
