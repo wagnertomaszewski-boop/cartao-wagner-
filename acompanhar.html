@@ -354,8 +354,8 @@ async function carregarRespostasPublicas(protocolo) {
 }
 
 async function consultarSolicitacao() {
-  const erro=document.getElementById("erro");
-  if(erro){erro.textContent="Acompanhamento em manutenção para proteger os dados dos cidadãos.";erro.style.display="block";}
+  const avisoDeManutencao=document.getElementById("erro");
+  if(avisoDeManutencao){avisoDeManutencao.textContent="Acompanhamento em manutenção para proteger os dados dos cidadãos.";avisoDeManutencao.style.display="block";}
   return;
 
 
