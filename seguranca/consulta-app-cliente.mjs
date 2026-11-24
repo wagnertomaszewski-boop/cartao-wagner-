@@ -13,7 +13,7 @@ const ENDPOINTS = Object.freeze({
 const erro = (mensagem) => new Error(mensagem);
 
 export function validarProtocolo(protocolo) {
-  if (typeof protocolo !== 'string') throw erro('Informe um protocolo válido.');
+  if (typeof protocolo !== 'string' || /[\x00-\x1f\x7f]/.test(protocolo)) throw erro('Informe um protocolo válido.');
   const p = protocolo.trim();
   if (!p || p.length > 80 || /[\x00-\x1f\x7f]/.test(p)) throw erro('Informe um protocolo válido.');
   return p;
