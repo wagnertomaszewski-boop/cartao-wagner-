@@ -204,9 +204,8 @@ Vereador Wagner Tomaszewski.
   placeholder="Ex.: 2026-000002"
 >
 
-<button onclick="consultarSolicitacao()">
-CONSULTAR SOLICITAÇÃO
-</button>
+<button type="button" disabled aria-disabled="true" style="background:#64748b;cursor:not-allowed">CONSULTA TEMPORARIAMENTE EM MANUTENÇÃO</button>
+<p role="status" style="font-size:17px;line-height:1.5;color:#334155">Por segurança, estamos atualizando o acesso às solicitações. O acompanhamento exigirá protocolo e chave individual. Seus pedidos continuam registrados.</p>
 
 <div id="resultado">
   <h2>Solicitação encontrada</h2>
@@ -355,6 +354,10 @@ async function carregarRespostasPublicas(protocolo) {
 }
 
 async function consultarSolicitacao() {
+  const erro=document.getElementById("erro");
+  if(erro){erro.textContent="Acompanhamento em manutenção para proteger os dados dos cidadãos.";erro.style.display="block";}
+  return;
+
 
   const protocolo =
     document.getElementById("protocolo").value.trim();
