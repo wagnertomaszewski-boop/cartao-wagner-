@@ -14,25 +14,35 @@ const SERVICE=/^VA[0-9a-fA-F]{32}$/;
 const APIKEY=/^SK[0-9a-fA-F]{32}$/;
 const CELULAR=/^\+55[1-9]\d{10}$/;
 const CODIGO=/^\d{6}$/;
-const ERRO='Transporte de verificação WhatsApp indisponível.';
 
 /**
  * @param {{serviceSid:string,apiKeySid:string,apiKeySecret:string,
- * requisitar?:(url:string,options:any)=>Promise<any>,timeoutMs?:number}} config
+ * requisitar?:(url:string,options:any)=>Promise<any>,timeoutMs?:number,
+ * habilitarEnvioTeste?:boolean,telefonesTestePermitidos?:string[]}} config
  */
 export function criarTransporteWhatsAppTwilioVerify({
- serviceSid,apiKeySid,apiKeySecret,requisitar=fetch,timeoutMs=15000
+ serviceSid,apiKeySid,apiKeySecret,requisitar=fetch,timeoutMs=15000,
+ habilitarEnvioTeste=false,telefonesTestePermitidos=[]
 }={}){
  if(!SERVICE.test(serviceSid||'')||!APIKEY.test(apiKeySid||'')||
   typeof apiKeySecret!=='string'||Buffer.byteLength(apiKeySecret)<16||
   typeof requisitar!=='function'||!Number.isSafeInteger(timeoutMs)||
   timeoutMs<1000||timeoutMs>30000)
   throw Error('Twilio Verify privado não configurado.');
+ // Sem habilitação e lista de testes, este adaptador não gera tráfego nem cobranças.
+ // Esta candidata NÃO implementa um modo de envio indiscriminado a cidadãos.
+ if(typeof habilitarEnvioTeste!=='boolean'||!Array.isArray(telefonesTestePermitidos)||
+  telefonesTestePermitidos.length>20||
+  !telefonesTestePermitidos.every(n=>typeof n==='string'&&CELULAR.test(n))||
+  (habilitarEnvioTeste&&telefonesTestePermitidos.length===0))
+  throw Error('Lista restrita de telefones de teste obrigatória.');
+ const destinos=new Set(telefonesTestePermitidos);
  const endpoint='https://verify.twilio.com/v2/Services/'+serviceSid+'/Verifications';
  const preparacaoPronta=criarVerificadorPreparacaoTwilioVerify({serviceSid,apiKeySid,apiKeySecret,requisitar,timeoutMs});
  // Basic Auth apenas no servidor. Não registrar config, headers ou resposta bruta.
  const autorizacao='Basic '+Buffer.from(apiKeySid+':'+apiKeySecret).toString('base64');
  return async function enviarDesafio({desafioId,telefoneNovo,codigo,expiraEm}={}){
+  if(!habilitarEnvioTeste||!destinos.has(telefoneNovo))return false;
   if(typeof desafioId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(desafioId)||
    !CELULAR.test(telefoneNovo||'')||!CODIGO.test(codigo||'')||
    typeof expiraEm!=='string'||!Number.isFinite(Date.parse(expiraEm)))
