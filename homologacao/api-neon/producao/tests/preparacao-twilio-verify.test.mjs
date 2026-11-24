@@ -4,7 +4,7 @@ import {criarVerificadorPreparacaoTwilioVerify} from '../conferente-externo/veri
 import {criarTransporteWhatsAppTwilioVerify} from '../conferente-externo/transporte-whatsapp-twilio-verify.mjs';
 
 const serviceSid='VA'+'a'.repeat(32);
-const config={serviceSid,apiKeySid:'SK'+'b'.repeat(32),apiKeySecret:'SEGREDO-SINTETICO-ISOLADO-DE-TESTE'};
+const config={serviceSid,apiKeySid:'SK'+'b'.repeat(32),apiKeySecret:'SEGREDO-SINTETICO-ISOLADO-DE-TESTE',habilitarEnvioTeste:true,telefonesTestePermitidos:['+5551999988888']};
 const envio={desafioId:'00000000-0000-4000-8000-000000000011',telefoneNovo:'+5551999988888',
  codigo:'123456',expiraEm:'2026-11-23T23:50:00.000Z'};
 const pronto={sid:serviceSid,custom_code_enabled:true,
