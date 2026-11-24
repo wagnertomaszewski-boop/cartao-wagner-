@@ -28,6 +28,15 @@ quando não houver mudanças em recursos Android nativos.
 - RPCs antigas de consulta por protocolo isolado revogadas na contenção anterior.
 - A nova página é candidata: ainda não há autorização cidadã completa no backend produtivo.
 
+## Estado do backup manual — conferência de 24/11/2026
+
+- **20/11:** `mandato-acao-backup-2026-11-20.backup` em Documentos; arquivo custom PostgreSQL com 893 entradas lidas por `pg_restore --list`. Inventário e leitura do índice **não comprovam restauração integral**.
+- **21/11:** cópia manual de Storage com 55 anexos, 4 documentos de resposta e 1 comprovante (60 arquivos), segundo o registro operacional. A criptografia da cópia mais recente ainda necessita confirmação.
+- **Tentativas anteriores de restauração do backup de 20/11:** falha com extensão `supabase_vault` ausente no PostgreSQL local; ensaio adicional não finalizado por falha de senha do PostgreSQL local. Não marcar `backupConfirmado` só pela existência do arquivo.
+- **Ensaios antigos:** relatórios de 10/11 e 11/11 demonstram restaurações de versões anteriores (40 solicitações / 58 objetos), **não** da cópia de 20/11 (44 solicitações / 60 objetos).
+- **Próxima ação:** confirmar integridade e restauração em ambiente isolado, sem revelar backup, senhas, chaves ou dados pessoais no GitHub/chat. Garantir cópia cifrada dos 60 binários e material para decriptação sob guarda do responsável.
+- **Controle:** papel `mandato_api_privada` criado em 24/11 como `NOLOGIN`, sem `GRANT` de leitura/escrita, sem senha. Não ativar até backup recuperável e aceite de liberação.
+
 ## Sequência de liberação
 1. Confirmar backup recuperável do banco e objetos Storage.
 2. Resolver os 3 protocolos ausentes com conferência administrativa e auditoria;
