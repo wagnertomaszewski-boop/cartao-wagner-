@@ -5,6 +5,8 @@ on:
       - feature/consulta-segura-twa-20261124
     paths:
       - 'acompanhar.html'
+      - 'v2/index.html'
+      - 'v2/acompanhar.html'
       - 'seguranca/consulta-app-*.mjs'
       - 'seguranca/config-consulta-publica.json'
       - 'testes/consulta-app.test.mjs'
@@ -21,7 +23,10 @@ jobs:
         with:
           node-version: '22'
       - name: Testar cliente do cidadão sem banco, segredos ou produção
-        run: node --test testes/consulta-app.test.mjs
+        run: |
+          node --check seguranca/consulta-app-cliente.mjs
+          node --check seguranca/consulta-app-ui.mjs
+          node --test testes/consulta-app.test.mjs
       - name: Verificar que a integração permanece desligada
         run: |
           node -e "const c=require('./seguranca/config-consulta-publica.json'); if(c.ativo!==false||c.apiBase!=='')process.exit(1)"
