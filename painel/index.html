@@ -1081,6 +1081,50 @@ function mostrarAnexoNoPainel(url, caminho){
   modal.classList.add("aberto");
 }
 
+// Acesso administrativo a documentos de respostas: nunca reutilizar URL pública.
+function caminhoPrivadoDocumentoResposta(a) {
+  let caminho = String(a?.caminho || '');
+  if (!caminho) {
+    const legado=String(a?.url || '');
+    const prefixo=SUPABASE_URL + "/storage/v1/object/public/documentos-respostas/";
+    if (!legado.startsWith(prefixo) || legado.includes("?") || legado.includes("#")) return "";
+    try { caminho=legado.slice(prefixo.length).split("/").map(decodeURIComponent).join("/"); }
+    catch { return ""; }
+  }
+  if (!/^[0-9]+\\/[A-Za-z0-9._/-]+$/.test(caminho) ||
+      caminho.includes("..") || caminho.includes("//")) return "";
+  return caminho;
+}
+
+async function abrirDocumentoResposta(caminho, botao) {
+  const caminhoSeguro=caminhoPrivadoDocumentoResposta({caminho});
+  if (!caminhoSeguro) { alert("Documento inválido."); return; }
+  const textoOriginal=botao?.textContent || "Abrir documento";
+  if(botao){botao.disabled=true;botao.textContent="Abrindo...";}
+  try {
+    const sessao=await obterSessaoValida();
+    if(!sessao) throw Error("Sua sessão expirou. Entre novamente.");
+    const caminhoUrl=caminhoSeguro.split("/").map(encodeURIComponent).join("/");
+    const resp=await requisicao(
+      SUPABASE_URL + "/storage/v1/object/sign/documentos-respostas/" + caminhoUrl,
+      {method:"POST",headers:{
+        apikey:SUPABASE_KEY, Authorization:"Bearer " + sessao.access_token,
+        "Content-Type":"application/json"
+      },body:JSON.stringify({expiresIn:300})}
+    );
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok) throw Error("Documento não autorizado ou indisponível.");
+    let link=data.signedURL || data.signedUrl || "";
+    if(link.startsWith("/")) link=SUPABASE_URL + "/storage/v1" + link;
+    const u=new URL(link);
+    if(u.origin!==new URL(SUPABASE_URL).origin ||
+       !u.pathname.startsWith("/storage/v1/object/sign/documentos-respostas/"))
+      throw Error("Link temporário inválido.");
+    mostrarAnexoNoPainel(u.href,caminhoSeguro);
+  } catch(err) { alert(mensagemDeErro(err)); }
+  finally { if(botao){botao.disabled=false;botao.textContent=textoOriginal;} }
+}
+
 async function abrirAnexoCidadao(caminho, botao) {
   if (!caminho) return;
 
@@ -1862,8 +1906,10 @@ async function carregarSolicitacoes() {
             const links = anexos.length
               ? '<div class="anexos">' + anexos.map(a => {
                   const nome = esc(a.nome || "Documento");
-                  const url = esc(a.url || "");
-                  return url ? '<a href="' + url + '" target="_blank" rel="noopener">📎 ' + nome + '</a>' : "";
+                  const caminho = caminhoPrivadoDocumentoResposta(a);
+                  return caminho ? '<button type="button" class="btn-anexo-cidadao" '+
+                    'data-caminho="' + escCampo(caminho) + '" '+
+                    'onclick="abrirDocumentoResposta(this.dataset.caminho,this)">📎 '+nome+'</button>' : "";
                 }).join("") + '</div>'
               : "";
             return '<div class="resposta-item">' +
@@ -2100,8 +2146,7 @@ async function enviarResposta(id) {
       anexos.push({
         nome: arquivo.name,
         tipo: arquivo.type || "",
-        caminho: caminho,
-        url: caminhoPublicoStorage("documentos-respostas", caminho)
+        caminho: caminho
       });
     }
 
