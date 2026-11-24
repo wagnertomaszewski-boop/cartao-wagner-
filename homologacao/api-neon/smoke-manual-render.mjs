@@ -27,3 +27,40 @@ assert.equal((await get('/hml/modelo/solicitacoes')).status,401);
 console.log('MODELO_REAL_HML_OK: cadastro dos dois clientes disponível e catálogo privado protegido; prova real Neon confirmada.');
 
 assert.equal((await get('/hml/conteudos')).status,401);assert.equal((await get('/hml/modelo/dashboard')).status,401);console.log('ECOSSISTEMA_HML_OK: telas reais, conteúdo e gestão privados protegidos, prova integrada Neon confirmada.');
+
+// Regressão de primeiro acesso: apenas identificadores sintéticos e nenhum
+// WhatsApp externo. A consulta deve falhar fechada sem chave e com chave inválida.
+const protocoloFicticio='HML-00000000-0000-0000-0000-000000000000';
+const chaveFicticia='a'.repeat(43);
+for(const body of [
+ {protocolo:protocoloFicticio},
+ {protocolo:protocoloFicticio,chave:chaveFicticia},
+ {protocolo:'HML-SEM-PROTOCOLO-REAL',chave:chaveFicticia}
+]){
+ const r=await fetch(base+'/hml/cidadao/consultar',{method:'POST',headers,body:JSON.stringify(body)});
+ assert.equal(r.status,200,'Consulta fictícia não deve obter acesso');
+ assert.equal(r.headers.get('cache-control'),'no-store');
+ const j=await r.json();
+ assert.deepEqual(j,{encontrado:false},'Nenhum detalhe pode ser revelado sem credencial válida');
+}
+const recuperar=await get('/hml/v2/recuperar');
+assert.equal(recuperar.status,200);
+const telaRecuperar=await recuperar.text();
+assert.match(telaRecuperar,/Primeiro acesso ou perdi minha chave/);
+assert.match(telaRecuperar,/nunca recebeu uma chave/);
+assert.match(telaRecuperar,/código válido por cinco minutos/);
+const incompleto=await fetch(base+'/hml/manual/validar',{
+ method:'POST',headers,
+ body:JSON.stringify({pedidoId:'00000000-0000-4000-8000-000000000001',recibo:'b'.repeat(43),codigo:'123456'})
+});
+assert.equal(incompleto.status,200);
+assert.equal(incompleto.headers.get('cache-control'),'no-store');
+assert.deepEqual(await incompleto.json(),{confirmado:false},'Código sem pedido válido não pode liberar chave');
+const requisicaoCruzada=await fetch(base+'/hml/cidadao/consultar',{
+ method:'POST',headers:{...headers,Origin:'https://origem-invalida.example'},
+ body:JSON.stringify({protocolo:protocoloFicticio,chave:chaveFicticia})
+});
+assert.equal(requisicaoCruzada.status,403);
+assert.equal((await get('/hml/manual/pedidos')).status,401);
+console.log('PRIMEIRO_ACESSO_HML_SEGURO_OK: interface real; protocolo isolado e chave incorreta rejeitados; codigo não aprovado rejeitado; admin e origem externa bloqueados.');
+
