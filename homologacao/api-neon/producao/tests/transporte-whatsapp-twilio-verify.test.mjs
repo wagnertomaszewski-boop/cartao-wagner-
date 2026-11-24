@@ -16,19 +16,22 @@ const sucesso={ok:true,status:201,json:async()=>({
  sid:'VE'+'e'.repeat(32),service_sid:serviceSid,
  to:novo,channel:'whatsapp',status:'pending'
 })};
+const preparacao={ok:true,status:200,json:async()=>({sid:serviceSid,custom_code_enabled:true,whatsapp:{msg_service_sid:'MG'+'d'.repeat(32),from:'whatsapp:+5551999997777'}})};
 const entrada={desafioId,telefoneNovo:novo,codigo:'123456',expiraEm:'2026-11-24T20:00:00.000Z'};
 const config={serviceSid,apiKeySid,apiKeySecret};
 
 test('envio via WhatsApp Verify usa código customizado e URL HTTPS fixa, sem retornar dados sensíveis',async()=>{
  const chamadas=[];
  const enviar=criarTransporteWhatsAppTwilioVerify({...config,
-  requisitar:async(url,options)=>{chamadas.push({url,options});return sucesso;}
+  requisitar:async(url,options)=>{chamadas.push({url,options});return options.method==='GET'?preparacao:sucesso;}
  });
  assert.equal(await enviar(entrada),true);
- assert.equal(chamadas.length,1);
- assert.equal(chamadas[0].url,'https://verify.twilio.com/v2/Services/'+serviceSid+'/Verifications');
- assert.equal(new URL(chamadas[0].url).search,'');
- const op=chamadas[0].options;
+ assert.equal(chamadas.length,2);
+ assert.equal(chamadas[0].url,'https://verify.twilio.com/v2/Services/'+serviceSid);
+ assert.equal(chamadas[0].options.method,'GET');
+ assert.equal(chamadas[1].url,'https://verify.twilio.com/v2/Services/'+serviceSid+'/Verifications');
+ assert.equal(new URL(chamadas[1].url).search,'');
+ const op=chamadas[1].options;
  assert.equal(op.method,'POST');
  assert.equal(op.redirect,'error');
  assert.equal(op.headers['Content-Type'],'application/x-www-form-urlencoded');
@@ -52,7 +55,7 @@ test('nunca trata uma rejeição, erro do provedor ou resposta inconsistente com
   {ok:true,status:201,json:async()=>({...await sucesso.json(),service_sid:'VA'+'f'.repeat(32)})}
  ];
  for(const resposta of casos){
-  const enviar=criarTransporteWhatsAppTwilioVerify({...config,requisitar:async()=>resposta});
+  const enviar=criarTransporteWhatsAppTwilioVerify({...config,requisitar:async(_url,opts)=>opts.method==='GET'?preparacao:resposta});
   assert.equal(await enviar(entrada),false);
  }
  const enviarErro=criarTransporteWhatsAppTwilioVerify({...config,requisitar:async()=>{throw Error('rede indisponivel');}});
@@ -84,6 +87,7 @@ test('inicia desafio com provedor, mas não confirma posse sem receber código c
  };
  const transporte=criarTransporteWhatsAppTwilioVerify({...config,
   requisitar:async(url,opt)=>{
+   if(opt.method==='GET')return preparacao;
    envios.push(Object.fromEntries(new URLSearchParams(opt.body)));
    return sucesso;
   }
