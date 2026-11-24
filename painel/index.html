@@ -1091,7 +1091,1329 @@ function caminhoPrivadoDocumentoResposta(a) {
     try { caminho=legado.slice(prefixo.length).split("/").map(decodeURIComponent).join("/"); }
     catch { return ""; }
   }
-  if (!/^[0-9]+\\/[A-Za-z0-9._/-]+$/.test(caminho) ||
+  if (!new RegExp('^[0-9]+/[A-Za-z0-9._/-]+
+      caminho.includes("..") || caminho.includes("//")) return "";
+  return caminho;
+}
+
+async function abrirDocumentoResposta(caminho, botao) {
+  const caminhoSeguro=caminhoPrivadoDocumentoResposta({caminho});
+  if (!caminhoSeguro) { alert("Documento inválido."); return; }
+  const textoOriginal=botao?.textContent || "Abrir documento";
+  if(botao){botao.disabled=true;botao.textContent="Abrindo...";}
+  try {
+    const sessao=await obterSessaoValida();
+    if(!sessao) throw Error("Sua sessão expirou. Entre novamente.");
+    const caminhoUrl=caminhoSeguro.split("/").map(encodeURIComponent).join("/");
+    const resp=await requisicao(
+      SUPABASE_URL + "/storage/v1/object/sign/documentos-respostas/" + caminhoUrl,
+      {method:"POST",headers:{
+        apikey:SUPABASE_KEY, Authorization:"Bearer " + sessao.access_token,
+        "Content-Type":"application/json"
+      },body:JSON.stringify({expiresIn:300})}
+    );
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok) throw Error("Documento não autorizado ou indisponível.");
+    let link=data.signedURL || data.signedUrl || "";
+    if(link.startsWith("/")) link=SUPABASE_URL + "/storage/v1" + link;
+    const u=new URL(link);
+    if(u.origin!==new URL(SUPABASE_URL).origin ||
+       !u.pathname.startsWith("/storage/v1/object/sign/documentos-respostas/"))
+      throw Error("Link temporário inválido.");
+    mostrarAnexoNoPainel(u.href,caminhoSeguro);
+  } catch(err) { alert(mensagemDeErro(err)); }
+  finally { if(botao){botao.disabled=false;botao.textContent=textoOriginal;} }
+}
+
+async function abrirAnexoCidadao(caminho, botao) {
+  if (!caminho) return;
+
+  const textoOriginal = botao ? botao.textContent : "";
+  if (botao) {
+    botao.disabled = true;
+    botao.textContent = "Abrindo...";
+  }
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const caminhoCodificado = String(caminho)
+      .split("/")
+      .filter(Boolean)
+      .map(encodeURIComponent)
+      .join("/");
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/storage/v1/object/sign/anexos-solicitacoes/" + caminhoCodificado,
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ expiresIn: 3600 })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => ({}));
+    if (!resposta.ok) throw new Error(dados.message || dados.error || "Não foi possível abrir o anexo.");
+
+    let url = dados.signedURL || dados.signedUrl || "";
+    if (!url) throw new Error("O servidor não retornou o link do anexo.");
+    if (url.startsWith("/")) url = SUPABASE_URL + "/storage/v1" + url;
+
+    mostrarAnexoNoPainel(url, caminho);
+  } catch (e) {
+    alert(mensagemDeErro(e));
+  } finally {
+    if (botao) {
+      botao.disabled = false;
+      botao.textContent = textoOriginal || "Abrir anexo";
+    }
+  }
+}
+
+function arquivosPendentes(id) {
+  return arquivosPendentesPorSolicitacao.get(Number(id)) || [];
+}
+
+function renderArquivosPendentes(id) {
+  const alvo = document.getElementById(`pendentes-${id}`);
+  if (!alvo) return;
+
+  const arquivos = arquivosPendentes(id);
+
+  if (arquivos.length === 0) {
+    alvo.innerHTML = '<div class="dica-anexo">Nenhum arquivo selecionado ainda.</div>';
+    return;
+  }
+
+  alvo.innerHTML = arquivos.map((arquivo, indice) => {
+    const nome = esc(arquivo.name);
+    const tamanhoMb = (arquivo.size / (1024 * 1024)).toFixed(2);
+    return `
+      <div class="arquivo-pendente">
+        <span>📎 ${nome} (${tamanhoMb} MB)</span>
+        <button type="button" onclick="removerDocumentoPendente(${id}, ${indice})">Remover</button>
+      </div>
+    `;
+  }).join("");
+}
+
+function adicionarDocumentos(id) {
+  const input = document.getElementById(`documentos-${id}`);
+  if (!input) return;
+
+  const atuais = arquivosPendentes(id);
+  const novos = Array.from(input.files || []);
+
+  for (const arquivo of novos) {
+    if (arquivo.size > 10 * 1024 * 1024) {
+      alert("O arquivo " + arquivo.name + " ultrapassa o limite de 10 MB.");
+      input.value = "";
+      return;
+    }
+  }
+
+  const combinados = [...atuais];
+
+  for (const arquivo of novos) {
+    const duplicado = combinados.some(a =>
+      a.name === arquivo.name &&
+      a.size === arquivo.size &&
+      a.lastModified === arquivo.lastModified
+    );
+
+    if (!duplicado) combinados.push(arquivo);
+  }
+
+  if (combinados.length > 5) {
+    alert("Você pode anexar no máximo 5 documentos por resposta.");
+    input.value = "";
+    return;
+  }
+
+  arquivosPendentesPorSolicitacao.set(Number(id), combinados);
+  input.value = "";
+  renderArquivosPendentes(id);
+}
+
+function removerDocumentoPendente(id, indice) {
+  const arquivos = [...arquivosPendentes(id)];
+  arquivos.splice(indice, 1);
+
+  if (arquivos.length === 0) {
+    arquivosPendentesPorSolicitacao.delete(Number(id));
+  } else {
+    arquivosPendentesPorSolicitacao.set(Number(id), arquivos);
+  }
+
+  renderArquivosPendentes(id);
+}
+
+function mostrarLogin(mensagem = "") {
+  window.painelMapaPrivadoLimpar?.();
+  document.getElementById("telaLogin").style.display = "block";
+  document.querySelector("header").style.display = "none";
+  document.querySelector("main").style.display = "none";
+  const nav = document.getElementById("painelBottom"); if(nav) nav.style.display = "none";
+  document.getElementById("erroLogin").textContent = mensagem;
+}
+
+function mostrarPainel() {
+  document.getElementById("telaLogin").style.display = "none";
+  document.querySelector("header").style.display = "block";
+  document.querySelector("main").style.display = "block";
+  const nav = document.getElementById("painelBottom"); if(nav) nav.style.display = "grid";
+  irPainel((location.hash || "#inicio").slice(1), null, false);
+}
+
+async function renovarSessao(refreshToken) {
+  const resposta = await requisicao(
+    SUPABASE_URL + "/auth/v1/token?grant_type=refresh_token",
+    {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    }
+  );
+
+  const dados = await resposta.json().catch(() => ({}));
+
+  if (!resposta.ok) {
+    throw new Error(dados.msg || dados.message || dados.error_description || "Sessão expirada.");
+  }
+
+  const sessao = {
+    access_token: dados.access_token,
+    refresh_token: dados.refresh_token || refreshToken,
+    expires_at: Date.now() + ((dados.expires_in || 3600) * 1000)
+  };
+  salvarSessao(sessao);
+  return sessao;
+}
+
+async function obterSessaoValida() {
+  let sessao = lerSessao();
+  if (!sessao || !sessao.access_token) return null;
+
+  if (sessao.expires_at && Date.now() > sessao.expires_at - 60000) {
+    if (!sessao.refresh_token) return null;
+    sessao = await renovarSessao(sessao.refresh_token);
+  }
+  return sessao;
+}
+
+async function fazerLogin() {
+  const email = document.getElementById("emailLogin").value.trim();
+  const senha = document.getElementById("senhaLogin").value;
+  const erroEl = document.getElementById("erroLogin");
+  const botao = document.getElementById("btnLogin");
+
+  erroEl.textContent = "";
+
+  if (!email || !senha) {
+    erroEl.textContent = "Digite seu e-mail e sua senha.";
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = "ENTRANDO...";
+
+  try {
+    const resposta = await requisicao(
+      SUPABASE_URL + "/auth/v1/token?grant_type=password",
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email: email, password: senha })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => ({}));
+
+    if (!resposta.ok) {
+      throw new Error(dados.msg || dados.message || dados.error_description || "Não foi possível entrar.");
+    }
+
+    salvarSessao({
+      access_token: dados.access_token,
+      refresh_token: dados.refresh_token,
+      expires_at: Date.now() + ((dados.expires_in || 3600) * 1000)
+    });
+
+    document.getElementById("senhaLogin").value = "";
+    mostrarPainel();
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    console.error("Erro de login:", e);
+    erroEl.textContent = mensagemDeErro(e);
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "ENTRAR";
+  }
+}
+
+function alternarSolicitacaoLembrete(botao){
+  const card=botao?.closest(".card");
+  if(!card) return;
+  const aberto=card.classList.toggle("expandido");
+  if(!aberto){
+    card.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+}
+
+async function carregarProjetosPainel(){
+  const alvo=document.getElementById("listaProjetosPainel");
+  if(!alvo) return;
+  alvo.innerHTML="Carregando conteúdos...";
+  try{
+    const sessao=await obterSessaoValida();
+    if(!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+    const resp=await requisicao(
+      SUPABASE_URL + "/rest/v1/projetos_acoes_publicos?select=*&order=ordem.asc,criado_em.desc",
+      {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token}}
+    );
+    const dados=await resp.json().catch(()=>[]);
+    if(!resp.ok) throw new Error(dados.message||"Não foi possível carregar os conteúdos.");
+    if(!Array.isArray(dados)||!dados.length){
+      alvo.innerHTML='<div class="vazio">Nenhum projeto ou ação cadastrado ainda.</div>';
+      return;
+    }
+    const nomes={projeto:"Projeto de lei",sugestivo:"Projeto sugestivo",pedido:"Pedido",emenda:"Emenda",resultado:"Resultado"};
+    alvo.innerHTML=dados.map(item=>`
+      <article class="conteudo-item" data-tipo="${escCampo(item.tipo)}" data-publicado="${item.publicado?"sim":"nao"}">
+        <div class="conteudo-item-top">
+          <div>
+            <div class="tipo">${esc(nomes[item.tipo]||item.tipo)}</div>
+            <h4>${esc(item.titulo)}</h4>
+          </div>
+          <span class="publicacao-chip ${item.publicado?"on":""}">${item.publicado?"Publicado":"Rascunho"}</span>
+        </div>
+        <details class="conteudo-item-detalhes"><summary>Ver resumo e ações ▾</summary>
+        ${item.foto_url?'<img class="conteudo-foto" src="'+esc(item.foto_url)+'" alt="Foto do conteúdo">':""}
+        ${item.foto_antes_url&&item.foto_depois_url
+          ? '<div class="painel-fotos-duplas"><figure><img src="'+esc(item.foto_antes_url)+'" alt="Foto antes"><figcaption>ANTES</figcaption></figure><figure><img src="'+esc(item.foto_depois_url)+'" alt="Foto depois"><figcaption>DEPOIS</figcaption></figure></div>'
+          : ""}
+        <p>${esc(item.resumo||"")}</p>
+        <div class="conteudo-meta">
+          ${item.referencia?'<span>📄 '+esc(item.referencia)+'</span>':""}
+          ${item.area?'<span>• '+esc(item.area)+'</span>':""}
+          ${item.situacao?'<span>• '+esc(item.situacao)+'</span>':""}
+        </div>
+        <div class="conteudo-acoes">
+          <button type="button" class="azul" onclick="alternarPublicacaoProjeto(${item.id},${!item.publicado})">${item.publicado?"Ocultar do app":"Publicar no app"}</button>
+          <a class="btn-editar-projeto" href="./projetos.html?id=${Number(item.id)}">Editar este projeto ↗</a>
+          <button type="button" class="vermelho" onclick="excluirProjetoAcao(${item.id})">Excluir</button>
+        </div>
+        </details>
+      </article>`).join("");
+    filtrarProjetosPainel();
+  }catch(e){
+    alvo.innerHTML='<div class="erro">'+esc(mensagemDeErro(e))+'</div>';
+  }
+}
+
+function filtrarProjetosPainel(){
+  const lista=document.getElementById("listaProjetosPainel");
+  if(!lista)return;
+  const busca=normalizar(document.getElementById("buscaProjetos")?.value);
+  const tipo=document.getElementById("projetoFiltroTipo")?.value||"todos";
+  const publicado=document.getElementById("projetoFiltroPublicacao")?.value||"todos";
+  const itens=Array.from(lista.querySelectorAll(".conteudo-item"));
+  let visiveis=0;
+  itens.forEach(item=>{
+    const combinaTipo=tipo==="todos"||item.dataset.tipo===tipo;
+    const combinaPublicacao=publicado==="todos"||(publicado==="publicado"&&item.dataset.publicado==="sim")||(publicado==="rascunho"&&item.dataset.publicado==="nao");
+    const combinaBusca=!busca||normalizar(item.textContent).includes(busca);
+    const mostrar=combinaTipo&&combinaPublicacao&&combinaBusca;
+    item.hidden=!mostrar;
+    if(mostrar)visiveis++;
+  });
+  const contador=document.getElementById("contagemProjetosPainel");
+  if(contador)contador.textContent=itens.length?visiveis+" de "+itens.length+" publicações":"";
+}
+
+async function enviarFotoProjeto(arquivo,sessao){
+  if(!arquivo) return null;
+  if(arquivo.size>10*1024*1024) throw new Error("A foto deve ter no máximo 10 MB.");
+  const ext=(arquivo.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
+  const caminho="projetos/"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
+  const resp=await requisicao(
+    SUPABASE_URL+"/storage/v1/object/conteudos-mandato/"+caminho,
+    {
+      method:"POST",
+      headers:{
+        "apikey":SUPABASE_KEY,
+        "Authorization":"Bearer "+sessao.access_token,
+        "Content-Type":arquivo.type||"image/jpeg",
+        "x-upsert":"false"
+      },
+      body:arquivo
+    }
+  );
+  if(!resp.ok) throw new Error("Não foi possível enviar a foto.");
+  return SUPABASE_URL+"/storage/v1/object/public/conteudos-mandato/"+caminho.split("/").map(encodeURIComponent).join("/");
+}
+
+async function salvarProjetoAcao(){
+  const titulo=document.getElementById("projTitulo").value.trim();
+  const resumo=document.getElementById("projResumo").value.trim();
+  if(!titulo){alert("Digite o título.");return;}
+  const sessao=await obterSessaoValida();
+  if(!sessao){mostrarLogin("Sua sessão expirou. Entre novamente.");return;}
+  let fotoUrl=null;
+  const arquivoFoto=document.getElementById("projFoto")?.files?.[0];
+  try{
+    fotoUrl=await enviarFotoProjeto(arquivoFoto,sessao);
+  }catch(e){
+    alert(mensagemDeErro(e));
+    return;
+  }
+
+  const body={
+    tipo:document.getElementById("projTipo").value,
+    titulo,
+    resumo,
+    referencia:document.getElementById("projReferencia").value.trim()||null,
+    area:document.getElementById("projArea").value.trim()||null,
+    situacao:document.getElementById("projSituacao").value.trim()||null,
+    publicado:document.getElementById("projPublicado").checked,
+    destaque:document.getElementById("projDestaque").checked,
+    foto_url:fotoUrl,
+    atualizado_em:new Date().toISOString()
+  };
+  const resp=await requisicao(SUPABASE_URL+"/rest/v1/projetos_acoes_publicos",{
+    method:"POST",
+    headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Content-Type":"application/json","Prefer":"return=representation"},
+    body:JSON.stringify(body)
+  });
+  const dados=await resp.json().catch(()=>[]);
+  if(!resp.ok){alert(dados.message||"Não foi possível salvar.");return;}
+  ["projTitulo","projResumo","projReferencia","projArea","projSituacao"].forEach(id=>document.getElementById(id).value="");
+  const fotoEl=document.getElementById("projFoto"); if(fotoEl) fotoEl.value="";
+  document.getElementById("projPublicado").checked=true;
+  document.getElementById("projDestaque").checked=false;
+  await carregarProjetosPainel();
+  alert("Conteúdo salvo.");
+}
+
+async function alternarPublicacaoProjeto(id,publicado){
+  const sessao=await obterSessaoValida(); if(!sessao)return;
+  const resp=await requisicao(SUPABASE_URL+"/rest/v1/projetos_acoes_publicos?id=eq."+id,{
+    method:"PATCH",
+    headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Content-Type":"application/json"},
+    body:JSON.stringify({publicado,atualizado_em:new Date().toISOString()})
+  });
+  if(!resp.ok){alert("Não foi possível atualizar a publicação.");return;}
+  carregarProjetosPainel();
+}
+
+async function excluirProjetoAcao(id){
+  if(!confirm("Excluir este conteúdo?")) return;
+  const sessao=await obterSessaoValida(); if(!sessao)return;
+  const resp=await requisicao(SUPABASE_URL+"/rest/v1/projetos_acoes_publicos?id=eq."+id,{
+    method:"DELETE",
+    headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token}
+  });
+  if(!resp.ok){alert("Não foi possível excluir.");return;}
+  carregarProjetosPainel();
+}
+
+async function carregarResultadosConcluidos(){
+  const alvo=document.getElementById("listaResultados");
+  if(!alvo)return;
+  alvo.textContent="Carregando solicitações concluídas...";
+  try{
+    const sessao=await obterSessaoValida();
+    if(!sessao)throw new Error("Sua sessão expirou. Entre novamente.");
+    const url=SUPABASE_URL+"/rest/v1/solicitacoes?select=id,protocolo,assunto,localidade,whatsapp,criado_em,atualizado_em&status=eq.Conclu%C3%ADdo&order=atualizado_em.desc";
+    const resp=await requisicao(url,{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token}});
+    const itens=await resp.json().catch(()=>[]);
+    if(!resp.ok)throw new Error(itens?.message||"Não foi possível consultar os resultados.");
+    let avaliacoes={};
+    try{
+      const ar=await requisicao(SUPABASE_URL+"/rest/v1/avaliacoes_solicitacoes?select=solicitacao_id,avaliacao,respondido_em",{
+        headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token}
+      });
+      if(ar.ok){
+        const ad=await ar.json();
+        (Array.isArray(ad)?ad:[]).forEach(a=>{avaliacoes[Number(a.solicitacao_id)]=a;});
+      }
+    }catch(e){console.warn("Avaliações indisponíveis",e);}
+    if(!Array.isArray(itens)||!itens.length){
+      alvo.innerHTML='<div class="vazio"><strong>Nenhuma solicitação concluída ainda.</strong><p>Quando uma solicitação receber o status Concluído, será exibida aqui.</p></div>';
+      return;
+    }
+    alvo.innerHTML='<p class="resultado-total">'+itens.length+' solicitação(ões) concluída(s)</p>'+itens.map(item=>{
+      const id=Number(item.id);
+      if(!Number.isSafeInteger(id))return "";
+      const aval=avaliacoes[id];
+      return '<article class="resultado-card"><span class="resultado-chip">✓ Concluída</span>'+
+        '<h3>'+esc(item.protocolo||"Solicitação #"+id)+'</h3>'+
+        '<p>'+esc(item.assunto)+'</p>'+
+        (item.localidade?'<p class="resultado-meta">Localidade: '+esc(item.localidade)+'</p>':'')+
+        '<p class="resultado-meta">Atualização: '+esc(formatarData(item.atualizado_em||item.criado_em))+'</p>'+
+        '<button type="button" onclick="abrirSolicitacaoPorId('+id+')">Abrir histórico e documentos ↗</button>'+
+        '<a class="resultado-antes-depois" href="./projetos.html?novo=resultado&amp;protocolo='+encodeURIComponent(item.protocolo||"")+'">📸 Preparar antes e depois ↗</a>'+
+        '<div class="avaliacao-box" data-whatsapp="'+escCampo(item.whatsapp||"")+'" data-protocolo="'+escCampo(item.protocolo||"")+'">'+
+          '<strong>⭐ Avaliação do cidadão</strong>'+
+          '<p>'+(aval?.avaliacao?'✓ '+esc(textoAvaliacao(aval.avaliacao)):'Ainda sem avaliação')+'</p>'+
+          (aval?.avaliacao?'':'<button type="button" onclick="prepararConviteAvaliacao('+id+',this)">Preparar convite</button><div class="convite-resultado" aria-live="polite"></div>')+
+        '</div></article>';
+    }).join("");
+  }catch(e){alvo.innerHTML='<div class="erro">'+esc(mensagemDeErro(e))+'<button type="button" onclick="carregarResultadosConcluidos()">Tentar novamente</button></div>';}
+}
+
+async function carregarLembretes(){
+  const alvo=document.getElementById("listaLembretes");
+  if(!alvo) return;
+  alvo.innerHTML="Carregando lembretes...";
+
+  try{
+    const sessao=await obterSessaoValida();
+    if(!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const resposta=await requisicao(
+      SUPABASE_URL + "/rest/v1/solicitacoes?select=id,protocolo,nome,assunto,lembrete_em,anotacao_interna,status,whatsapp&lembrete_em=not.is.null&order=lembrete_em.asc",
+      {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token}}
+    );
+    const dados=await resposta.json().catch(()=>[]);
+    if(!resposta.ok) throw new Error(dados.message||"Não foi possível carregar os lembretes.");
+
+    const hoje=dataHojeISO();
+    const itens=(Array.isArray(dados)?dados:[]);
+    if(!itens.length){
+      alvo.innerHTML='<div class="vazio">Nenhum lembrete cadastrado.</div>';
+      return;
+    }
+
+    const grupo=(tipo)=>itens.filter(x=>{
+      if(!x.lembrete_em) return false;
+      if(tipo==="atrasado") return x.lembrete_em<hoje;
+      if(tipo==="hoje") return x.lembrete_em===hoje;
+      return x.lembrete_em>hoje;
+    });
+
+    const renderItem=(item,tipo)=>{
+      const nota=String(item.anotacao_interna||"").trim();
+      return `
+        <article class="lembrete-card ${tipo}">
+          <div class="lembrete-top">
+            <div>
+              <div class="lembrete-data-pill">${tipo==="atrasado"?"⚠️ Atrasado":tipo==="hoje"?"⏰ Hoje":"📅 Próximo"} · ${esc(formatarDataCurta(item.lembrete_em))}</div>
+              <div class="lembrete-protocolo">${esc(item.protocolo||("Solicitação #"+item.id))}</div>
+              <div class="lembrete-titulo">${esc(item.assunto)}</div>
+              <div class="lembrete-pessoa">${esc(item.nome)} · ${esc(item.status||"Recebida")}</div>
+            </div>
+          </div>
+          ${nota?'<div class="lembrete-nota">'+esc(nota)+'</div>':""}
+          <div class="lembrete-acoes">
+            <button type="button" class="acao-principal" onclick="abrirSolicitacaoPorId(${Number(item.id)})">Abrir solicitação</button>
+            ${String(item.whatsapp||"").replace(/\D/g,"").length>2
+              ? '<a href="https://wa.me/'+(String(item.whatsapp||"").replace(/\D/g,"").startsWith("55")?String(item.whatsapp||"").replace(/\D/g,""):"55"+String(item.whatsapp||"").replace(/\D/g,""))+'" target="_blank" rel="noopener"><button type="button" class="whatsapp">WhatsApp</button></a>'
+              : ""}
+          </div>
+        </article>`;
+    };
+
+    let html="";
+    const atrasados=grupo("atrasado"), hojeItens=grupo("hoje"), futuros=grupo("futuro");
+    if(atrasados.length) html+='<div class="secao-lembrete-titulo">Atrasados</div>'+atrasados.map(x=>renderItem(x,"atrasado")).join("");
+    if(hojeItens.length) html+='<div class="secao-lembrete-titulo">Hoje</div>'+hojeItens.map(x=>renderItem(x,"hoje")).join("");
+    if(futuros.length) html+='<div class="secao-lembrete-titulo">Próximos</div>'+futuros.map(x=>renderItem(x,"futuro")).join("");
+    alvo.innerHTML=html||'<div class="vazio">Nenhum lembrete cadastrado.</div>';
+  }catch(e){
+    alvo.innerHTML='<div class="erro"><strong>Não foi possível carregar os lembretes.</strong><br>'+esc(mensagemDeErro(e))+'<br><button type="button" onclick="carregarLembretes()">Tentar novamente</button></div>';
+  }
+}
+
+async function abrirSolicitacaoPorId(id){
+  irPainel("solicitacoes",null,true);
+  await carregarSolicitacoes();
+  const card=document.querySelector('#lista .card[data-id="'+id+'"]');
+  if(!card) return;
+  card.classList.add("expandido");
+  card.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+
+function normalizarNumeroWhatsapp(valor) {
+  const digitos = String(valor || "").replace(/\D/g, "");
+  const numeroNacional = digitos.startsWith("55") && (digitos.length === 12 || digitos.length === 13)
+    ? digitos.slice(2) : digitos;
+  return /^\d{10,11}$/.test(numeroNacional) ? "55" + numeroNacional : "";
+}
+
+function montarMensagemAvisoStatus(item) {
+  const nome = String(item.nome || "").trim().split(/\s+/)[0];
+  const saudacao = nome ? "Olá, " + nome + "!" : "Olá!";
+  const protocolo = String(item.protocolo || ("Solicitação #" + item.id)).trim();
+  const status = String(item.status || "Recebida").trim();
+  const orientacoes = {
+    recebida: "Recebemos sua solicitação e ela foi registrada em nosso sistema.",
+    recebido: "Recebemos sua solicitação e ela foi registrada em nosso sistema.",
+    "em analise": "Nossa equipe está analisando o pedido.",
+    encaminhado: "O pedido foi encaminhado ao setor responsável. Continuaremos acompanhando.",
+    "aguardando resposta": "O pedido já foi encaminhado. Estamos aguardando um retorno do órgão responsável.",
+    "em andamento": "Estamos acompanhando as providências relacionadas ao seu pedido.",
+    concluido: "A solicitação foi marcada como concluída. Confira os detalhes pelo aplicativo."
+  };
+  const orientacao = orientacoes[normalizar(status)] || "Você pode consultar o andamento pelo aplicativo.";
+  return saudacao + "\n\n" +
+    "O status da sua solicitação *" + protocolo + "* no Mandato em Ação foi atualizado para *" + status + "*.\n\n" +
+    orientacao + "\n\n" +
+    "Você pode acompanhar o protocolo pelo aplicativo.\n\n" +
+    "Equipe Mandato em Ação\nVereador Wagner Tomaszewski";
+}
+
+
+function textoAvaliacao(valor){
+  return ({sim:"Sim, resolvido",parcialmente:"Parcialmente resolvido",nao:"Não foi resolvido"})[valor] || "";
+}
+async function prepararConviteAvaliacao(id, botao){
+  const box=botao.closest(".avaliacao-box");
+  const alvo=box?.querySelector(".convite-resultado");
+  if(!box||!alvo||!Number.isSafeInteger(Number(id)))return;
+  const textoAnterior=botao.textContent;
+  botao.disabled=true;
+  botao.textContent="Preparando...";
+  alvo.textContent="";
+  try{
+    const sessao=await obterSessaoValida();
+    if(!sessao)throw new Error("Sua sessão expirou. Entre novamente.");
+    const headers={"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token};
+    let resp=await requisicao(SUPABASE_URL+"/rest/v1/avaliacoes_solicitacoes?select=solicitacao_id,convite,avaliacao,respondido_em&solicitacao_id=eq."+encodeURIComponent(id),{headers});
+    let dados=await resp.json().catch(()=>[]);
+    if(!resp.ok)throw new Error(dados.message||"Não foi possível consultar a avaliação.");
+    let item=Array.isArray(dados)?dados[0]:null;
+    if(!item){
+      resp=await requisicao(SUPABASE_URL+"/rest/v1/avaliacoes_solicitacoes?select=solicitacao_id,convite,avaliacao,respondido_em",{
+        method:"POST",headers:{...headers,"Content-Type":"application/json","Prefer":"return=representation"},
+        body:JSON.stringify({solicitacao_id:Number(id)})
+      });
+      dados=await resp.json().catch(()=>[]);
+      if(!resp.ok)throw new Error(dados.message||"Não foi possível gerar o convite.");
+      item=Array.isArray(dados)?dados[0]:null;
+    }
+    if(!item?.convite)throw new Error("Convite indisponível.");
+    if(item.avaliacao){
+      alvo.innerHTML='<div class="avaliacao-respondida">✓ Avaliação recebida: '+esc(textoAvaliacao(item.avaliacao))+'</div>';
+      return;
+    }
+    const url=new URL(location.pathname.includes("/painel/")?"../v2/avaliar.html":"./v2/avaliar.html",location.href);
+    url.searchParams.set("convite",item.convite);
+    const link=url.toString();
+    const numero=normalizarNumeroWhatsapp(box.dataset.whatsapp||"");
+    const protocolo=box.dataset.protocolo||"";
+    const mensagem="Olá! A solicitação "+protocolo+" foi marcada como concluída. Queremos saber se o problema foi resolvido. Avalie pelo link individual: "+link;
+    const whats=numero?"https://wa.me/"+numero+"?text="+encodeURIComponent(mensagem):"";
+    alvo.innerHTML='<p>Convite individual: compartilhe apenas com o cidadão responsável. Ele poderá responder uma única vez.</p>'+
+      '<input class="link-avaliacao" readonly aria-label="Link privado da avaliação" value="'+escCampo(link)+'">'+
+      '<button type="button" onclick="copiarLinkAvaliacao(this)">📋 Copiar link</button>'+
+      (whats?'<a href="'+escCampo(whats)+'" target="_blank" rel="noopener noreferrer">📲 Enviar pelo WhatsApp</a>':'<p>Sem WhatsApp cadastrado; use o botão Copiar link.</p>');
+  }catch(e){alvo.textContent=mensagemDeErro(e);}
+  finally{botao.disabled=false;botao.textContent=textoAnterior;}
+}
+async function copiarLinkAvaliacao(botao){
+  const input=botao.closest(".avaliacao-box")?.querySelector(".link-avaliacao");
+  if(!input)return;
+  try{await navigator.clipboard.writeText(input.value);botao.textContent="✓ Link copiado";}
+  catch(e){input.focus();input.select();alert("Selecione e copie o link mostrado no campo.");}
+}
+
+function montarLinkAvisoStatus(item) {
+  const numero = normalizarNumeroWhatsapp(item.whatsapp);
+  return numero ? "https://wa.me/" + numero + "?text=" + encodeURIComponent(montarMensagemAvisoStatus(item)) : "";
+}
+
+function validarStatusParaAviso(link) {
+  const card = link.closest(".card");
+  const seletor = card && card.querySelector('select[id^="status-"]');
+  if (seletor && seletor.value !== link.dataset.status) {
+    alert("Salve o novo status antes de preparar o aviso pelo WhatsApp.");
+    return false;
+  }
+  return true;
+}
+
+async function carregarSolicitacoes() {
+  const lista = document.getElementById("lista");
+  lista.textContent = "Carregando solicitações...";
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) {
+      limparSessao();
+      mostrarLogin("Sua sessão expirou. Entre novamente.");
+      return;
+    }
+
+    const filtroStatus = document.getElementById("filtroStatus").value;
+    const termoBusca = normalizar(document.getElementById("filtroBusca").value);
+
+    let url = SUPABASE_URL + "/rest/v1/solicitacoes?select=*&order=id.desc";
+    if (filtroStatus !== "Todos") {
+      url += "&status=eq." + encodeURIComponent(filtroStatus);
+    }
+
+    const resposta = await requisicao(url, {
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + sessao.access_token
+      }
+    });
+
+    const dadosResposta = await resposta.json().catch(() => ([]));
+
+    if (resposta.status === 401) {
+      limparSessao();
+      mostrarLogin("Sua sessão expirou. Entre novamente.");
+      return;
+    }
+
+    if (!resposta.ok) {
+      throw new Error(
+        dadosResposta.message ||
+        dadosResposta.hint ||
+        dadosResposta.details ||
+        "Não foi possível carregar as solicitações."
+      );
+    }
+
+    let dados = Array.isArray(dadosResposta) ? dadosResposta : [];
+
+    const respostasPorSolicitacao = {};
+    try {
+      const respostaRespostas = await requisicao(
+        SUPABASE_URL + "/rest/v1/respostas_solicitacoes?select=*&order=criado_em.desc",
+        {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + sessao.access_token
+          }
+        }
+      );
+
+      if (respostaRespostas.ok) {
+        const respostas = await respostaRespostas.json().catch(() => []);
+        (Array.isArray(respostas) ? respostas : []).forEach(r => {
+          const chave = Number(r.solicitacao_id);
+          if (!respostasPorSolicitacao[chave]) respostasPorSolicitacao[chave] = [];
+          respostasPorSolicitacao[chave].push(r);
+        });
+      } else {
+        console.warn("Histórico de respostas ainda não está disponível.");
+      }
+    } catch (e) {
+      console.warn("Não foi possível carregar respostas:", e);
+    }
+
+    const historicoPorSolicitacao = {};
+    try {
+      const rh = await requisicao(
+        SUPABASE_URL + "/rest/v1/solicitacoes_status_historico?select=solicitacao_id,status,criado_em&order=criado_em.asc",
+        {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token}}
+      );
+      if (rh.ok) {
+        const hs = await rh.json().catch(()=>[]);
+        (Array.isArray(hs)?hs:[]).forEach(h=>{
+          const chave=Number(h.solicitacao_id);
+          if(!historicoPorSolicitacao[chave]) historicoPorSolicitacao[chave]=[];
+          historicoPorSolicitacao[chave].push(h);
+        });
+      }
+    } catch(e) {
+      console.warn("Histórico de status não disponível:",e);
+    }
+
+    atualizarContadoresStatus();
+
+    if(faixaSemMovimento){
+      dados=dados.filter(item=>faixaMovimento(item)===faixaSemMovimento);
+      dados.sort((a,b)=>diasSemMovimento(b)-diasSemMovimento(a));
+    }
+    atualizarFiltroMovimento();
+
+    if (termoBusca) {
+      dados = dados.filter(item =>
+        normalizar(item.nome).includes(termoBusca) ||
+        normalizar(item.protocolo).includes(termoBusca)
+      );
+    }
+
+    if (dados.length === 0) {
+      lista.innerHTML = '<div class="vazio">Nenhuma solicitação encontrada.</div>';
+      return;
+    }
+
+    lista.innerHTML = "";
+
+    dados.forEach(item => {
+      const id = Number(item.id);
+      const status = item.status || "Recebida";
+      const whatsapp = normalizarNumeroWhatsapp(item.whatsapp);
+
+      const card = document.createElement("div");
+      card.dataset.id = String(id);
+      const estadoDoLembrete = estadoLembrete(item.lembrete_em);
+      card.className = "card" +
+        (estadoDoLembrete === "hoje" ? " lembrete-hoje" : "") +
+        (estadoDoLembrete === "atrasado" ? " lembrete-atrasado" : "");
+
+      let lembreteHtml = "";
+      if (item.lembrete_em) {
+        const dataLegivel = esc(formatarDataCurta(item.lembrete_em));
+        if (estadoDoLembrete === "hoje") {
+          lembreteHtml = '<div class="lembrete-alerta hoje">⏰ Lembrete para hoje — ' + dataLegivel + '</div>';
+        } else if (estadoDoLembrete === "atrasado") {
+          lembreteHtml = '<div class="lembrete-alerta atrasado">⚠️ Lembrete atrasado — ' + dataLegivel + '</div>';
+        } else {
+          lembreteHtml = '<div class="lembrete-alerta futuro">📅 Próximo lembrete — ' + dataLegivel + '</div>';
+        }
+      }
+
+      const anexosCidadao = Array.isArray(item.anexos)
+        ? item.anexos.filter(Boolean)
+        : [];
+
+      const anexosCidadaoHtml = anexosCidadao.length
+        ? '<div class="anexos-cidadao-box">' +
+            '<strong>📷 Anexos enviados pelo cidadão</strong>' +
+            anexosCidadao.map((caminho, indice) =>
+              '<button type="button" class="btn-anexo-cidadao" ' +
+              'data-caminho="' + escCampo(caminho) + '" ' +
+              'onclick="abrirAnexoCidadao(this.dataset.caminho, this)">' +
+              '📎 Abrir anexo ' + (indice + 1) +
+              '</button>'
+            ).join("") +
+          '</div>'
+        : "";
+
+      const respostas = respostasPorSolicitacao[id] || [];
+      const historicoRespostas = respostas.length
+        ? respostas.map(r => {
+            const anexos = normalizarAnexos(r.anexos);
+            const links = anexos.length
+              ? '<div class="anexos">' + anexos.map(a => {
+                  const nome = esc(a.nome || "Documento");
+                  const caminho = caminhoPrivadoDocumentoResposta(a);
+                  return caminho ? '<button type="button" class="btn-anexo-cidadao" '+
+                    'data-caminho="' + escCampo(caminho) + '" '+
+                    'onclick="abrirDocumentoResposta(this.dataset.caminho,this)">📎 '+nome+'</button>' : "";
+                }).join("") + '</div>'
+              : "";
+            return '<div class="resposta-item">' +
+              '<div class="resposta-data">' + esc(formatarData(r.criado_em)) + '</div>' +
+              (r.mensagem ? '<div class="resposta-texto">' + esc(r.mensagem) + '</div>' : '') +
+              links +
+            '</div>';
+          }).join("")
+        : '<div class="sem-resposta">Nenhuma resposta enviada ainda.</div>';
+
+      const statusNorm = normalizar(status);
+      const statusClasse = statusNorm.includes("concluido") ? "concluido" :
+        statusNorm.includes("encaminhado") ? "encaminhado" :
+        statusNorm.includes("aguardando resposta") ? "aguardando" :
+        statusNorm.includes("andamento") ? "andamento" :
+        statusNorm.includes("analise") ? "analise" :
+        "recebida";
+
+      const linhaTempoHtml = renderLinhaTempoAdmin(historicoPorSolicitacao[id] || [], status, item.criado_em, item.atualizado_em);
+
+      const diasParado=diasSemMovimento(item);
+      const faixaParado=faixaMovimento(item);
+      card.innerHTML = `
+        ${lembreteHtml}
+        ${faixaParado?`<div class="alerta-sem-atualizacao nivel-${faixaParado}">⚠️ Sem atualização há ${diasParado} dia(s)</div>`:""}
+        <div class="protocolo">${esc(item.protocolo || ("Solicitação #" + id))}</div>
+        <div class="data-info">
+          <span>🕒 Recebida em ${esc(formatarData(item.criado_em))}</span>
+          ${item.atualizado_em ? `<span>↻ Atualizada em ${esc(formatarData(item.atualizado_em))}</span>` : ""}
+        </div>
+
+        <div class="solicitacao-resumo">
+          <div class="linha-resumo"><strong>Nome:</strong> <span>${esc(item.nome)}</span></div>
+          <div class="linha-resumo"><strong>Assunto:</strong> <span>${esc(item.assunto)}</span></div>
+          <div class="linha-resumo"><strong>Status:</strong> <span class="status-chip ${statusClasse}">${esc(status)}</span></div>
+        </div>
+
+        <button type="button" class="btn-abrir-solicitacao abrir-topo" onclick="alternarSolicitacaoLembrete(this)">Abrir solicitação</button>
+
+        <div class="detalhes-expandido">
+          <section class="bloco-painel cinza">
+            <div class="bloco-titulo"><span>👤</span>Dados do cidadão</div>
+            <div class="dados-grid">
+              <div class="dado"><small>Nome</small><strong>${esc(item.nome)}</strong></div>
+              <div class="dado"><small>WhatsApp</small><strong>${esc(item.whatsapp)}</strong></div>
+              <div class="dado"><small>Localidade</small><strong>${esc(item.localidade)}</strong></div>
+              ${item.latitude !== null && item.longitude !== null && item.latitude !== undefined && item.longitude !== undefined && Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude)) ? '<div class="dado"><small>📍 Localização do problema</small><a href="https://www.google.com/maps?q='+Number(item.latitude)+','+Number(item.longitude)+'" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:10px;background:#e8f4ff;color:#07569b;font-weight:800;text-decoration:none">📍 Ver localização no mapa ↗</a></div>' : ''}
+              <div class="dado"><small>Assunto</small><strong>${esc(item.assunto)}</strong></div>
+            </div>
+            <div class="descricao-moderna"><small>Descrição</small>${esc(item.descricao)}</div>
+            <div class="acoes-rapidas">
+              ${whatsapp.length > 2
+                ? `<a href="https://wa.me/${whatsapp}" target="_blank" rel="noopener"><button type="button" class="btn-whatsapp">WhatsApp</button></a>`
+                : ""}
+            </div>
+          </section>
+
+          <section class="bloco-painel">
+            <div class="timeline-title-row">
+              <div class="bloco-titulo"><span>🧭</span>Linha do tempo</div>
+              <span class="status-chip ${statusClasse}">${esc(status)}</span>
+            </div>
+            ${linhaTempoHtml}
+          </section>
+
+          ${anexosCidadao.length ? `
+          <section class="bloco-painel azul">
+            <div class="bloco-titulo"><span>📷</span>Fotos e anexos recebidos</div>
+            ${anexosCidadaoHtml}
+          </section>` : ""}
+
+          <section class="gestao-card nota">
+            <div class="gestao-head">
+              <div class="gestao-ico">📝</div>
+              <div><strong>Anotação e lembrete</strong><small>Uso interno do mandato</small></div>
+            </div>
+            <div class="gestao-body">
+              <div class="nota-grid">
+                <div class="campo-mini">
+                  <label for="anotacao-${id}">Anotação interna</label>
+                  <textarea id="anotacao-${id}" placeholder="Escreva uma observação interna...">${escCampo(item.anotacao_interna)}</textarea>
+                </div>
+                <div class="campo-mini">
+                  <label for="lembrete-${id}">Lembrar em</label>
+                  <input id="lembrete-${id}" class="lembrete-data" type="text" inputmode="numeric" placeholder="DD/MM/AAAA" value="${escCampo(formatarDataCurta(item.lembrete_em))}">
+                  <div class="nota-info">Opcional</div>
+                </div>
+              </div>
+              <div class="nota-actions">
+                ${item.lembrete_em ? `<button type="button" class="linkbtn" onclick="removerLembrete(${id})">Remover lembrete</button>` : ""}
+                <button id="btn-anotacao-${id}" class="primario" type="button" onclick="salvarAnotacaoInterna(${id})">Salvar</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="gestao-card status">
+            <div class="gestao-head">
+              <div class="gestao-ico">🔄</div>
+              <div><strong>Status da solicitação</strong><small>Atualize o andamento</small></div>
+            </div>
+            <div class="gestao-body">
+              <div class="status-topline">
+                <span style="font-size:11px;color:#7a8998">Status atual</span>
+                <span class="status-chip ${statusClasse}">${esc(status)}</span>
+              </div>
+              <div class="status-controles">
+                <select id="status-${id}">
+                  ${["Recebida","Recebido","Em análise","Encaminhado","Aguardando resposta","Em andamento","Concluído"]
+                    .map(s => `<option value="${s}" ${s === status ? "selected" : ""}>${s}</option>`)
+                    .join("")}
+                </select>
+                <button id="botao-${id}" type="button" onclick="atualizarStatus(${id})">Salvar status</button>
+              </div>
+              <div class="aviso-status-acoes">
+                ${whatsapp
+                  ? `<a class="btn-aviso-status" href="${escCampo(montarLinkAvisoStatus(item))}" data-status="${escCampo(status)}" onclick="return validarStatusParaAviso(this)" target="_blank" rel="noopener noreferrer">📲 Avisar pelo WhatsApp</a>`
+                  : '<span class="aviso-status-ajuda">Não há um número de WhatsApp válido cadastrado.</span>'}
+                <span class="aviso-status-ajuda">O WhatsApp abrirá com a mensagem do status salvo. Confira e toque em Enviar. Avise apenas quem autorizou o contato.</span>
+              </div>
+            </div>
+          </section>
+
+          ${statusNorm.includes("conclu") ? `<section class="avaliacao-box" data-whatsapp="${escCampo(item.whatsapp)}" data-protocolo="${escCampo(item.protocolo)}">
+            <strong>⭐ Avaliação do cidadão</strong>
+            <p>Prepare um convite individual para saber se o problema foi resolvido.</p>
+            <button type="button" onclick="prepararConviteAvaliacao(${id},this)">Preparar avaliação</button>
+            <div class="convite-resultado" aria-live="polite"></div>
+          </section>` : ""}
+
+          <section class="gestao-card resposta">
+            <div class="gestao-head">
+              <div class="gestao-ico">💬</div>
+              <div><strong>Resposta ao cidadão</strong><small>Mensagem visível no protocolo</small></div>
+            </div>
+            <div class="gestao-body">
+              ${respostas.length ? historicoRespostas : '<div class="resposta-historico-vazio">💬 Nenhuma resposta enviada ainda.</div>'}
+              <div class="resposta-compose">
+                <textarea id="resposta-${id}" placeholder="Digite a resposta que o cidadão verá no protocolo."></textarea>
+                <div class="resposta-linha">
+                  <input type="file" id="documentos-${id}" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.odt,.ods" onchange="adicionarDocumentos(${id})">
+                  <button id="btn-resposta-${id}" type="button" onclick="enviarResposta(${id})">Enviar resposta</button>
+                </div>
+                <div class="resposta-ajuda">Você pode anexar até 5 arquivos, um por vez.</div>
+                <div id="pendentes-${id}" class="arquivos-pendentes"></div>
+              </div>
+            </div>
+          </section>
+
+          <button type="button" class="btn-abrir-solicitacao fechar-final" onclick="alternarSolicitacaoLembrete(this)">Fechar solicitação</button>
+        </div>
+      `;
+      card.addEventListener("click", (ev) => {
+        if (card.classList.contains("expandido")) return;
+        if (ev.target.closest("button,a,input,select,textarea")) return;
+        const b = card.querySelector(".btn-abrir-solicitacao");
+        if (b) alternarSolicitacaoLembrete(b);
+      });
+
+      lista.appendChild(card);
+      renderArquivosPendentes(id);
+    });
+
+  } catch (e) {
+    console.error("Erro ao carregar solicitações:", e);
+    lista.innerHTML = `
+      <div class="erro">
+        <strong>Não foi possível carregar as solicitações.</strong><br>
+        ${esc(mensagemDeErro(e))}<br>
+        <button type="button" onclick="carregarSolicitacoes()">Tentar novamente</button>
+      </div>
+    `;
+  }
+}
+
+async function enviarResposta(id) {
+  const campo = document.getElementById(`resposta-${id}`);
+  const arquivosEl = document.getElementById(`documentos-${id}`);
+  const botao = document.getElementById(`btn-resposta-${id}`);
+  if (!campo || !arquivosEl || !botao) return;
+
+  const mensagem = campo.value.trim();
+  const arquivos = [...arquivosPendentes(id)];
+
+  if (!mensagem && arquivos.length === 0) {
+    alert("Digite uma resposta ou selecione pelo menos um documento.");
+    return;
+  }
+
+  if (arquivos.length > 5) {
+    alert("Envie no máximo 5 documentos por resposta.");
+    return;
+  }
+
+  for (const arquivo of arquivos) {
+    if (arquivo.size > 10 * 1024 * 1024) {
+      alert("O arquivo " + arquivo.name + " ultrapassa o limite de 10 MB.");
+      return;
+    }
+  }
+
+  botao.disabled = true;
+  botao.textContent = "Enviando...";
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const anexos = [];
+
+    for (const arquivo of arquivos) {
+      const nomeSeguro = arquivo.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const caminho = id + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "-" + nomeSeguro;
+
+      const upload = await requisicao(
+        SUPABASE_URL + "/storage/v1/object/documentos-respostas/" +
+          caminho.split("/").map(encodeURIComponent).join("/"),
+        {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + sessao.access_token,
+            "Content-Type": arquivo.type || "application/octet-stream",
+            "x-upsert": "false"
+          },
+          body: arquivo
+        }
+      );
+
+      if (!upload.ok) {
+        const detalhe = await upload.text().catch(() => "");
+        throw new Error("Não foi possível enviar o documento " + arquivo.name + ". " + detalhe);
+      }
+
+      anexos.push({
+        nome: arquivo.name,
+        tipo: arquivo.type || "",
+        caminho: caminho
+      });
+    }
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/rest/v1/respostas_solicitacoes",
+      {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({
+          solicitacao_id: id,
+          mensagem: mensagem || null,
+          anexos: anexos
+        })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => []);
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.message ||
+        dados.hint ||
+        dados.details ||
+        "Não foi possível registrar a resposta."
+      );
+    }
+
+    alert("Resposta enviada com sucesso!");
+    campo.value = "";
+    arquivosEl.value = "";
+    arquivosPendentesPorSolicitacao.delete(Number(id));
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    console.error("Erro ao enviar resposta:", e);
+    alert(mensagemDeErro(e));
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Enviar resposta / documentos";
+  }
+}
+
+async function removerLembrete(id){
+  const campo=document.getElementById(`lembrete-${id}`);
+  if(!campo) return;
+  campo.value="";
+  await salvarAnotacaoInterna(id);
+}
+
+async function salvarAnotacaoInterna(id) {
+  const campo = document.getElementById(`anotacao-${id}`);
+  const lembrete = document.getElementById(`lembrete-${id}`);
+  const botao = document.getElementById(`btn-anotacao-${id}`);
+  if (!campo || !lembrete || !botao) return;
+
+  let lembreteIso = null;
+  try {
+    lembreteIso = dataBrParaIso(lembrete.value);
+  } catch (e) {
+    alert(e.message);
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = "Salvando...";
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/rest/v1/solicitacoes?id=eq." + encodeURIComponent(id),
+      {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({
+          anotacao_interna: campo.value.trim() || null,
+          lembrete_em: lembreteIso,
+          atualizado_em: new Date().toISOString()
+        })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => ([]));
+
+    if (!resposta.ok || !Array.isArray(dados) || dados.length === 0) {
+      throw new Error(
+        dados.message ||
+        dados.hint ||
+        dados.details ||
+        "Não foi possível salvar a anotação."
+      );
+    }
+
+    alert("Anotação e lembrete salvos!");
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    console.error("Erro ao salvar anotação interna:", e);
+    alert(mensagemDeErro(e));
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Salvar anotação e lembrete";
+  }
+}
+
+async function atualizarStatus(id) {
+  const seletor = document.getElementById(`status-${id}`);
+  const botao = document.getElementById(`botao-${id}`);
+  if (!seletor || !botao) return;
+
+  botao.disabled = true;
+  botao.textContent = "Salvando...";
+
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
+
+    const resposta = await requisicao(
+      SUPABASE_URL + "/rest/v1/solicitacoes?id=eq." + encodeURIComponent(id),
+      {
+        method: "PATCH",
+        headers: {
+          "apikey": SUPABASE_KEY,
+          "Authorization": "Bearer " + sessao.access_token,
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
+        },
+        body: JSON.stringify({ status: seletor.value, atualizado_em: new Date().toISOString() })
+      }
+    );
+
+    const dados = await resposta.json().catch(() => ([]));
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.message ||
+        dados.hint ||
+        dados.details ||
+        "Não foi possível atualizar o status."
+      );
+    }
+
+    if (!Array.isArray(dados) || dados.length === 0) {
+      throw new Error("O servidor não permitiu alterar este registro.");
+    }
+
+    const statusSalvo = seletor.value;
+    const filtroAtual = document.getElementById("filtroStatus");
+    if (filtroAtual && filtroAtual.value !== "Todos" && filtroAtual.value !== statusSalvo) {
+      filtroAtual.value = "Todos";
+      document.querySelectorAll("#statusFiltros button").forEach(b => b.classList.toggle("ativo", b.dataset.status === "Todos"));
+    }
+    await carregarSolicitacoes();
+    const cardAtualizado = document.querySelector('#lista .card[data-id="' + id + '"]');
+    if (cardAtualizado) {
+      cardAtualizado.classList.add("expandido");
+      cardAtualizado.querySelector(".gestao-card.status")?.scrollIntoView({behavior:"smooth",block:"center"});
+    }
+    alert("Status atualizado com sucesso! Você já pode avisar o cidadão pelo WhatsApp.");
+
+  } catch (e) {
+    console.error("Erro ao atualizar status:", e);
+    alert(mensagemDeErro(e));
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Salvar novo status";
+  }
+}
+
+async function verificarLogin() {
+  try {
+    const sessao = await obterSessaoValida();
+    if (!sessao) {
+      mostrarLogin("");
+      return;
+    }
+
+    mostrarPainel();
+    await carregarSolicitacoes();
+
+  } catch (e) {
+    limparSessao();
+    mostrarLogin(mensagemDeErro(e));
+  }
+}
+
+function sair() {
+  limparSessao();
+  document.getElementById("senhaLogin").value = "";
+  mostrarLogin("");
+}
+
+window.addEventListener("popstate",()=>irPainel((location.hash||"#inicio").slice(1),null,false));
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"){
+    // Mantém o conteúdo atual na tela; atualização completa só quando necessária.
+    const nav=document.getElementById("painelBottom");
+    if(nav) nav.style.display="grid";
+  }
+});
+
+document.querySelectorAll("#statusFiltros button").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    faixaSemMovimento=0;
+    document.querySelectorAll("#statusFiltros button").forEach(b=>b.classList.remove("ativo"));
+    btn.classList.add("ativo");
+    const select=document.getElementById("filtroStatus");
+    if(select) select.value=btn.dataset.status;
+    carregarSolicitacoes();
+  });
+});
+
+document.getElementById("filtroStatus")?.addEventListener("change",()=>{
+  const valor=document.getElementById("filtroStatus").value;
+  document.querySelectorAll("#statusFiltros button").forEach(b=>b.classList.toggle("ativo",b.dataset.status===valor));
+});
+
+document.getElementById("btnLogin").addEventListener("click", fazerLogin);
+document.getElementById("senhaLogin").addEventListener("keydown", e => {
+  if (e.key === "Enter") fazerLogin();
+});
+
+document.getElementById("filtroStatus").addEventListener("change", ()=>{
+  faixaSemMovimento=0;
+  carregarSolicitacoes();
+});
+["buscaProjetos","projetoFiltroTipo","projetoFiltroPublicacao"].forEach(id=>{
+  const campo=document.getElementById(id);
+  if(campo)campo.addEventListener(id==="buscaProjetos"?"input":"change",filtrarProjetosPainel);
+});
+
+let atrasoBusca;
+document.getElementById("filtroBusca").addEventListener("input", () => {
+  clearTimeout(atrasoBusca);
+  atrasoBusca = setTimeout(carregarSolicitacoes, 350);
+});
+
+document.getElementById("btnSair").addEventListener("click", sair);
+
+verificarLogin();
+
+// Permite instalar o Painel V17 na tela inicial do celular como aplicativo web.
+// O service worker prioriza a versão online, mantendo as futuras atualizações do painel.
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js", {scope:"./"}).catch(err => {
+      console.warn("Instalação do painel indisponível neste navegador:", err);
+    });
+  });
+}
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script src="./mapa-solicitacoes.js" defer></script>
+</body>
+</html>
+).test(caminho) ||
       caminho.includes("..") || caminho.includes("//")) return "";
   return caminho;
 }
