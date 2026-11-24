@@ -31,7 +31,9 @@ export async function montarCandidata({config,destino}){
                   return url ? '<a href="' + url + '" target="_blank" rel="noopener">📎 ' + nome + '</a>' : "";`;
  const novo=`const caminho = a.caminho || (a.url && a.url.startsWith(SUPABASE_URL+'/storage/v1/object/public/documentos-respostas/') ? decodeURIComponent(a.url.split('/documentos-respostas/')[1]) : '');
                   return caminho ? '<button type="button" data-documento-resposta="'+esc(caminho)+'">📎 '+nome+'</button>' : '';`;
- if(!painel.includes(antigo))throw Error('Renderização de documentos do Painel mudou; revisar candidata.');
+ const marcadorNovo='onclick="abrirDocumentoResposta(this.dataset.caminho, this)"';
+ if(!painel.includes(antigo)&&!painel.includes(marcadorNovo))
+   throw Error('O Painel deve impedir o uso de URLs públicas de documentos.');
  // Elimina as chamadas diagnósticas antigas que enviavam o JWT produtivo ao HML.
  const inicioAntigo=painel.indexOf('// Diagnóstico somente de leitura.');
  const fimAntigo=painel.indexOf('function recarregarSemCache()',inicioAntigo);
@@ -53,7 +55,17 @@ export async function montarCandidata({config,destino}){
  // A sessão biométrica nunca faz refresh silencioso: expiração exige login completo.
  painel=painel.replace('if (!sessao.refresh_token) return null;',"if(painelBiometriaNativa){limparSessao();mostrarLogin('Sessão expirada. Entre com e-mail, senha e MFA.');return null;}\n    if (!sessao.refresh_token) return null;");
  if(painel.includes('mandato-neon-homologacao.onrender.com'))throw Error('Origem HML remanescente no Painel candidato.');
- painel=painel.replace(antigo,novo).replace('url: caminhoPublicoStorage("documentos-respostas", caminho)','url: null');
+ if(painel.includes(antigo)){
+  painel=painel.replace(antigo,novo)
+   .replace('url: caminhoPublicoStorage("documentos-respostas", caminho)','url: null');
+ } else {
+  // O Painel de origem já utiliza links assinados. Na candidata, delegar ao
+  // cliente privado para obter autenticação/MFA, sem abrir duas vezes.
+  painel=painel.replace(marcadorNovo,
+   'data-documento-resposta="' + "' + escCampo(caminho) + '" + '">📎 ');
+  if(!painel.includes('data-documento-resposta='))
+    throw Error('Documento de resposta não está protegido na candidata.');
+ }
  painel=painel.replace('</body>',`<script>window.MANDATO_CHAVE_PUBLICA=SUPABASE_KEY;document.addEventListener('click',e=>{const b=e.target.closest('[data-documento-resposta]');if(b)window.abrirDocumentoRespostaPrivado(b.dataset.documentoResposta);});</script><script type="module" src="../v2/seguranca/painel-privado.mjs"></script></body>`);
  await mkdir(out+'/painel',{recursive:true});await writeFile(out+'/painel/index.html',painel);await cp(new URL('./web/painel.mjs',import.meta.url),out+'/v2/seguranca/painel-privado.mjs');
  // A agenda conserva seu login manual e lembretes, sem tokens em texto no Android.
