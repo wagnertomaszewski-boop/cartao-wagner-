@@ -34,6 +34,8 @@
 
 Foi acrescentado `transporte-whatsapp-twilio-verify.mjs` como opção de entrega real por **Twilio Verify, canal WhatsApp**. O serviço de verificação gera o código local, protege-o por HMAC e usa `CustomCode` para solicitar ao provedor o envio do mesmo código, sem expô-lo ao navegador. O adaptador exige resposta de solicitação `pending`, número e canal corretos; isso **não equivale à confirmação de entrega**. A posse só é confirmada quando o código válido é informado ao verificador externo, dentro de cinco minutos, com consumo único.
 
+**Pré-verificação antes do envio:** o adaptador chama o endpoint oficial **GET** do próprio Verify Service (`verificar-preparacao-twilio-verify.mjs`) antes de qualquer POST que possa gerar custo. Só permite a tentativa se `custom_code_enabled` for `true` e houver `whatsapp.msg_service_sid` e `whatsapp.from` válidos. Qualquer erro de rede, falta de permissão ou configuração incompleta interrompe a operação sem tentar enviar. A consulta é somente leitura e não é um teste de entrega real.
+
 Pré-requisitos externos **não disponíveis no repositório**:
 - Conta Twilio ativa, Verify Service `VA...`, API Key `SK...` e API Secret guardados somente no serviço externo;
 - Em **Verify > Services > General**, habilitar **Custom Verification Code**;
