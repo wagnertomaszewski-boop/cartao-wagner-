@@ -62,7 +62,7 @@ export async function montarCandidata({config,destino}){
   // O Painel de origem já utiliza links assinados. Na candidata, delegar ao
   // cliente privado para obter autenticação/MFA, sem abrir duas vezes.
   painel=painel.replace(marcadorNovo,
-   'data-documento-resposta="' + "' + escCampo(caminho) + '" + '">📎 ');
+   `data-documento-resposta="' + escCampo(caminho) + '"`);
   if(!painel.includes('data-documento-resposta='))
     throw Error('Documento de resposta não está protegido na candidata.');
  }
