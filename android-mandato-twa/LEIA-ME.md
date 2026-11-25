@@ -1,6 +1,6 @@
 # Mandato em Ação 3.0.0 para Android
 
-Candidata TWA reconstruída a partir do AAB original, com a mesma URL inicial, o ícone e as imagens de abertura. Identificador `com.wagnertomaszewski.mandatoemacao`, SDK mínimo 23 e alvo 36.
+Candidata TWA reconstruída a partir do AAB original, com a mesma URL inicial, o ícone e as imagens de abertura. Identificador `com.wagnertomaszewski.mandatoemacao`, SDK mínimo 23 e alvo 36, com Android Browser Helper 2.6.2 e AndroidX Browser 1.9.0-alpha04, como no AAB original.
 
 A Play Console informa que a versão ativa é 2.0.0, código 2. Antes de usar o código 3 para assinar e preparar o envio, confira no **Explorador de pacotes de apps** se ele nunca foi usado, inclusive em rascunhos e em qualquer faixa de teste. A compilação sem assinatura é apenas uma candidata. Se 3 já estiver ocupado, gere outro candidato com um número acima do maior código usado.
 
