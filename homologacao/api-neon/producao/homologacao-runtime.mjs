@@ -53,11 +53,16 @@ async function iniciar({urlTeste,segredoBase}){
   url.search='';
   const {default:pg}=await import('pg');
   const pool=new pg.Pool({connectionString:url.href,ssl:{rejectUnauthorized:true},max:2,connectionTimeoutMillis:8000});
-  const {rows:[prova]}=await pool.query(`SELECT current_database()=$1 AND current_user=$1
-   AND NOT has_schema_privilege(current_user,'public','CREATE')
-   AND NOT has_table_privilege(current_user,'mandato_privado.auditoria_recuperacao','UPDATE')
-   AND has_table_privilege(current_user,'mandato_privado.storage_teste','SELECT,INSERT') AS ok`,[papelTeste]);
-  if(prova?.ok!==true){await pool.end();throw Error('Privilégios de homologação incompatíveis');}
+  try{
+   const {rows:[prova]}=await pool.query(`SELECT current_database()=$1 AND current_user=$1
+    AND NOT has_schema_privilege(current_user,'public','CREATE')
+    AND NOT has_table_privilege(current_user,'mandato_privado.auditoria_recuperacao','UPDATE')
+    AND has_table_privilege(current_user,'mandato_privado.storage_teste','SELECT,INSERT') AS ok`,[papelTeste]);
+   if(prova?.ok!==true)throw Error('Privilégios de homologação incompatíveis');
+  }catch(erro){
+   await pool.end().catch(()=>{});
+   throw erro;
+  }
   return {banco:'Neon exclusivo',async executar(fn){
    const client=await pool.connect();
    try{return await fn(montarRepositorio((q,p)=>client.query(q,p),segredoBase));}
