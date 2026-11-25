@@ -2,6 +2,9 @@ name: Painel do Mandato - Play Store (teste interno)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - build/painel-aab-candidato-92c3674
 
 permissions:
   contents: read
