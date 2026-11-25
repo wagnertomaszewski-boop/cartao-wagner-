@@ -1,0 +1,14 @@
+CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE mandato_api_privada;CREATE SCHEMA auth;CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;CREATE SEQUENCE public.protocolo_seq;
+CREATE TABLE public.solicitacoes(id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,protocolo text DEFAULT 'HML-CANDIDATA-'||lpad(nextval('protocolo_seq')::text,6,'0'),nome text NOT NULL,whatsapp text NOT NULL,localidade text NOT NULL,assunto text NOT NULL,descricao text NOT NULL,status text NOT NULL DEFAULT 'Recebida',anexos text[],latitude numeric,longitude numeric,criado_em timestamptz DEFAULT now(),atualizado_em timestamptz DEFAULT now(),anotacao_interna text);
+CREATE TABLE public.solicitacoes_status_historico(id bigint GENERATED ALWAYS AS IDENTITY,solicitacao_id bigint REFERENCES public.solicitacoes(id),status text,criado_em timestamptz DEFAULT now());
+CREATE TABLE public.respostas_solicitacoes(id bigint GENERATED ALWAYS AS IDENTITY,solicitacao_id bigint REFERENCES public.solicitacoes(id),mensagem text,anexos jsonb DEFAULT '[]',criado_em timestamptz DEFAULT now());
+CREATE SCHEMA storage;CREATE TABLE storage.objects(bucket_id text);CREATE TABLE storage.buckets(id text PRIMARY KEY,public boolean);INSERT INTO storage.buckets VALUES('documentos-respostas',true),('conteudos-mandato',true);
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+GRANT USAGE ON SCHEMA storage,auth TO anon,authenticated;
+GRANT SELECT ON storage.objects TO anon,authenticated;
+INSERT INTO storage.objects VALUES ('documentos-respostas'),('conteudos-mandato');
+CREATE POLICY conteudo_publico ON storage.objects FOR SELECT TO PUBLIC USING(bucket_id='conteudos-mandato');
+CREATE POLICY "admin atualiza documentos de resposta" ON storage.objects FOR UPDATE TO authenticated USING(bucket_id='documentos-respostas' AND auth.uid()='00000000-0000-4000-8000-000000000001'::uuid);
+CREATE FUNCTION public.consulta_publica_protocolo(text) RETURNS text LANGUAGE sql SECURITY DEFINER AS $$ SELECT 'privado' $$;CREATE FUNCTION public.consulta_publica_historico_protocolo(text) RETURNS text LANGUAGE sql SECURITY DEFINER AS $$ SELECT 'privado' $$;CREATE FUNCTION public.consulta_publica_respostas_protocolo(text) RETURNS text LANGUAGE sql SECURITY DEFINER AS $$ SELECT 'privado' $$;
+CREATE FUNCTION public.consultar_protocolo(text) RETURNS text LANGUAGE sql SECURITY DEFINER AS $$ SELECT 'privado' $$;
+SET mandato.migracao_autorizada='sim';

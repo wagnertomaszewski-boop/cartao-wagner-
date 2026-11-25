@@ -7,6 +7,7 @@ import {criarCadastroModeloHml} from './solicitacoes-modelo-hml.mjs';
 import {criarGestaoSolicitacoesHml} from './gestao-solicitacoes-hml.mjs';
 import {criarConteudosHml} from './conteudos-publicos-hml.mjs';
 import {createHash} from 'node:crypto';
+import {criarCandidataHml} from './producao/homologacao-runtime.mjs';
 import {criarArquivosHml} from './arquivos-privados-hml.mjs';
 import {criarConteudoArquivosHml} from './conteudo-arquivos-hml.mjs';
 const BASE='/hml';
@@ -90,7 +91,12 @@ export async function montar({env,pool}){
  });
  const json=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8',...seguro});res.end(JSON.stringify(data));};
  const corpo=async (req,max=4096)=>{if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']||''))throw Object.assign(Error('Envie JSON'),{status:415});const a=[];let n=0;for await(const b of req){n+=b.length;if(n>max)throw Object.assign(Error('Requisição grande'),{status:413});a.push(b);}try{const d=JSON.parse(Buffer.concat(a).toString());if(!d||Array.isArray(d)||typeof d!=='object')throw Error();return d;}catch{throw Object.assign(Error('JSON inválido'),{status:400});}};
+ const candidata=criarCandidataHml({
+  origem:HML_ORIGIN,
+  verificarMfa:req=>exigirAdminMfa({auth,pool,headers:fromNodeHeaders(req.headers),adminEmail:env.AUTH_HML_ADMIN_EMAIL})
+ });
  async function handler(req,res){
+  if(await candidata(req,res))return true;
   const path=req.url?.split('?')[0];if(!path||!(path===BASE||path.startsWith(BASE+'/')))return false;
   try{
    for(const [k,v]of Object.entries(seguro))res.setHeader(k,v);

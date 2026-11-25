@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mandato em Ação · API candidata em homologação</title>
+<main>
+<h1>Mandato em Ação · API candidata</h1>
+<p>Homologação. Use somente dados fictícios. Dados e arquivos de teste são apagados quando o serviço reinicia.</p>
+<nav><a href="./cidadao">App do cidadão</a> · <a href="./painel">Painel</a> · <a href="./versao">Versão da API</a></nav>
+<p id="estado" role="status"></p>
+<section id="cidadao" hidden>
+<h2>Nova solicitação fictícia</h2>
+<form id="cadastro">
+<p><label>Seu WhatsApp para teste opcional <input id="telefone" type="tel" placeholder="+55 DDD número"></label></p>
+<p><label><input id="consentimento" type="checkbox"> Autorizo o uso do meu próprio número neste teste.</label></p>
+<button>Criar solicitação fictícia</button>
+</form>
+<p><label>Protocolo <input id="protocolo" autocomplete="off"></label></p>
+<p><label>Chave <input id="chave" autocomplete="off"></label></p>
+<button id="consultar">Consultar</button>
+<button id="anexar">Enviar anexo fictício</button>
+<div id="anexos"></div>
+<h2>Recuperar chave</h2>
+<button id="solicitar">Pedir recuperação</button>
+<p><label>Código recebido <input id="codigo" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></label></p>
+<button id="validar">Validar código</button>
+</section>
+<section id="painel" hidden>
+<h2>Painel da API candidata</h2>
+<p><a href="/hml/">Entrar ou renovar MFA na homologação</a> e voltar a esta página.</p>
+<button id="sessao">Validar MFA</button>
+<button id="listar">Listar pedidos de recuperação</button>
+<div id="pedidos"></div>
+</section>
+</main>
+<script type="module" src="./app.js"></script>
+</html>

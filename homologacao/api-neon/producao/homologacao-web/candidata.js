@@ -1,0 +1,109 @@
+const $=id=>document.getElementById(id);
+const status=$('estado');
+let recibo=null;
+const padrao='+5551000000000';
+const telefone=()=>{
+ const valor=$('telefone').value.trim();
+ if(valor&&!$('consentimento').checked)throw Error('Confirme o consentimento para usar seu próprio número.');
+ return valor||padrao;
+};
+const credencial=()=>({protocolo:$('protocolo').value.trim(),chave:$('chave').value.trim()});
+async function api(rota,dados={}){
+ const r=await fetch('./api/v1/'+rota,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados),cache:'no-store',redirect:'error',signal:AbortSignal.timeout(20000)});
+ const j=await r.json();
+ if(!r.ok)throw Error(j.erro||'Operação indisponível.');
+ return j;
+}
+let ocupado=false;
+async function executar(fn){
+ if(ocupado)return;
+ ocupado=true;status.textContent='Aguarde…';
+ try{status.textContent=await fn();}catch(e){status.textContent=e.message;}
+ finally{ocupado=false;}
+}
+function botao(nome,fn){
+ const b=document.createElement('button');b.type='button';b.textContent=nome;b.onclick=()=>executar(fn);return b;
+}
+function mostrarAnexos(itens){
+ $('anexos').replaceChildren(...itens.map(a=>botao('Baixar '+a.nome,async()=>{
+  const f=await api('arquivos/baixar',{...credencial(),arquivoId:a.id});
+  const bytes=Uint8Array.from(atob(f.base64),x=>x.charCodeAt(0));
+  const url=URL.createObjectURL(new Blob([bytes],{type:f.mime}));
+  const link=document.createElement('a');link.href=url;link.download=f.nome;link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  return 'Download autorizado pela API candidata.';
+ })));
+}
+let operacaoId=crypto.randomUUID();
+$('cadastro').onsubmit=e=>{
+ e.preventDefault();
+ void executar(async()=>{
+  const d=await api('solicitacoes/cadastrar',{operacaoId,p_nome:'Cidadão fictício',p_whatsapp:telefone(),p_localidade:'Homologação',p_assunto:'Solicitação de teste',p_descricao:'Dados sintéticos da API candidata.'});
+  operacaoId=crypto.randomUUID();recibo=null;
+  $('protocolo').value=d.protocolo;$('chave').value=d.chaveInicial;mostrarAnexos([]);
+  return 'Solicitação fictícia criada. Guarde o protocolo e a chave.';
+ });
+};
+$('consultar').onclick=()=>executar(async()=>{
+ mostrarAnexos([]);
+ const r=await api('solicitacoes/consultar',credencial());
+ if(!r.encontrado)return 'Protocolo ou chave inválidos.';
+ mostrarAnexos(r.anexos);
+ return 'Consulta autorizada. Situação: '+r.status;
+});
+$('anexar').onclick=()=>executar(async()=>{
+ const png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j1ioAAAAASUVORK5CYII=';
+ const a=await api('arquivos/anexar',{...credencial(),nome:'homologacao.png',mime:'image/png',base64:png});
+ mostrarAnexos([a]);
+ return 'Imagem fictícia enviada ao Storage privado de teste.';
+});
+$('solicitar').onclick=()=>executar(async()=>{
+ recibo=await api('recuperacao/solicitar',{protocolo:credencial().protocolo,telefone:telefone()});
+ return 'Pedido registrado para análise, se os dados corresponderem ao cadastro.';
+});
+$('validar').onclick=()=>executar(async()=>{
+ if(!recibo)throw Error('Faça primeiro o pedido de recuperação nesta aba.');
+ const codigo=$('codigo').value;$('codigo').value='';
+ const d=await api('recuperacao/validar',{...recibo,codigo});
+ if(!d.validado)return 'Código incorreto, expirado ou já usado.';
+ $('chave').value=d.novaChave;recibo=null;return 'Nova chave emitida. A anterior perdeu a validade.';
+});
+$('sessao').onclick=()=>executar(async()=>{
+ const d=await api('admin/sessao/validar');
+ if(d.mfaRecente!==true)throw Error('MFA não confirmado.');
+ return 'MFA confirmado pela API candidata.';
+});
+$('listar').onclick=()=>executar(async()=>{
+ $('pedidos').replaceChildren();
+ const itens=await api('admin/recuperacao/listar');
+ for(const p of itens){
+  const bloco=document.createElement('p');bloco.textContent=p.protocolo+' · '+p.estado+' ';
+  if(p.estado==='pendente')bloco.append(botao('Aprovar pedido fictício',async()=>{
+   if(!confirm('Confirma que esta solicitação é fictícia e que conferiu o destino?'))return 'Aprovação cancelada.';
+   await api('admin/recuperacao/decidir',{pedidoId:p.id,decisao:'aprovar',identidadeConferida:true,justificativa:'Conferência da identidade fictícia para homologação.'});
+   return 'Pedido aprovado. Atualize a lista.';
+  }));
+  if(p.estado==='aprovado')bloco.append(botao('Gerar código',async()=>{
+   const telefoneConfirmado=prompt('Redigite o WhatsApp autorizado neste teste.');
+   if(!telefoneConfirmado)return 'Emissão cancelada.';
+   const r=await api('admin/recuperacao/emitir',{pedidoId:p.id,telefoneConfirmado});
+   if(r.envioPermitido!==true||!/^\+55\d{11}$/.test(r.telefone))throw Error('Destino não confirmado.');
+   const codigo=document.createElement('span');codigo.textContent=' Código de teste: '+r.codigo+' ';
+   const enviar=document.createElement('a');enviar.textContent='Abrir WhatsApp para envio manual';
+   enviar.rel='noreferrer';
+   enviar.href='https://api.whatsapp.com/send?phone='+r.telefone.slice(1)+'&text='+encodeURIComponent(r.mensagem);
+   enviar.onclick=e=>{if(Date.now()>=Date.parse(r.expiraEm)||!confirm('Confirme que este é seu próprio WhatsApp de teste.'))e.preventDefault();};
+   const confirmar=botao('Confirmar envio manual',async()=>{
+    if(!confirm('Você enviou o código ao seu número de teste?'))return 'Confirmação cancelada.';
+    await api('admin/recuperacao/confirmar-envio',{pedidoId:p.id,envioConfirmado:true});return 'Envio manual registrado.';
+   });
+   if(r.telefone===padrao)bloco.replaceChildren(codigo);
+   else bloco.replaceChildren(codigo,enviar,confirmar);
+   setTimeout(()=>{codigo.remove();enviar.remove();confirmar.remove();},Math.max(0,Date.parse(r.expiraEm)-Date.now()));
+   return 'Código gerado. O envio é manual.';
+  }));
+  $('pedidos').append(bloco);
+ }
+ return itens.length?'Pedidos fictícios carregados.':'Sem pedidos fictícios.';
+});
+$(location.pathname.endsWith('/painel')?'painel':'cidadao').hidden=false;
