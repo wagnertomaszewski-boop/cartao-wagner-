@@ -1,0 +1,50 @@
+name: Mandato em Ação TWA - candidato sem assinatura
+
+on:
+  push:
+    branches:
+      - build/mandato-twa-3-candidato
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Instalar SDK Android
+        run: |
+          SDK="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$(find "$SDK/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          test -x "$SDKMANAGER"
+          "$SDKMANAGER" --install 'platforms;android-36' 'build-tools;35.0.0'
+      - name: Compilar AAB sem assinatura
+        working-directory: android-mandato-twa
+        run: ./gradlew --no-daemon :app:bundleRelease -PmandatoVersionCode=3
+      - name: Verificar que o AAB está sem assinatura
+        working-directory: android-mandato-twa
+        run: |
+          bundle=app/build/outputs/bundle/release/app-release.aab
+          test -s "$bundle"
+          if unzip -Z1 "$bundle" | grep -Ei '^META-INF/[^/]+\.(RSA|DSA|EC|SF)$'; then
+            exit 1
+          fi
+          cd "$(dirname "$bundle")"
+          sha256sum app-release.aab > app-release.aab.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mandato-em-Acao-3.0.0-AAB-sem-assinatura
+          path: |
+            android-mandato-twa/app/build/outputs/bundle/release/app-release.aab
+            android-mandato-twa/app/build/outputs/bundle/release/app-release.aab.sha256
+            android-mandato-twa/LEIA-ME.md
+          if-no-files-found: error
+          retention-days: 14
