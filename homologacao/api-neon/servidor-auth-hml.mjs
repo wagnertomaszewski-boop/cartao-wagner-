@@ -93,6 +93,8 @@ export async function montar({env,pool}){
  const corpo=async (req,max=4096)=>{if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']||''))throw Object.assign(Error('Envie JSON'),{status:415});const a=[];let n=0;for await(const b of req){n+=b.length;if(n>max)throw Object.assign(Error('Requisição grande'),{status:413});a.push(b);}try{const d=JSON.parse(Buffer.concat(a).toString());if(!d||Array.isArray(d)||typeof d!=='object')throw Error();return d;}catch{throw Object.assign(Error('JSON inválido'),{status:400});}};
  const candidata=criarCandidataHml({
   origem:HML_ORIGIN,
+  urlTeste:env.CANDIDATA_HML_DATABASE_URL,
+  segredoBase:env.AUTH_HML_SECRET,
   verificarMfa:req=>exigirAdminMfa({auth,pool,headers:fromNodeHeaders(req.headers),adminEmail:env.AUTH_HML_ADMIN_EMAIL})
  });
  if(process.env.RENDER==='true'){

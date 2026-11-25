@@ -1,6 +1,5 @@
-import {randomBytes} from 'node:crypto';
+import {createHmac,randomBytes} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
-import {PGlite} from '@electric-sql/pglite';
 import {criarRepositorio} from './repositorio.mjs';
 import {criarHandlerProducao} from './http.mjs';
 
@@ -14,13 +13,41 @@ const json=(res,status,body)=>{
  res.writeHead(status,{...headers,'Content-Type':'application/json'});
  res.end(JSON.stringify(body));return true;
 };
-async function iniciar(){
+const hostTeste='ep-sweet-shape-bejhudcn-pooler.c-9.us-east-2.aws.neon.tech';
+const papelTeste='mandato_candidata_hml';
+
+async function iniciar({urlTeste,segredoBase}){
+ if(process.env.RENDER==='true'||urlTeste){
+  const url=new URL(urlTeste);
+  if(url.protocol!=='postgresql:'||url.hostname!==hostTeste||url.pathname!=='/'+papelTeste||url.username!==papelTeste||
+   !url.password||url.hash||url.port||typeof segredoBase!=='string'||segredoBase.length<32)
+   throw Error('Conexão exclusiva de homologação obrigatória');
+  url.search='';
+  const {default:pg}=await import('pg');
+  const pool=new pg.Pool({connectionString:url.href,ssl:{rejectUnauthorized:true},max:2,connectionTimeoutMillis:8000});
+  const {rows:[prova]}=await pool.query(`SELECT current_database()=$1 AND current_user=$1
+   AND NOT has_schema_privilege(current_user,'public','CREATE')
+   AND NOT has_table_privilege(current_user,'mandato_privado.auditoria_recuperacao','UPDATE')
+   AND has_table_privilege(current_user,'mandato_privado.storage_teste','SELECT,INSERT') AS ok`,[papelTeste]);
+  if(prova?.ok!==true){await pool.end();throw Error('Privilégios de homologação incompatíveis');}
+  return {banco:'Neon exclusivo',async executar(fn){
+   const client=await pool.connect();
+   try{return await fn(montarRepositorio((q,p)=>client.query(q,p),segredoBase));}
+   finally{client.release();}
+  }};
+ }
+ const {PGlite}=await import('@electric-sql/pglite');
  const db=new PGlite();
  for(const path of ['./homologacao-esquema.sql','../sql/rascunhos/20261115_estrutura_privada_recuperacao_producao.sql','./sql/estrutura-candidata.sql','./sql/contatos-legados-candidata.sql']){
   await db.exec(await readFile(new URL(path,import.meta.url),'utf8'));
  }
  await db.exec('CREATE TABLE mandato_privado.storage_teste (caminho text PRIMARY KEY, bytes bytea NOT NULL); GRANT SELECT, INSERT ON mandato_privado.storage_teste TO mandato_api_privada; SET ROLE mandato_api_privada;');
- const query=(q,p)=>db.query(q,p);
+ const repo=montarRepositorio((q,p)=>db.query(q,p),randomBytes(32).toString('hex'));
+ return {banco:'PGlite isolado',executar:fn=>fn(repo)};
+}
+
+function montarRepositorio(query,segredoBase){
+ const derivar=contexto=>createHmac('sha256',segredoBase).update(contexto).digest('hex');
  const pool={query,connect:async()=>({query,release(){}})};
  const storage={
   async enviar(caminho,bytes){
@@ -34,11 +61,11 @@ async function iniciar(){
    return Buffer.from(objeto.bytes);
   }
  };
- return criarRepositorio({pool,storage,segredo:randomBytes(32).toString('hex'),segredoChaves:randomBytes(32).toString('hex')});
+ return criarRepositorio({pool,storage,segredo:derivar('candidata-hml/operacoes'),segredoChaves:derivar('candidata-hml/chaves')});
 }
-export function criarCandidataHml({origem,verificarMfa}){
+export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
  let inicializacao, fila=Promise.resolve(), pendentes=0;
- const preparar=()=>inicializacao??=iniciar();
+ const preparar=()=>inicializacao??=iniciar({urlTeste,segredoBase});
  const handler=async(req,res)=>{
   const path=req.url?.split('?')[0];
   if(!path?.startsWith(base+'/'))return false;
@@ -50,8 +77,8 @@ export function criarCandidataHml({origem,verificarMfa}){
   }
   if(rota==='versao'&&req.method==='GET'){
    try{
-    await preparar();
-    return json(res,200,{api:'candidata',ambiente:'homologacao',base:'5b79918',deploy:process.env.RENDER_GIT_COMMIT??null,banco:'PGlite isolado',storage:'privado de teste'});
+    const {banco}=await preparar();
+    return json(res,200,{api:'candidata',ambiente:'homologacao',base:'5b79918',deploy:process.env.RENDER_GIT_COMMIT??null,banco,storage:'privado de teste'});
    }catch(e){console.error('Candidata HML indisponível',e.code??e.name);return json(res,503,{erro:'Candidata indisponível'});}
   }
   if(!rota.startsWith('api/v1/')||req.method!=='POST')return json(res,404,{erro:'Rota indisponível'});
@@ -63,14 +90,16 @@ export function criarCandidataHml({origem,verificarMfa}){
   // PGlite usa uma única conexão. Serializa as transações do repositório.
   const processar=async()=>{
    try{
-    const repositorio=await preparar();
+    const banco=await preparar();
     req.url='/'+rota;
     delete req.headers.authorization;
     const interno=operador?randomBytes(24).toString('base64url'):null;
     if(interno)req.headers.authorization='Bearer '+interno;
-    const handler=criarHandlerProducao({repositorio,origemApi:origem,
-     resolverAdminMfa:async token=>interno&&token===interno?{usuarioId:operador.usuarioId,mfaRecente:true}:null});
-    await handler(req,res);
+    await banco.executar(async repositorio=>{
+     const handler=criarHandlerProducao({repositorio,origemApi:origem,
+      resolverAdminMfa:async token=>interno&&token===interno?{usuarioId:operador.usuarioId,mfaRecente:true}:null});
+     await handler(req,res);
+    });
    }catch(e){console.error('Candidata HML indisponível',e.code??e.name);if(!res.headersSent)json(res,503,{erro:'Candidata indisponível'});else res.end();}
   };
   if(req.headers['content-length']>1500000)return json(res,413,{erro:'Arquivo excede o limite'});
