@@ -1,6 +1,3 @@
-Traceback (most recent call last):
-  File "<stdin>", line 6, in <module>
-AssertionError
 import {readFile} from 'node:fs/promises';
 import {toNodeHandler,fromNodeHeaders} from 'better-auth/node';
 import {criarAuthAdminHml,validarConfigAuthHml,segredoIgual,exigirAdminMfa,HML_ORIGIN} from './auth-admin-hml.mjs';
@@ -117,7 +114,9 @@ export async function montar({env,pool}){
    if(req.method==='GET'&&assets[path]){const name=assets[path];let content=await readFile(new URL('./'+name,import.meta.url));
     const v2Candidata=['/hml/v2/index.html','/hml/v2/solicitar','/hml/v2/recuperar'].includes(path)&&
      new URL(req.url,HML_ORIGIN).searchParams.get('api')==='candidata';
-    if(v2Candidata)content=content.toString().replace(/(\/hml\/v2\/(?:solicitar|recuperar))(?=['"])/g,'$1?api=candidata');
+    if(v2Candidata)content=content.toString().replace(/(\/hml\/v2\/(?:solicitar|recuperar))(?=['"])/g,'$1?api=candidata')
+     .replace(/((?:tela-cadastro-hml|tela-recuperacao-manual)\.mjs)(?=['"])/g,
+      '$1?rev='+encodeURIComponent(process.env.RENDER_GIT_COMMIT??'local'));
     let extras={};if(['telas/v2/projetos.html','telas/v2/index.html'].includes(name)){const html=content.toString(),sha=x=>"'sha256-"+createHash('sha256').update(x).digest('base64')+"'",dec=x=>x.replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&');const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(x=>sha(x[1]));const eventos=[...html.matchAll(/\bon[a-z]+="([^"]*)"/g)].map(x=>sha(dec(x[1])));const estilos=[...html.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/g)].map(x=>sha(x[1])).concat([...html.matchAll(/\bstyle="([^"]*)"/g)].map(x=>sha(dec(x[1]))));extras={'Content-Security-Policy':seguro['Content-Security-Policy'].replace("script-src 'self'","script-src 'self' 'unsafe-hashes' "+[...new Set([...scripts,...eventos,sha("go('projetos')")])].join(' ')).replace("style-src 'self'","style-src 'self' 'unsafe-hashes' "+[...new Set(estilos)].join(' '))};}res.writeHead(200,{'Content-Type':name.endsWith('.html')?'text/html; charset=utf-8':(name.endsWith('.js')||name.endsWith('.mjs'))?'application/javascript; charset=utf-8':'text/css; charset=utf-8',...seguro,...extras});res.end(content);return true;}
    if(path.startsWith('/hml/auth/')){await autenticar(req,res);return true;}
    if(path==='/hml/setup'&&req.method==='POST'){
