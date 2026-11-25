@@ -431,3 +431,49 @@ test('migração candidata rejeita política homônima de outro papel e mantém 
   assert.equal((await a.db.query("SELECT count(*) AS n FROM mandato_privado.chaves_acompanhamento")).rows[0].n,0);
  }finally{await a.db.close();}
 });
+
+test('HTTP Edge rejeita código reutilizado, expirado e bloqueado por cinco tentativas e audita os eventos',async()=>{
+ const a=await ambiente();
+ const origem='https://pmmsdjozyyxkbuqlkfpb.supabase.co';
+ const responder=adaptarParaEdge(criarHandlerProducao({
+  repositorio:a.repo,origemApi:origem,resolverAdminMfa:async token=>token==='admin-sintetico'?op:null
+ }),{versao:'a'.repeat(40)});
+ async function post(rota,payload,administrador=false){
+  const resposta=await responder(new Request(origem+'/functions/v1/mandato-privado/api/v1/'+rota,{
+   method:'POST',headers:{'Content-Type':'application/json',...(administrador?{Authorization:'Bearer admin-sintetico'}:{})},
+   body:JSON.stringify(payload)
+  }));
+  const corpo=await resposta.json();
+  assert.equal(resposta.status,200,JSON.stringify(corpo));
+  return corpo;
+ }
+ try{
+  const cadastro=await post('solicitacoes/cadastrar',dados());
+  async function emitir(){
+   const recibo=await post('recuperacao/solicitar',{protocolo:cadastro.protocolo,telefone:dados().p_whatsapp});
+   await post('admin/recuperacao/decidir',{pedidoId:recibo.pedidoId,decisao:'aprovar',identidadeConferida:true,justificativa:'Conferência fictícia.'},true);
+   const {codigo}=await post('admin/recuperacao/emitir',{pedidoId:recibo.pedidoId,telefoneConfirmado:dados().p_whatsapp},true);
+   return {...recibo,codigo};
+  }
+  const usado=await emitir();
+  const renovado=await post('recuperacao/validar',usado);
+  assert.equal(renovado.validado,true);
+  assert.deepEqual(await post('recuperacao/validar',usado),{validado:false});
+  assert.deepEqual(await post('solicitacoes/consultar',{protocolo:cadastro.protocolo,chave:cadastro.chaveInicial}),{encontrado:false});
+  assert.equal((await post('solicitacoes/consultar',{protocolo:cadastro.protocolo,chave:renovado.novaChave})).encontrado,true);
+  const expirado=await emitir();
+  a.avancar(300000);
+  assert.deepEqual(await post('recuperacao/validar',expirado),{validado:false});
+  const bloqueado=await emitir();
+  const errado=bloqueado.codigo==='000000'?'111111':'000000';
+  for(let tentativa=0;tentativa<5;tentativa++)
+   assert.deepEqual(await post('recuperacao/validar',{...bloqueado,codigo:errado}),{validado:false});
+  assert.deepEqual(await post('recuperacao/validar',bloqueado),{validado:false});
+  const {rows:eventos}=await a.db.query('SELECT evento,count(*)::int AS total FROM mandato_privado.auditoria_recuperacao GROUP BY evento');
+  const contagem=Object.fromEntries(eventos.map(({evento,total})=>[evento,total]));
+  assert.equal(contagem.codigo_validado_chave_renovada,1);
+  assert.equal(contagem.codigo_reutilizado,1);
+  assert.equal(contagem.codigo_expirado,1);
+  assert.equal(contagem.codigo_incorreto,5);
+ }finally{await a.db.close();}
+});

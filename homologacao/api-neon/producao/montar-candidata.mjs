@@ -13,6 +13,7 @@ export async function montarCandidata({config,destino}){
  html=html.replace(/\/\/ Integração segura desabilitada.*?\n(?=document\.querySelectorAll\("\.tab"\))/s,'');
  html=html.replace(/async function projetoRpc\(nome,payload\)\{[^\n]*\n/,`async function projetoRpc(nome,payload){const r=await fetch(SUPABASE_URL+'/rest/v1/rpc/'+nome,{method:'POST',headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify(payload),cache:'no-store',signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('Não foi possível consultar os projetos agora.');return r.json()}\n`);
  html=html.replace('type="file" accept="image/*,.pdf"','type="file" multiple accept="image/jpeg,image/png,application/pdf"').replace('Você pode anexar um arquivo para ajudar a identificar a situação.','Selecione até 20 fotografias ou PDFs, com até 1 MB cada.');
+ html=html.replaceAll('href="./recuperar-acesso.html"','href="#recuperacaoV2"');
  html=html.replace('Consulte o andamento pelo número do protocolo.','Consulte com seu protocolo e sua chave individual de acompanhamento.');
  html=html.replace('A abertura dos arquivos estará disponível após a conclusão da autorização segura.','Os anexos são abertos somente após validar protocolo e chave.');
  html=html.replace('<script src="./solicitacao-localizacao.js" defer></script>',`<script>document.getElementById('formSolicitacao').addEventListener('submit',e=>e.preventDefault());for(const id of ['botaoEnviar','consultar'])document.getElementById(id).disabled=true;document.getElementById('mensagem').textContent='Carregando acesso seguro. Se não carregar, tente novamente mais tarde.';document.getElementById('mensagem').style.display='block';</script><script type="module" src="./seguranca/tela-privada.mjs"></script>`);
@@ -66,6 +67,7 @@ export async function montarCandidata({config,destino}){
   if(!painel.includes('data-documento-resposta='))
     throw Error('Documento de resposta não está protegido na candidata.');
  }
+ painel=painel.replaceAll('href="./recuperacoes.html"','href="#estadoRecPrivada"');
  painel=painel.replace('</body>',`<script>window.MANDATO_CHAVE_PUBLICA=SUPABASE_KEY;document.addEventListener('click',e=>{const b=e.target.closest('[data-documento-resposta]');if(b)window.abrirDocumentoRespostaPrivado(b.dataset.documentoResposta);});</script><script type="module" src="../v2/seguranca/painel-privado.mjs"></script></body>`);
  await mkdir(out+'/painel',{recursive:true});await writeFile(out+'/painel/index.html',painel);await cp(new URL('./web/painel.mjs',import.meta.url),out+'/v2/seguranca/painel-privado.mjs');
  // A agenda conserva seu login manual e lembretes, sem tokens em texto no Android.
