@@ -93,7 +93,11 @@ function montarRepositorio(query,segredoBase){
 }
 export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
  let inicializacao, fila=Promise.resolve(), pendentes=0;
- const preparar=()=>inicializacao??=iniciar({urlTeste,segredoBase});
+ // Reutiliza a conexão saudável e libera uma inicialização rejeitada para a próxima chamada.
+ const preparar=()=>inicializacao??=iniciar({urlTeste,segredoBase}).catch(erro=>{
+  inicializacao=undefined;
+  throw erro;
+ });
  const handler=async(req,res)=>{
   const path=req.url?.split('?')[0];
   if(!path?.startsWith(base+'/'))return false;
