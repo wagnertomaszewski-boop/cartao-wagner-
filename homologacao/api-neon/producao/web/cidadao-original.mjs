@@ -1,3 +1,4 @@
+import {ativarMascaraTelefone} from '../v2/seguranca/telefone.mjs';
 import {criarClienteWeb} from '../v2/seguranca/cliente.mjs';
 
 const $=id=>document.getElementById(id);
@@ -5,6 +6,8 @@ const config=await fetch('./v2/seguranca/configuracao-publica.json',{cache:'no-s
  if(!r.ok)throw Error('Configuração indisponível.');
  return r.json();
 });
+ativarMascaraTelefone($('whatsapp'));
+ativarMascaraTelefone($('whatsappRecuperacao'));
 const api=criarClienteWeb(config);
 const mensagem=(id,classe,texto)=>{
  const alvo=$(id);

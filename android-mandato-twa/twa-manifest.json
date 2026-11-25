@@ -15,7 +15,7 @@
   "startUrl": "/cartao-wagner-/",
   "iconUrl": "https://wagnertomaszewski-boop.github.io/cartao-wagner-/icon-512.png",
   "splashScreenFadeOutDuration": 300,
-  "appVersionName": "1",
+  "appVersionName": "3.0.0",
   "appVersionCode": 3,
   "shortcuts": [],
   "generatorApp": "PWABuilder",

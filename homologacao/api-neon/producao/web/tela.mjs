@@ -1,8 +1,11 @@
+import {ativarMascaraTelefone} from './telefone.mjs';
 import {criarClienteWeb,criarContratoRecuperacaoCidadao} from './cliente.mjs';
 import {criarSelecaoLocalizacao,montarMapaPrivado} from './localizacao.mjs';
 import {validarSelecaoArquivos,criarVisualizadorFotos} from './fotos.mjs';
 const $=id=>document.getElementById(id);let ciclo=0,acesso=null,cadastro=null,pendentes=[],operacaoId=crypto.randomUUID(),ocupado=false,mapa=null,ponto=null;
 const config=await fetch('./seguranca/configuracao-publica.json',{cache:'no-store',redirect:'error'}).then(r=>{if(!r.ok)throw Error('Configuração indisponível.');return r.json();});
+ativarMascaraTelefone($('whatsapp'));
+ativarMascaraTelefone($('whatsappRecuperacaoV2'));
 const api=criarClienteWeb(config,async(...args)=>{const inicio=ciclo,r=await fetch(...args);if(inicio!==ciclo)throw Error('Tela encerrada. Informe novamente os dados.');return r;});
 const acompanhamento=criarContratoRecuperacaoCidadao(api);
 const avisar=(id,t)=>{const el=$(id);el.className='notice';el.style.display='block';el.textContent=t;};

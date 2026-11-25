@@ -15,6 +15,13 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Testar preenchimento do WhatsApp
+        run: node --test homologacao/api-neon/producao/tests/telefone-web.test.mjs
+      - name: Preparar atualização web vinculada ao AAB
+        run: node homologacao/api-neon/producao/preparar-release.mjs "$GITHUB_SHA" "$RUNNER_TEMP/mandato-web"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -46,5 +53,12 @@ jobs:
             android-mandato-twa/app/build/outputs/bundle/release/app-release.aab
             android-mandato-twa/app/build/outputs/bundle/release/app-release.aab.sha256
             android-mandato-twa/LEIA-ME.md
+            android-mandato-twa/preparar-assetlinks.mjs
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mandato-em-Acao-3.0.0-Atualizacao-Web
+          path: ${{ runner.temp }}/mandato-web
           if-no-files-found: error
           retention-days: 14
