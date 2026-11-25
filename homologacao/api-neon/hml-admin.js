@@ -2,7 +2,10 @@ import {criarApiEntrada,criarFluxoEntrada} from './login-fluxo.mjs';
 const $=id=>document.getElementById(id),api=criarApiEntrada();let ocupado=false;
 function mensagem(texto){$('mensagem').textContent=texto;$('feedback-login').textContent=texto;if(texto)$('feedback-login').scrollIntoView({block:'nearest'});}
 function aplicarEstado(e){$('estado').textContent=e.autenticado?(e.mfaRecente?'Sessão administrativa confirmada com MFA recente.':'Sessão autenticada. Confirme o MFA para continuar.'):'Entre com sua conta exclusiva de homologação.';$('instalacao').hidden=e.instalado;$('sair').hidden=!e.autenticado;$('login').hidden=e.autenticado||e.aguardandoMfa;$('mfa').hidden=e.mfaRecente||(!e.autenticado&&!e.aguardandoMfa);$('ativar-mfa').hidden=!e.autenticado||e.mfaAtivado;$('verify').hidden=!e.aguardandoMfa&&(!e.autenticado||!e.mfaAtivado);$('refazer-login').hidden=!e.aguardandoMfa;$('operacoes').hidden=!e.mfaRecente;$('whatsapp').textContent=e.whatsappConfigurado?'WhatsApp de teste configurado.':'Envio manual disponível no painel de recuperação. Não usa Cloud API.';}
-const fluxo=criarFluxoEntrada({api,aplicarEstado,mensagem,abrirPainel:()=>location.assign('/hml/painel/recuperacoes')});
+const paraCandidata=new URLSearchParams(location.search).get('destino')==='candidata';
+const destinoPainel=paraCandidata?'/hml/candidata/painel':'/hml/painel/recuperacoes';
+const abrirPainel=()=>location.replace(destinoPainel);
+const fluxo=criarFluxoEntrada({api,aplicarEstado,mensagem,abrirPainel});
 const estado=()=>fluxo.atualizar();
 const show=async fn=>{if(ocupado)return;ocupado=true;const botoes=[...document.querySelectorAll('button')];for(const b of botoes)b.disabled=true;try{mensagem('');await fn();}catch(e){mensagem(e.message);}finally{ocupado=false;for(const b of botoes)b.disabled=false;}};
 function form(id,fn){$(id).addEventListener('submit',ev=>{ev.preventDefault();if(ocupado)return;const d=Object.fromEntries(new FormData(ev.target));void show(async()=>{try{await fn(d);}finally{for(const x of ev.target.querySelectorAll('input[type=password],input[autocomplete=one-time-code]'))x.value='';}});});}
@@ -17,4 +20,7 @@ form('confirmar',async d=>{$('mensagem').textContent=(await api('/cidadao/confir
 form('consultar',async d=>{$('mensagem').textContent=(await api('/cidadao/consultar',d)).encontrado?'Chave válida para a solicitação fictícia.':'Nenhuma solicitação corresponde a essa chave.';});
 $('auditoria').onclick=()=>show(async()=>{$('eventos').textContent=JSON.stringify((await api('/api/auditoria')).eventos,null,2);});
 $('sair').onclick=()=>show(async()=>{await api('/auth/sign-out',{});location.reload();});
-void show(estado);
+void show(async()=>{
+ const atual=await estado();
+ if(paraCandidata&&atual.autenticado&&atual.mfaRecente)abrirPainel();
+});

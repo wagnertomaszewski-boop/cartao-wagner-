@@ -9,7 +9,7 @@ const telefone=()=>{
 };
 const credencial=()=>({protocolo:$('protocolo').value.trim(),chave:$('chave').value.trim()});
 async function api(rota,dados={}){
- const r=await fetch('./api/v1/'+rota,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados),cache:'no-store',redirect:'error',signal:AbortSignal.timeout(20000)});
+ const r=await fetch('/hml/candidata/api/v1/'+rota,{method:'POST',credentials:'same-origin',referrerPolicy:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados),cache:'no-store',redirect:'error',signal:AbortSignal.timeout(20000)});
  const j=await r.json();
  if(!r.ok)throw Error(j.erro||'Operação indisponível.');
  return j;
