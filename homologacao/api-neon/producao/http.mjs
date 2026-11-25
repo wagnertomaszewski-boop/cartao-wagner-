@@ -15,7 +15,7 @@ export function criarHandlerProducao({repositorio,resolverAdminMfa,origemApi}){
   const send=(s,d)=>{res.writeHead(s,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Vary':'Origin',...(origemReconhecida?{'Access-Control-Allow-Origin':origin}:{})});res.end(JSON.stringify(d));};
   if(!permitida||(req.method==='OPTIONS'&&semOrigin)){send(403,{erro:'Origem não autorizada.'});return true;}
   if(req.method==='OPTIONS'){res.writeHead(204,{'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Authorization','Vary':'Origin','Cache-Control':'no-store'});res.end();return true;}
-  const rota=req.url.slice('/api/v1/'.length),nome=rotas[rota];if(req.method!=='POST'||!nome){send(404,{erro:'Rota não encontrada.'});return true;}
+  const rota=req.url.slice('/api/v1/'.length),nome=Object.hasOwn(rotas,rota)?rotas[rota]:null;if(req.method!=='POST'||!nome){send(404,{erro:'Rota não encontrada.'});return true;}
   try{
    // IP do cliente não é confiável por cabeçalho arbitrário. Limite global seguro;
    // limitação adicional por telefone/recuperação é persistida no banco.

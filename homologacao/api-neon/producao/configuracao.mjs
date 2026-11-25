@@ -12,8 +12,12 @@ export function validarConfiguracaoPublica(c){
 export function validarConfiguracaoServidor(env){
  const c=validarConfiguracaoPublica({ambiente:env.MANDATO_AMBIENTE,projeto:env.SUPABASE_PROJECT_REF,apiBase:env.MANDATO_API_ORIGIN,versao:env.MANDATO_RELEASE_SHA});
  if(env.MANDATO_PUBLICACAO_AUTORIZADA!=='sim'||!/^[0-9a-f]{40}$/.test(env.MANDATO_RELEASE_SHA||''))throw Error('Publicação não autorizada.');
- if(typeof env.MANDATO_SEGREDO!=='string'||Buffer.byteLength(env.MANDATO_SEGREDO)<32||env.MANDATO_SEGREDO===env.AUTH_HML_SECRET)throw Error('Segredo produtivo independente obrigatório.');
+ if(typeof env.MANDATO_SEGREDO!=='string'||new TextEncoder().encode(env.MANDATO_SEGREDO).length<32||env.MANDATO_SEGREDO===env.AUTH_HML_SECRET)throw Error('Segredo produtivo independente obrigatório.');
  const db=new URL(env.DATABASE_URL);
+ const opcoes=[...db.searchParams];
+ // O driver pode substituir a configuração TLS pelas opções da URL.
+ if(opcoes.length>1||opcoes.some(([nome,valor])=>nome!=='sslmode'||valor!=='verify-full'))
+  throw Error('Conexão produtiva exige TLS com verificação completa.');
  // Permitir somente o Supabase existente e o papel restrito, nunca postgres/admin.
  // Endpoint direto: IPv6 ou IPv4 contratado. Supavisor: IPv4, sessão (5432)
  // ou transação (6543), recomendado para funções Edge. O usuário do pooler
@@ -30,3 +34,4 @@ export function validarConfiguracaoServidor(env){
   throw Error('Conexão produtiva restrita obrigatória.');
  return c;
 }
+

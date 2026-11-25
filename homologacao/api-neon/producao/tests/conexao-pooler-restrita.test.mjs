@@ -47,3 +47,10 @@ test('sem autorização explícita ou com segredo de homologação, recusa antes
  assert.throws(()=>validarConfiguracaoServidor({...env,MANDATO_PUBLICACAO_AUTORIZADA:'nao',DATABASE_URL:url}),/Publicação não autorizada/);
  assert.throws(()=>validarConfiguracaoServidor({...env,AUTH_HML_SECRET:env.MANDATO_SEGREDO,DATABASE_URL:url}),/Segredo produtivo independente obrigatório/);
 });
+
+test('aceita somente parâmetros de TLS que não enfraquecem a verificação',()=>{
+ const url='postgresql://mandato_api_privada.'+ref+':senha-ficticia@aws-0-sa-east-1.pooler.supabase.com:5432/postgres';
+ assert.equal(validar(url+'?sslmode=verify-full').projeto,ref);
+ for(const query of ['sslmode=disable','sslmode=require','sslmode=verify-full&sslmode=disable','ssl=no-verify','host=outro.example'])
+  assert.throws(()=>validar(url+'?'+query),/TLS com verificação completa/);
+});

@@ -1,3 +1,4 @@
+import {adaptarParaEdge} from '../edge-adaptador.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';
 import {PGlite} from '@electric-sql/pglite';
 import {generateKeyPairSync,sign} from 'node:crypto';
@@ -247,26 +248,29 @@ test('contenção real de privilégios protege quatro RPCs e documentos, preserv
  assert.equal((await a.db.query("SELECT count(*)::int n FROM storage.objects WHERE bucket_id='documentos-respostas'")).rows[0].n,1);
  for(const role of ['anon','authenticated'])for(const f of ['consulta_publica_protocolo','consulta_publica_historico_protocolo','consulta_publica_respostas_protocolo','consultar_protocolo']){assert.equal((await a.db.query('SELECT has_function_privilege($1,$2,\'EXECUTE\') AS permitido',[role,'public.'+f+'(text)'])).rows[0].permitido,false);}assert.equal((await a.db.query("SELECT public FROM storage.buckets WHERE id='documentos-respostas'")).rows[0].public,false);assert.equal((await a.db.query("SELECT public FROM storage.buckets WHERE id='conteudos-mandato'")).rows[0].public,true);assert.equal((await a.db.query("SELECT has_table_privilege('mandato_api_privada','mandato_privado.auditoria_recuperacao','UPDATE') AS permitido")).rows[0].permitido,false);}finally{await a.db.close();}});
 test('configuração e cliente de produção não aceitam homologação, segredos ou protocolo isolado',async()=>{const c={ambiente:'producao',projeto:'pmmsdjozyyxkbuqlkfpb',apiBase:'https://api.exemplo.org',versao:'a'.repeat(40)};assert.throws(()=>validarConfiguracaoPublica({...c,apiBase:'https://mandato-neon-homologacao.onrender.com'}));assert.throws(()=>validarConfiguracaoPublica({...c,secret:'nao-publicar'}));assert.throws(()=>validarConfiguracaoServidor({}));let chamadas=0;const api=criarClienteWeb(c,async(url,o)=>{chamadas++;assert.equal(new URL(url).search,'');assert.equal(o.credentials,'omit');assert.equal(o.cache,'no-store');return {ok:true,json:async()=>({encontrado:false})};});assert.throws(()=>api.consultar({protocolo:'2026-000001'}));await api.consultar({protocolo:'2026-000001',chave:'a'.repeat(43)});assert.equal(chamadas,1);});
-test('cliente browser e API candidata completam recuperacao de protocolo legado sem chave, com HTTP e banco isolados',async()=>{
+test('cliente browser e API candidata completam recuperacao de protocolo legado sem chave, com Edge e banco isolados',async()=>{
  const a=await ambiente();
  const protocolo='LEGADO/E2E/2025';
  const telefone='5551999997777',chaveFalsa=Buffer.alloc(32,3).toString('base64url');
  await a.db.query("INSERT INTO public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,status,protocolo) VALUES('Cidadão fictício',$1,'Local fictício','Pedido antigo','Descrição fictícia','Em andamento',$2)",[telefone,protocolo]);
  await a.db.query("INSERT INTO public.solicitacoes_status_historico(solicitacao_id,status) SELECT id,'Em andamento' FROM public.solicitacoes WHERE protocolo=$1",[protocolo]);
  await a.db.query("INSERT INTO public.respostas_solicitacoes(solicitacao_id,mensagem) SELECT id,'Resposta fictícia preservada' FROM public.solicitacoes WHERE protocolo=$1",[protocolo]);
- const handler=criarHandlerProducao({repositorio:a.repo,origemApi:'https://api.exemplo.org',resolverAdminMfa:async token=>token==='admin-token-ficticio'?op:null});
- const servidor=http.createServer(async(req,res)=>{if(!await handler(req,res)){res.writeHead(404);res.end();}});
- await new Promise(resolve=>servidor.listen(0,'127.0.0.1',resolve));
+ const edge='https://pmmsdjozyyxkbuqlkfpb.supabase.co';
+ const base=edge+'/functions/v1/mandato-privado';
+ const handler=criarHandlerProducao({repositorio:a.repo,origemApi:edge,resolverAdminMfa:async token=>token==='admin-token-ficticio'?op:null});
+ const responder=adaptarParaEdge(handler,{versao:'a'.repeat(40)});
  let requisicoes=0;
  try{
-  const destino='http://127.0.0.1:'+servidor.address().port;
-  const buscar=(url,opt)=>{
-   assert.equal(new URL(url).origin,'https://api.exemplo.org');
+  const buscar=async(url,opt)=>{
+   assert.ok(url.startsWith(base+'/api/v1/'));
    assert.equal(opt.credentials,'omit');assert.equal(opt.cache,'no-store');assert.equal(opt.redirect,'error');
    assert.equal(opt.method,'POST');requisicoes++;
-   return fetch(destino+new URL(url).pathname,{...opt,headers:{...opt.headers,Origin:'https://wagnertomaszewski-boop.github.io'}});
+   const destino=requisicoes%2===0?url.replace('/functions/v1/','/'):url;
+   const r=await responder(new Request(destino,{...opt,headers:{...opt.headers,Origin:'https://wagnertomaszewski-boop.github.io'}}));
+   assert.equal(r.headers.get('cache-control'),'no-store');
+   return r;
   };
-  const cfg={ambiente:'producao',projeto:'pmmsdjozyyxkbuqlkfpb',apiBase:'https://api.exemplo.org',versao:'a'.repeat(40)};
+  const cfg={ambiente:'producao',projeto:'pmmsdjozyyxkbuqlkfpb',apiBase:base,versao:'a'.repeat(40)};
   const api=criarClienteWeb(cfg,buscar);
   const contrato=criarContratoRecuperacaoCidadao(api);
   assert.throws(()=>api.consultar({protocolo}),/protocolo e chave/i);
@@ -274,6 +278,9 @@ test('cliente browser e API candidata completam recuperacao de protocolo legado 
   assert.equal(desconhecido.encontrado,false);
   const pedido=await contrato.solicitar({protocolo,telefone:'(51) 99999-7777'});
   assert.match(pedido.pedidoId,/^[0-9a-f-]{36}$/);assert.match(pedido.recibo,/^[A-Za-z0-9_-]{43}$/);
+  await assert.rejects(api.validarSessaoAdmin('sessao-sem-mfa'),/renove o MFA/);
+  assert.deepEqual(await api.validarSessaoAdmin('admin-token-ficticio'),{autenticado:true,mfaRecente:true});
+  await assert.rejects(api.admin('listar',{},'sessao-sem-mfa'),/renove o MFA/);
   const antes=await api.admin('listar',{},'admin-token-ficticio');
   assert.equal(antes.filter(x=>x.id===pedido.pedidoId).length,1);
   await api.admin('decidir',{pedidoId:pedido.pedidoId,decisao:'aprovar',identidadeConferida:true,justificativa:'Identidade conferida em teste fictício.'},'admin-token-ficticio');
@@ -299,7 +306,7 @@ test('cliente browser e API candidata completam recuperacao de protocolo legado 
   assert.equal((await a.db.query('SELECT count(*) AS n FROM mandato_privado.chaves_acompanhamento')).rows[0].n,1);
   assert.equal((await a.db.query("SELECT count(*) AS n FROM mandato_privado.auditoria_recuperacao WHERE evento='codigo_validado_chave_renovada'")).rows[0].n,1);
   assert.ok(requisicoes>=8);
- }finally{await new Promise(resolve=>servidor.close(resolve));await a.db.close();}
+ }finally{await a.db.close();}
 });
 test('rota administrativa de regularizacao exige autenticação e MFA recente',async()=>{
  const entradas=[];

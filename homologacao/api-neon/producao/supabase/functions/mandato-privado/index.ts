@@ -1,7 +1,7 @@
 // CANDIDATA NÃO IMPLANTADA: usa o Supabase existente, sem banco ou serviço Render novo.
 import {Buffer} from 'node:buffer';
 Object.assign(globalThis,{Buffer});
-import pg from 'pg';
+import pg from 'npm:pg@8.16.3';
 import {validarConfiguracaoServidor} from '../../../configuracao.mjs';
 import {criarRepositorio} from '../../../repositorio.mjs';
 import {criarVerificadorContatoIndependente} from '../../../verificador-contato-independente.mjs';
@@ -14,10 +14,18 @@ const env=Deno.env.toObject();
 // Não usar SUPABASE_DB_URL administrativo injetado automaticamente.
 env.DATABASE_URL=env.MANDATO_DATABASE_URL;
 const config=validarConfiguracaoServidor(env);
-const pool=new pg.Pool({connectionString:env.DATABASE_URL,ssl:{rejectUnauthorized:true},max:1});
+// A validação já conferiu as opções da URL. O pool aplica TLS explicitamente.
+const db=new URL(env.DATABASE_URL);
+db.search='';
+const pool=new pg.Pool({
+ connectionString:db.toString(),
+ ssl:{rejectUnauthorized:true},
+ max:1,
+ connectionTimeoutMillis:8000
+});
 const privilegios=(await pool.query("SELECT current_user AS usuario,has_table_privilege(current_user,'mandato_privado.auditoria_recuperacao','UPDATE') AS altera_auditoria,has_schema_privilege(current_user,'public','CREATE') AS cria_publico")).rows[0];
 if(privilegios.usuario!=='mandato_api_privada'||privilegios.altera_auditoria||privilegios.cria_publico)throw Error('Papel produtivo incompatível.');
-const idsPermitidos=String(env.MANDATO_ADMIN_UIDS||'').split(',').filter(Boolean);
+const idsPermitidos=String(env.MANDATO_ADMIN_UIDS||'').split(',').map(id=>id.trim()).filter(Boolean);
 // Não existe modo "checkbox" como prova. Sem conferente independente aprovado,
 // a regularização antiga fica DESATIVADA e a emissão para número incompleto bloqueada.
 const chaveConferente=env.MANDATO_CONFERENTE_ED25519_PUBLIC_KEY||'';

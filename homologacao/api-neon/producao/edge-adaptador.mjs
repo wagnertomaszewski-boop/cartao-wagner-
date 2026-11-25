@@ -1,8 +1,9 @@
 import {Buffer} from 'node:buffer';
 // Adapta o handler existente a Request/Response; não duplica regras de acesso.
 export function adaptarParaEdge(handler,{versao}){return async request=>{
- const url=new URL(request.url),prefixo='/functions/v1/mandato-privado';
- if(!url.pathname.startsWith(prefixo+'/')||url.search)return new Response('Rota inválida',{status:404});
+ const url=new URL(request.url);
+ const prefixo=['/functions/v1/mandato-privado','/mandato-privado'].find(p=>url.pathname.startsWith(p+'/'));
+ if(!prefixo||url.search)return new Response('Rota inválida',{status:404,headers:{'Cache-Control':'no-store'}});
  const path=url.pathname.slice(prefixo.length);
  if(path==='/health'&&request.method==='GET')return Response.json({status:'ok',ambiente:'producao',versao},{headers:{'Cache-Control':'no-store'}});
  let status=500,cabecalhos={},conteudo='';const headers=Object.fromEntries(request.headers);
