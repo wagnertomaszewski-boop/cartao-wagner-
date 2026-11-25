@@ -41,5 +41,5 @@ const repositorio=criarRepositorio({pool,segredo:env.MANDATO_SEGREDO,
  segredoChaves:env.PRODUCAO_HMAC_SECRET,
  storage,
  validarRegularizacaoContato});
-const handler=criarHandlerProducao({repositorio,origemApi:new URL(config.apiBase).origin,resolverAdminMfa:criarResolvedorMfaRecente({supabaseUrl:env.SUPABASE_URL,chavePublica:env.MANDATO_PUBLISHABLE_KEY,idsPermitidos,sessaoAtiva:async(usuarioId:string,sessionId:string)=>(await pool.query('SELECT mandato_privado.sessao_administrativa_ativa($1::uuid,$2::uuid) AS ativa',[usuarioId,sessionId])).rows[0]?.ativa===true})});
+const handler=criarHandlerProducao({repositorio,reciboWeb:true,origemApi:new URL(config.apiBase).origin,resolverAdminMfa:criarResolvedorMfaRecente({supabaseUrl:env.SUPABASE_URL,chavePublica:env.MANDATO_PUBLISHABLE_KEY,idsPermitidos,sessaoAtiva:async(usuarioId:string,sessionId:string)=>(await pool.query('SELECT mandato_privado.sessao_administrativa_ativa($1::uuid,$2::uuid) AS ativa',[usuarioId,sessionId])).rows[0]?.ativa===true})});
 Deno.serve(adaptarParaEdge(handler,{versao:env.MANDATO_RELEASE_SHA}));

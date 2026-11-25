@@ -1,7 +1,7 @@
 import {criarClienteWeb,criarContratoRecuperacaoCidadao} from './cliente.mjs';
 import {criarSelecaoLocalizacao,montarMapaPrivado} from './localizacao.mjs';
 import {validarSelecaoArquivos,criarVisualizadorFotos} from './fotos.mjs';
-const $=id=>document.getElementById(id);let ciclo=0,acesso=null,recuperacao=null,cadastro=null,pendentes=[],operacaoId=crypto.randomUUID(),ocupado=false,mapa=null,ponto=null;
+const $=id=>document.getElementById(id);let ciclo=0,acesso=null,cadastro=null,pendentes=[],operacaoId=crypto.randomUUID(),ocupado=false,mapa=null,ponto=null;
 const config=await fetch('./seguranca/configuracao-publica.json',{cache:'no-store',redirect:'error'}).then(r=>{if(!r.ok)throw Error('Configuração indisponível.');return r.json();});
 const api=criarClienteWeb(config,async(...args)=>{const inicio=ciclo,r=await fetch(...args);if(inicio!==ciclo)throw Error('Tela encerrada. Informe novamente os dados.');return r;});
 const acompanhamento=criarContratoRecuperacaoCidadao(api);
@@ -30,10 +30,10 @@ function mostrarRecuperacaoPeloLink(){
 }
 addEventListener('hashchange',mostrarRecuperacaoPeloLink);
 mostrarRecuperacaoPeloLink();
-const validacao=document.createElement('div');validacao.hidden=true;validacao.innerHTML='<label for="codigoTemporario">Código temporário recebido</label><input id="codigoTemporario" inputmode="numeric" autocomplete="one-time-code" maxlength="6"><button id="validarTemporario" type="button">Validar e renovar chave</button><label for="novaChave">Nova chave de acompanhamento</label><input id="novaChave" readonly autocomplete="off">';$('recuperacaoV2').append(validacao);
-$('enviarRecuperacaoV2').onclick=async()=>{try{recuperacao=await acompanhamento.solicitar({protocolo:$('protocolo').value.trim(),telefone:$('whatsappRecuperacaoV2').value});validacao.hidden=false;avisar('erro','Se os dados corresponderem ao cadastro, o pedido será analisado pela equipe.');}catch(e){avisar('erro',e.message);}};
-$('validarTemporario').onclick=async()=>{try{if(!recuperacao)throw Error('Solicite a recuperação novamente.');const r=await acompanhamento.validar({...recuperacao,codigo:$('codigoTemporario').value});if(!r.confirmado)throw Error('Código inválido, expirado ou já utilizado.');$('novaChave').value=r.novaChave;recuperacao=null;avisar('erro','Guarde sua chave individual. Se existia uma chave anterior, ela foi invalidada.');}catch(e){avisar('erro',e.message);}finally{$('codigoTemporario').value='';}};
-function limpar(){ciclo++;acesso=null;cadastro=null;recuperacao=null;pendentes=[];galeria.limpar();for(const id of ['chaveEmitida','novaChave','chaveConsultaV2','codigoTemporario'])$(id).value='';$('resultado').classList.remove('show');}
+const validacao=document.createElement('div');validacao.hidden=false;validacao.innerHTML='<label for="codigoTemporario">Código temporário recebido</label><input id="codigoTemporario" inputmode="numeric" autocomplete="one-time-code" maxlength="6"><button id="validarTemporario" type="button">Validar e renovar chave</button><label for="novaChave">Nova chave de acompanhamento</label><input id="novaChave" readonly autocomplete="off">';$('recuperacaoV2').append(validacao);
+$('enviarRecuperacaoV2').onclick=async()=>{try{await api.solicitarNavegador({protocolo:$('protocolo').value.trim(),telefone:$('whatsappRecuperacaoV2').value});validacao.hidden=false;avisar('erro','Se os dados corresponderem ao cadastro, o pedido será analisado pela equipe.');}catch(e){avisar('erro',e.message);}};
+$('validarTemporario').onclick=async()=>{try{const r=await api.validarNavegador($('codigoTemporario').value);if(r.reciboAusente)throw Error('Recibo indisponível neste navegador. Use o mesmo navegador em que pediu a recuperação.');if(r.validado!==true)throw Error('Código inválido, expirado ou já utilizado.');$('protocolo').value=r.protocolo;$('novaChave').value=r.novaChave;avisar('erro','Guarde sua chave individual. Se existia uma chave anterior, ela foi invalidada.');}catch(e){avisar('erro',e.message);}finally{$('codigoTemporario').value='';}};
+function limpar(){ciclo++;acesso=null;cadastro=null;pendentes=[];galeria.limpar();for(const id of ['chaveEmitida','novaChave','chaveConsultaV2','codigoTemporario'])$(id).value='';$('resultado').classList.remove('show');}
 addEventListener('pagehide',limpar);addEventListener('pageshow',e=>{if(e.persisted)limpar();});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./service-worker-privado.js',{scope:'./',updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
 for(const id of ['botaoEnviar','consultar'])$(id).disabled=false;

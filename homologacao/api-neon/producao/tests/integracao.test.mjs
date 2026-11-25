@@ -477,3 +477,42 @@ test('HTTP Edge rejeita código reutilizado, expirado e bloqueado por cinco tent
   assert.equal(contagem.codigo_incorreto,5);
  }finally{await a.db.close();}
 });
+
+test('retomada web entre domínios mantém recibo em cookie particionado e rejeita outra origem',async()=>{
+ const a=await ambiente();
+ const edge='https://pmmsdjozyyxkbuqlkfpb.supabase.co';
+ const origem='https://wagnertomaszewski-boop.github.io';
+ const base=edge+'/functions/v1/mandato-privado/api/v1/';
+ const resposta=adaptarParaEdge(criarHandlerProducao({repositorio:a.repo,origemApi:edge,reciboWeb:true,
+  resolverAdminMfa:async token=>token==='admin-sintetico'?op:null}),{versao:'a'.repeat(40)});
+ const request=(rota,d,extra={})=>resposta(new Request(base+rota,{method:'POST',
+  headers:{Origin:origem,'Content-Type':'application/json',...extra},body:JSON.stringify(d)}));
+ try{
+  const p=await (await request('solicitacoes/cadastrar',dados())).json();
+  const rota='recuperacao/navegador/';
+  const options=await resposta(new Request(base+rota+'solicitar',{method:'OPTIONS',headers:{Origin:origem}}));
+  assert.equal(options.status,204);
+  assert.equal(options.headers.get('access-control-allow-credentials'),'true');
+  assert.equal((await request(rota+'solicitar',{}, {Origin:'https://outro.example'})).status,403);
+  const inicio=await request(rota+'solicitar',{protocolo:p.protocolo,telefone:dados().p_whatsapp});
+  assert.deepEqual(await inicio.json(),{recebido:true});
+  assert.equal(inicio.headers.get('access-control-allow-origin'),origem);
+  const cookie=inicio.headers.get('set-cookie');
+  assert.match(cookie,/Path=\/functions\/v1\/mandato-privado\/api\/v1\/recuperacao\/navegador; Max-Age=86400; HttpOnly; Secure; SameSite=None; Partitioned$/);
+  const credencial=cookie.split(';')[0];
+  const admin={Authorization:'Bearer admin-sintetico'};
+  const [{id}]=await (await request('admin/recuperacao/listar',{},admin)).json();
+  await request('admin/recuperacao/decidir',{pedidoId:id,decisao:'aprovar',identidadeConferida:true,justificativa:'Conferência fictícia.'},admin);
+  const {codigo}=await (await request('admin/recuperacao/emitir',{pedidoId:id,telefoneConfirmado:dados().p_whatsapp},admin)).json();
+  const cliente=criarClienteWeb({ambiente:'producao',projeto:'pmmsdjozyyxkbuqlkfpb',apiBase:edge+'/functions/v1/mandato-privado'},(url,opts)=>{
+   assert.equal(opts.credentials,'include');
+   return resposta(new Request(url,{...opts,headers:{...opts.headers,Origin:origem,Cookie:credencial}}));
+  });
+  assert.deepEqual(await (await request(rota+'validar',{codigo})).json(),{validado:false,reciboAusente:true});
+  const nova=await cliente.validarNavegador(codigo);
+  assert.equal(nova.validado,true);
+  assert.equal(nova.protocolo,p.protocolo);
+  assert.deepEqual(await cliente.validarNavegador(codigo),{validado:false});
+  assert.deepEqual(await (await request('solicitacoes/consultar',{protocolo:p.protocolo,chave:p.chaveInicial})).json(),{encontrado:false});
+ }finally{await a.db.close();}
+});
