@@ -1,14 +1,30 @@
+import {criarClienteCandidata,ativarMascaraTelefone} from './cliente-candidata.mjs';
 import {criarAtualizacaoVisivel} from './atualizacao-visivel.mjs';
 import {criarClienteBiometriaCidadao,criarBuscaPrivada} from './biometria-cidadao.mjs';
 import {criarClienteRecuperacaoManual,formatarDataMandato,salvarArquivoLocal} from './cliente-recuperacao-manual.mjs';
 const $=id=>document.getElementById(id);let api,pedido=null,nova=null,acesso=null,ocupado=false,cicloDaTela=0;
-const biometria=criarClienteBiometriaCidadao(globalThis.MandatoCidadaoBiometria);
+const biometria=!new URLSearchParams(location.search).has('api')&&criarClienteBiometriaCidadao(globalThis.MandatoCidadaoBiometria);
 const atualizarBiometria=()=>{$('ativar-biometria-cidadao').disabled=!acesso||acesso.biometrico===true;};
-try{api=criarClienteRecuperacaoManual({origem:location.origin,buscar:criarBuscaPrivada((...args)=>fetch(...args),()=>cicloDaTela)});}catch(e){$('mensagem').textContent=e.message;document.querySelectorAll('button').forEach(b=>b.disabled=true);}
+const candidata=new URLSearchParams(location.search).get('api')==='candidata';
+const buscar=criarBuscaPrivada((...args)=>fetch(...args),()=>cicloDaTela);
+try{api=candidata?criarClienteCandidata(buscar):criarClienteRecuperacaoManual({origem:location.origin,buscar});}catch(e){$('mensagem').textContent=e.message;document.querySelectorAll('button').forEach(b=>b.disabled=true);}
+if(candidata){
+ ativarMascaraTelefone($('telefone'));
+ const aviso=document.createElement('p');
+ aviso.textContent='Use dados fictícios. QR, confirmação de leitura e biometria seguem disponíveis no ambiente anterior.';
+ $('consulta').before(aviso);
+ for(const id of ['gerar-qr','confirmar-leitura'])$(id).hidden=true;
+ const rotulo=document.createElement('label'), consentimento=document.createElement('input');
+ consentimento.type='checkbox';consentimento.name='autorizado';
+ rotulo.append(consentimento,' Autorizo o uso do meu próprio WhatsApp neste teste.');
+ $('solicitar').append(rotulo);
+ $('recuperacao').hidden=false;
+ $('confirmacao').hidden=false;
+}
 async function agir(fn){if(!api||ocupado)return;ocupado=true;try{$('mensagem').textContent='';await fn();}catch(e){$('mensagem').textContent=e.message;}finally{ocupado=false;}}
 function limpar(){cicloDaTela++;$('andamento').hidden=true;for(const id of ['assunto','situacao','descricao','localidade','historico','respostas','anexos'])$(id).replaceChildren();pedido=null;nova=null;acesso=null;$('qr-acompanhamento').removeAttribute('src');$('qr-acompanhamento').hidden=true;for(const id of ['chave','codigo','nova-chave','telefone'])$(id).value='';}
 addEventListener('pagehide',()=>{atualizacao.parar();limpar();});
-function render(r){$('qr-acompanhamento').hidden=true;$('qr-acompanhamento').removeAttribute('src');$('andamento').hidden=!r.encontrado;if(!r.encontrado)throw Error('Protocolo ou chave inválidos.');$('assunto').textContent=r.assunto||'Solicitação';$('situacao').textContent=(r.status||'Acompanhamento protegido')+' · versão '+r.versao;
+function render(r){$('qr-acompanhamento').hidden=true;$('qr-acompanhamento').removeAttribute('src');$('andamento').hidden=!r.encontrado;if(!r.encontrado)throw Error('Protocolo ou chave inválidos.');$('assunto').textContent=r.assunto||'Solicitação';$('situacao').textContent=(r.status||'Acompanhamento protegido')+(r.versao?' · versão '+r.versao:'');
  $('descricao').textContent=(r.descricao||'')+(r.resultado?' · Resultado: '+r.resultado:'');$('localidade').textContent=r.localidade||'';
  for(const id of ['historico','respostas','anexos'])$(id).replaceChildren();
  for(const h of r.historico||[]){const li=document.createElement('li');li.textContent=(h.criadoEm?formatarDataMandato(h.criadoEm)+' · ':'')+h.status;$('historico').append(li);}
@@ -17,8 +33,8 @@ function render(r){$('qr-acompanhamento').hidden=true;$('qr-acompanhamento').rem
 }
 $('consulta').onsubmit=e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.target));$('chave').value='';$('andamento').hidden=true;acesso=null;atualizarBiometria();void agir(async()=>{const r=await api.consultar(d);if(r.encontrado)acesso=d;else acesso=null;atualizarBiometria();render(r);});};
 $('nav-recuperar').onclick=$('abrir-recuperacao').onclick=()=>{$('recuperacao').hidden=false;$('protocolo-rec').value=$('protocolo').value;$('protocolo-rec').focus();};
-$('solicitar').onsubmit=e=>{e.preventDefault();void agir(async()=>{if(pedido)throw Error('Você já tem um pedido aberto nesta aba.');const d=Object.fromEntries(new FormData(e.target));pedido=await api.solicitar(d);$('telefone').value='';$('confirmacao').hidden=false;$('solicitar').hidden=true;$('mensagem').textContent='Se os dados corresponderem ao cadastro, a equipe analisará seu pedido. Aguarde o código enviado manualmente pelo WhatsApp.';});};
-$('validar').onsubmit=e=>{e.preventDefault();const codigo=$('codigo').value;$('codigo').value='';void agir(async()=>{if(!pedido)throw Error('Solicite a recuperação primeiro.');const r=await api.validar({...pedido,codigo});if(!r.confirmado)throw Error('Código inválido, expirado, bloqueado ou já utilizado.');nova={protocolo:r.protocolo,chave:r.novaChave};pedido=null;$('confirmacao').hidden=true;$('recuperacao').hidden=true;$('nova-chave').value=r.novaChave;$('recuperado').hidden=false;$('mensagem').textContent='Chave individual emitida. Se havia chave anterior, ela foi invalidada.';});};
+$('solicitar').onsubmit=e=>{e.preventDefault();void agir(async()=>{if(pedido)throw Error('Você já tem um pedido aberto nesta aba.');const d=Object.fromEntries(new FormData(e.target));pedido=await api.solicitar({...d,autorizado:d.autorizado==='on'});$('telefone').value='';$('confirmacao').hidden=false;$('solicitar').hidden=true;$('mensagem').textContent='Se os dados corresponderem ao cadastro, a equipe analisará seu pedido. Aguarde o código enviado manualmente pelo WhatsApp.';});};
+$('validar').onsubmit=e=>{e.preventDefault();const codigo=$('codigo').value;$('codigo').value='';void agir(async()=>{if(!pedido&&!candidata)throw Error('Solicite a recuperação primeiro.');const r=await api.validar({...pedido,codigo});if(!r.confirmado)throw Error('Código inválido, expirado, bloqueado ou já utilizado.');nova={protocolo:r.protocolo,chave:r.novaChave};pedido=null;$('confirmacao').hidden=true;$('recuperacao').hidden=true;$('nova-chave').value=r.novaChave;$('recuperado').hidden=false;$('mensagem').textContent='Chave individual emitida. Se havia chave anterior, ela foi invalidada.';});};
 $('novo-pedido').onclick=()=>{pedido=null;$('confirmacao').hidden=true;$('solicitar').hidden=false;$('mensagem').textContent='Confira os dados para solicitar uma nova análise. A equipe precisa aprovar novamente.';};
 $('copiar').onclick=()=>agir(async()=>{if(!nova)throw Error('Nenhuma chave disponível.');await navigator.clipboard.writeText(nova.chave);$('mensagem').textContent='Chave copiada. Guarde-a em local seguro.';});
 $('consultar-nova').onclick=()=>agir(async()=>{if(!nova)throw Error('Nenhuma chave disponível.');render(await api.consultar(nova));acesso=nova;atualizarBiometria();$('protocolo').value=nova.protocolo;nova=null;$('nova-chave').value='';$('recuperado').hidden=true;});
