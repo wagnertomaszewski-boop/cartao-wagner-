@@ -3,6 +3,7 @@ import {resolve,relative,dirname,isAbsolute} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 import {montarCandidata} from './montar-candidata.mjs';
+import {montarCidadaoOriginal} from './montar-cidadao-original.mjs';
 
 const raiz=fileURLToPath(new URL('../',import.meta.url));
 const projeto=fileURLToPath(new URL('../../../',import.meta.url));
@@ -33,5 +34,6 @@ const web=await montarCandidata({
  config:{ambiente:'producao',projeto:'pmmsdjozyyxkbuqlkfpb',apiBase:'https://pmmsdjozyyxkbuqlkfpb.supabase.co/functions/v1/mandato-privado',versao},
  destino:resolve(out,'web')
 });
+await montarCidadaoOriginal(resolve(out,'web'));
 await writeFile(resolve(out,'manifesto.json'),JSON.stringify({versao,publicado:false,edge:{entrada,arquivos:Object.fromEntries(arquivos)},web},null,2)+'\n');
 console.log('Artefatos da Edge e dos clientes web preparados. Publicação bloqueada.');
