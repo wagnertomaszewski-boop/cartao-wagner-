@@ -10,7 +10,9 @@ export function validarConfiguracaoPublica(c){
  return Object.freeze({...c,apiBase:u.origin+u.pathname.replace(/\/$/,'')});
 }
 export function validarConfiguracaoServidor(env){
- const c=validarConfiguracaoPublica({ambiente:env.MANDATO_AMBIENTE,projeto:env.SUPABASE_PROJECT_REF,apiBase:env.MANDATO_API_ORIGIN,versao:env.MANDATO_RELEASE_SHA});
+ const projeto=/^https:\/\/([a-z0-9]{20})\.supabase\.co\/?$/.exec(env.SUPABASE_URL||'')?.[1];
+ if(projeto!==PROJETO)throw Error('SUPABASE_URL deve apontar para o projeto aprovado.');
+ const c=validarConfiguracaoPublica({ambiente:env.MANDATO_AMBIENTE,projeto,apiBase:env.MANDATO_API_ORIGIN,versao:env.MANDATO_RELEASE_SHA});
  if(env.MANDATO_PUBLICACAO_AUTORIZADA!=='sim'||!/^[0-9a-f]{40}$/.test(env.MANDATO_RELEASE_SHA||''))throw Error('Publicação não autorizada.');
  if(typeof env.MANDATO_SEGREDO!=='string'||new TextEncoder().encode(env.MANDATO_SEGREDO).length<32||env.MANDATO_SEGREDO===env.AUTH_HML_SECRET)throw Error('Segredo produtivo independente obrigatório.');
  const db=new URL(env.DATABASE_URL);

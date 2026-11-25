@@ -14,6 +14,7 @@ const env=Deno.env.toObject();
 // Não usar SUPABASE_DB_URL administrativo injetado automaticamente.
 env.DATABASE_URL=env.MANDATO_DATABASE_URL;
 const config=validarConfiguracaoServidor(env);
+const storage=criarStoragePrivado({chavesSecretas:env.SUPABASE_SECRET_KEYS});
 // A validação já conferiu as opções da URL. O pool aplica TLS explicitamente.
 const db=new URL(env.DATABASE_URL);
 db.search='';
@@ -38,7 +39,7 @@ const validarRegularizacaoContato=chaveConferente?criarVerificadorContatoIndepen
 }):null;
 const repositorio=criarRepositorio({pool,segredo:env.MANDATO_SEGREDO,
  segredoChaves:env.PRODUCAO_HMAC_SECRET,
- storage:criarStoragePrivado({credencial:env.SUPABASE_SERVICE_ROLE_KEY}),
+ storage,
  validarRegularizacaoContato});
 const handler=criarHandlerProducao({repositorio,origemApi:new URL(config.apiBase).origin,resolverAdminMfa:criarResolvedorMfaRecente({supabaseUrl:env.SUPABASE_URL,chavePublica:env.MANDATO_PUBLISHABLE_KEY,idsPermitidos,sessaoAtiva:async(usuarioId:string,sessionId:string)=>(await pool.query('SELECT mandato_privado.sessao_administrativa_ativa($1::uuid,$2::uuid) AS ativa',[usuarioId,sessionId])).rows[0]?.ativa===true})});
 Deno.serve(adaptarParaEdge(handler,{versao:env.MANDATO_RELEASE_SHA}));

@@ -5,7 +5,7 @@ import {validarConfiguracaoServidor} from '../configuracao.mjs';
 const ref='pmmsdjozyyxkbuqlkfpb';
 const env={
  MANDATO_AMBIENTE:'producao',
- SUPABASE_PROJECT_REF:ref,
+ SUPABASE_URL:'https://'+ref+'.supabase.co',
  MANDATO_API_ORIGIN:'https://'+ref+'.supabase.co/functions/v1/mandato-privado',
  MANDATO_RELEASE_SHA:'a'.repeat(40),
  MANDATO_PUBLICACAO_AUTORIZADA:'sim',
@@ -53,4 +53,14 @@ test('aceita somente parâmetros de TLS que não enfraquecem a verificação',()
  assert.equal(validar(url+'?sslmode=verify-full').projeto,ref);
  for(const query of ['sslmode=disable','sslmode=require','sslmode=verify-full&sslmode=disable','ssl=no-verify','host=outro.example'])
   assert.throws(()=>validar(url+'?'+query),/TLS com verificação completa/);
+});
+
+test('identifica o projeto pelo SUPABASE_URL e rejeita endereços incompatíveis',()=>{
+ const DATABASE_URL='postgresql://mandato_api_privada:senha-ficticia@db.'+ref+'.supabase.co/postgres';
+ assert.equal(validarConfiguracaoServidor({...env,DATABASE_URL,SUPABASE_URL:env.SUPABASE_URL+'/'}).projeto,ref);
+ for(const SUPABASE_URL of [undefined,'https://'+ 'a'.repeat(20)+'.supabase.co',
+  'http://'+ref+'.supabase.co',env.SUPABASE_URL+'/storage/v1',env.SUPABASE_URL+'.invalid',
+  'https://usuario@'+ref+'.supabase.co',env.SUPABASE_URL+'?ambiente=outro']){
+  assert.throws(()=>validarConfiguracaoServidor({...env,DATABASE_URL,SUPABASE_URL}),/SUPABASE_URL deve apontar/);
+ }
 });

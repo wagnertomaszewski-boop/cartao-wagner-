@@ -336,7 +336,8 @@ test('handler HTTP bloqueia origens, credenciais ausentes e MFA inválido antes 
 
 test('transporte de anexos usa a rota autenticada e recusa URLs públicas como entrada',async()=>{
  const chamadas=[];
- const storage=criarStoragePrivado({credencial:'credencial-sintetica-para-ensaio-privado',buscar:async(url,op)=>{
+ const chave='sb_secret_'+ 'sintetica_mandato'.repeat(2);
+ const storage=criarStoragePrivado({chavesSecretas:JSON.stringify({default:'sb_secret_'+ 'sintetica_default'.repeat(2),mandato_api_privada:chave}),buscar:async(url,op)=>{
   chamadas.push({url,op});
   return new Response('%PDF-ficticio');
  }});
@@ -344,11 +345,28 @@ test('transporte de anexos usa a rota autenticada e recusa URLs públicas como e
  assert.equal(bytes.toString(),'%PDF-ficticio');
  const [{url,op}]=chamadas;
  assert.match(url,/\/storage\/v1\/object\/authenticated\/documentos-respostas\/resposta\/arquivo%20de%20teste\.pdf$/);
- assert.match(op.headers.Authorization,/^Bearer /);
+ assert.equal(op.headers.apikey,chave);
+ assert.equal(op.headers.Authorization,undefined);
  assert.equal(op.redirect,'error');
  assert.equal(op.cache,'no-store');
  await assert.rejects(storage.baixar('https://example.invalid/storage/v1/object/public/documentos-respostas/a.pdf','documentos-respostas'),/Caminho privado inválido/);
  assert.equal(chamadas.length,1);
+ await storage.enviar('privado/1/arquivo.pdf',Buffer.from('%PDF-ficticio'),'application/pdf');
+ const upload=chamadas[1];
+ assert.match(upload.url,/^https:\/\/pmmsdjozyyxkbuqlkfpb\.supabase\.co\/storage\/v1\/object\/anexos-solicitacoes\//);
+ assert.equal(upload.op.method,'POST');
+ assert.deepEqual(upload.op.headers,{apikey:chave,'Content-Type':'application/pdf','x-upsert':'false'});
+ assert.equal(upload.op.redirect,'error');
+});
+
+test('Storage falha sem chave nomeada válida mesmo quando existe uma chave default',()=>{
+ const defaultKey='sb_secret_'+ 'sintetica_default'.repeat(2);
+ for(const chavesSecretas of [undefined,'{malformado',JSON.stringify({default:defaultKey}),
+  JSON.stringify({default:defaultKey,mandato_api_privada:'jwt-legado-ficticio'}),
+  JSON.stringify({mandato_api_privada:42})]){
+  assert.throws(()=>criarStoragePrivado({chavesSecretas}),erro=>
+   /SUPABASE_SECRET_KEYS|mandato_api_privada/.test(erro.message)&&!erro.message.includes(defaultKey));
+ }
 });
 
 test('preserva chave HMAC v1 emitida pelo cadastro anterior e recusa versão desconhecida',async()=>{
