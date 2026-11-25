@@ -4,6 +4,34 @@ import {criarRepositorio} from './repositorio.mjs';
 import {criarHandlerProducao} from './http.mjs';
 
 const base='/hml/candidata';
+const nomeRecibo='__Secure-mandato_hml_recibo';
+const caminhoRecibo=base+'/api/v1/recuperacao';
+const formatoRecibo=/^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\.([A-Za-z0-9_-]{43})$/i;
+
+function recuperacaoNoNavegador(repositorio,req,res){
+ const gravar=(valor,idade)=>res.setHeader('Set-Cookie',
+  nomeRecibo+'='+valor+'; Path='+caminhoRecibo+'; Max-Age='+idade+'; Secure; HttpOnly; SameSite=Strict');
+ return {
+  ...repositorio,
+  async solicitarRecuperacao(dados){
+   const {pedidoId,recibo}=await repositorio.solicitarRecuperacao(dados);
+   // A mesma resposta e o mesmo cookie são emitidos inclusive para pedidos fictícios sem correspondência.
+   gravar(pedidoId+'.'+recibo,86400);
+   return {recebido:true};
+  },
+  async validarCodigo({codigo}){
+   const cookies=(req.headers.cookie||'').split(';').map(parte=>parte.trim());
+   const prefixo=nomeRecibo+'=';
+   const candidatos=cookies.filter(parte=>parte.startsWith(prefixo));
+   const credencial=candidatos.length===1?formatoRecibo.exec(candidatos[0].slice(prefixo.length)):null;
+   if(!credencial)return {validado:false,reciboAusente:true};
+   const [,pedidoId,recibo]=credencial;
+   const resultado=await repositorio.validarCodigo({pedidoId,recibo,codigo});
+   if(resultado.validado===true)gravar('',0);
+   return resultado;
+  }
+ };
+}
 const arquivos=new Map([
  ['cidadao','candidata.html'],['painel','candidata.html'],['app.js','candidata.js']
 ]);
@@ -96,7 +124,7 @@ export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
     const interno=operador?randomBytes(24).toString('base64url'):null;
     if(interno)req.headers.authorization='Bearer '+interno;
     await banco.executar(async repositorio=>{
-     const handler=criarHandlerProducao({repositorio,origemApi:origem,
+     const handler=criarHandlerProducao({repositorio:recuperacaoNoNavegador(repositorio,req,res),origemApi:origem,
       resolverAdminMfa:async token=>interno&&token===interno?{usuarioId:operador.usuarioId,mfaRecente:true}:null});
      await handler(req,res);
     });

@@ -1,6 +1,5 @@
 const $=id=>document.getElementById(id);
 const status=$('estado');
-let recibo=null;
 const padrao='+5551000000000';
 const telefone=()=>{
  const valor=$('telefone').value.trim();
@@ -39,7 +38,7 @@ $('cadastro').onsubmit=e=>{
  e.preventDefault();
  void executar(async()=>{
   const d=await api('solicitacoes/cadastrar',{operacaoId,p_nome:'Cidadão fictício',p_whatsapp:telefone(),p_localidade:'Homologação',p_assunto:'Solicitação de teste',p_descricao:'Dados sintéticos da API candidata.'});
-  operacaoId=crypto.randomUUID();recibo=null;
+  operacaoId=crypto.randomUUID();
   $('protocolo').value=d.protocolo;$('chave').value=d.chaveInicial;mostrarAnexos([]);
   return 'Solicitação fictícia criada. Guarde o protocolo e a chave.';
  });
@@ -58,15 +57,15 @@ $('anexar').onclick=()=>executar(async()=>{
  return 'Imagem fictícia enviada ao Storage privado de teste.';
 });
 $('solicitar').onclick=()=>executar(async()=>{
- recibo=await api('recuperacao/solicitar',{protocolo:credencial().protocolo,telefone:telefone()});
+ await api('recuperacao/solicitar',{protocolo:credencial().protocolo,telefone:telefone()});
  return 'Pedido registrado para análise, se os dados corresponderem ao cadastro.';
 });
 $('validar').onclick=()=>executar(async()=>{
- if(!recibo)throw Error('Faça primeiro o pedido de recuperação nesta aba.');
  const codigo=$('codigo').value;$('codigo').value='';
- const d=await api('recuperacao/validar',{...recibo,codigo});
+ const d=await api('recuperacao/validar',{codigo});
+ if(d.reciboAusente)return 'Pedido não encontrado neste navegador. Inicie uma nova recuperação.';
  if(!d.validado)return 'Código incorreto, expirado ou já usado.';
- $('chave').value=d.novaChave;recibo=null;return 'Nova chave emitida. A anterior perdeu a validade.';
+ $('protocolo').value=d.protocolo;$('chave').value=d.novaChave;return 'Nova chave emitida. A anterior perdeu a validade.';
 });
 $('sessao').onclick=()=>executar(async()=>{
  const d=await api('admin/sessao/validar');
