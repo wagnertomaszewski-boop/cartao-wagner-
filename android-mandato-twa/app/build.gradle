@@ -50,6 +50,8 @@ def twaManifest = [
     orientation: 'default',
 ]
 
+def codigoVersaoMandato = (providers.gradleProperty('mandatoVersionCode').getOrElse('3')).toInteger()
+
 android {
     compileSdkVersion 36
     namespace "com.wagnertomaszewski.mandatoemacao"
@@ -57,7 +59,7 @@ android {
         applicationId "com.wagnertomaszewski.mandatoemacao"
         minSdkVersion 23
         targetSdkVersion 36
-        versionCode (project.findProperty('mandatoVersionCode') ?: '3').toInteger()
+        versionCode = codigoVersaoMandato
         versionName "3.0.0"
 
         // The name for the application
