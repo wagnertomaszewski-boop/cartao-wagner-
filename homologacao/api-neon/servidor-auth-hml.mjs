@@ -1,3 +1,6 @@
+Traceback (most recent call last):
+  File "<stdin>", line 6, in <module>
+AssertionError
 import {readFile} from 'node:fs/promises';
 import {toNodeHandler,fromNodeHeaders} from 'better-auth/node';
 import {criarAuthAdminHml,validarConfigAuthHml,segredoIgual,exigirAdminMfa,HML_ORIGIN} from './auth-admin-hml.mjs';
