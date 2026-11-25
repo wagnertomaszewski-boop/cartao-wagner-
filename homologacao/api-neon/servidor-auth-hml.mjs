@@ -95,6 +95,10 @@ export async function montar({env,pool}){
   origem:HML_ORIGIN,
   verificarMfa:req=>exigirAdminMfa({auth,pool,headers:fromNodeHeaders(req.headers),adminEmail:env.AUTH_HML_ADMIN_EMAIL})
  });
+ if(process.env.RENDER==='true'){
+  await candidata.preparar();
+  console.log('CANDIDATA_HML_PRONTA: banco e Storage isolados');
+ }
  async function handler(req,res){
   if(await candidata(req,res))return true;
   const path=req.url?.split('?')[0];if(!path||!(path===BASE||path.startsWith(BASE+'/')))return false;

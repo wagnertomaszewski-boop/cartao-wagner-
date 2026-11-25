@@ -38,7 +38,8 @@ async function iniciar(){
 }
 export function criarCandidataHml({origem,verificarMfa}){
  let inicializacao, fila=Promise.resolve(), pendentes=0;
- return async(req,res)=>{
+ const preparar=()=>inicializacao??=iniciar();
+ const handler=async(req,res)=>{
   const path=req.url?.split('?')[0];
   if(!path?.startsWith(base+'/'))return false;
   const rota=path.slice(base.length+1);
@@ -49,7 +50,7 @@ export function criarCandidataHml({origem,verificarMfa}){
   }
   if(rota==='versao'&&req.method==='GET'){
    try{
-    inicializacao??=iniciar(); await inicializacao;
+    await preparar();
     return json(res,200,{api:'candidata',ambiente:'homologacao',base:'5b79918',deploy:process.env.RENDER_GIT_COMMIT??null,banco:'PGlite isolado',storage:'privado de teste'});
    }catch(e){console.error('Candidata HML indisponível',e.code??e.name);return json(res,503,{erro:'Candidata indisponível'});}
   }
@@ -62,8 +63,7 @@ export function criarCandidataHml({origem,verificarMfa}){
   // PGlite usa uma única conexão. Serializa as transações do repositório.
   const processar=async()=>{
    try{
-    inicializacao??=iniciar();
-    const repositorio=await inicializacao;
+    const repositorio=await preparar();
     req.url='/'+rota;
     delete req.headers.authorization;
     const interno=operador?randomBytes(24).toString('base64url'):null;
@@ -81,4 +81,6 @@ export function criarCandidataHml({origem,verificarMfa}){
   try{await atual;}finally{pendentes--;}
   return true;
  };
+ handler.preparar=preparar;
+ return handler;
 }
