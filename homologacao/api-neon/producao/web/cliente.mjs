@@ -1,20 +1,12 @@
 import {validarConfiguracaoPublica} from './configuracao.mjs';
-// Formatos históricos: DDD + 8/9 dígitos, com ou sem o prefixo +55.
-// Não deduz um novo número a partir de oito dígitos; o servidor controla a emissão.
-export function normalizarTelefoneRecuperacao(valor){
- const bruto=String(valor??'').trim();
- if(bruto.startsWith('+')&&!bruto.startsWith('+55'))throw Error('Informe um número brasileiro com DDD.');
- const digitos=bruto.replace(/\D/g,'');
- const comPais=digitos.length===10||digitos.length===11?'55'+digitos:digitos;
- if(!/^55[1-9]\d{9,10}$/.test(comPais))throw Error('Informe o telefone cadastrado com DDD.');
- return '+'+comPais;
-}
+import {normalizarTelefoneRecuperacao} from './telefone.mjs';
+export {normalizarTelefoneRecuperacao} from './telefone.mjs';
 
 export function criarClienteWeb(config,buscar=fetch){
  const c=validarConfiguracaoPublica(config);
  async function enviar(rota,dados,token){const r=await buscar(c.apiBase+'/api/v1/'+rota,{method:'POST',credentials:rota.startsWith('recuperacao/navegador/')?'include':'omit',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(dados),signal:AbortSignal.timeout(25000)});if(!r.ok){if(token&&rota==='admin/recuperacao/emitir'&&r.status===409){let motivo=null;try{motivo=(await r.json())?.codigo;}catch{}if(motivo==='WHATSAPP_LEGADO_SEM_DESTINO')throw Error('Contato antigo sem destino WhatsApp confirmado. Não envie código; regularize o número mediante conferência de identidade e MFA.');}throw Error(r.status===429?'Limite de tentativas. Aguarde.':r.status===403?'Acesso não autorizado. Confira os dados ou renove o MFA.':'Não foi possível concluir. Tente novamente.');}return r.json();}
  return {
- cadastrar:d=>enviar('solicitacoes/cadastrar',d),
+ cadastrar:d=>enviar('solicitacoes/cadastrar',{...d,p_whatsapp:normalizarTelefoneRecuperacao(d.p_whatsapp)}),
  consultar:d=>{if(!/^[A-Za-z0-9_-]{43}$/.test(d.chave||'')||!d.protocolo)throw Error('Informe protocolo e chave de acompanhamento.');return enviar('solicitacoes/consultar',d);},
  anexar:d=>enviar('arquivos/anexar',d),baixar:d=>enviar('arquivos/baixar',d),
  solicitar:d=>enviar('recuperacao/solicitar',{...d,telefone:normalizarTelefoneRecuperacao(d?.telefone)}),validar:d=>enviar('recuperacao/validar',d),

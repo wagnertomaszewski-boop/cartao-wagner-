@@ -33,7 +33,7 @@ function recuperacaoNoNavegador(repositorio,req,res){
  };
 }
 const arquivos=new Map([
- ['cidadao','candidata.html'],['painel','candidata.html'],['app.js','candidata.js']
+ ['cidadao','candidata.html'],['painel','candidata.html'],['app.js','candidata.js'],['telefone.js','../web/telefone.mjs']
 ]);
 const headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff',
  'Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'none'; script-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"};
@@ -100,7 +100,7 @@ export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
   const rota=path.slice(base.length+1);
   if(req.method==='GET'&&arquivos.has(rota)){
    const arquivo=arquivos.get(rota);
-   res.writeHead(200,{...headers,'Content-Type':arquivo.endsWith('.js')?'text/javascript; charset=utf-8':'text/html; charset=utf-8'});
+   res.writeHead(200,{...headers,'Content-Type':rota.endsWith('.js')?'text/javascript; charset=utf-8':'text/html; charset=utf-8'});
    res.end(await readFile(new URL('./homologacao-web/'+arquivo,import.meta.url)));return true;
   }
   if(rota==='versao'&&req.method==='GET'){

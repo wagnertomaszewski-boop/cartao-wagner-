@@ -1,3 +1,4 @@
+import {pedirTelefone} from './telefone.mjs';
 import {criarClienteWeb} from './cliente.mjs';
 import {criarMfaWeb} from './mfa-web.mjs';
 const config=await fetch('../v2/seguranca/configuracao-publica.json',{cache:'no-store',redirect:'error'}).then(r=>r.json());const api=criarClienteWeb(config);let limparEnvio=null;
@@ -22,9 +23,9 @@ function numeroHistoricoSemNonoDigito(s){
 }
 async function regularizarTelefoneHistorico(pedido){
  if(!confirm('Este número histórico não permite presumir o nono dígito. Você já verificou a identidade e solicitou uma comprovação independente da posse do NOVO WhatsApp?'))return;
- const telefoneNovo=prompt('Digite o novo celular com DDD e nono dígito, preferencialmente +55:');
+ const telefoneNovo=await pedirTelefone('Digite o novo celular com DDD e nono dígito');
  if(!telefoneNovo)return;
- const telefoneConfirmado=prompt('Redigite o novo celular completo para conferir o destinatário:');
+ const telefoneConfirmado=await pedirTelefone('Redigite o novo celular com DDD para conferir o destinatário');
  if(!telefoneConfirmado)return;
  const justificativa=prompt('Registre como a identidade foi conferida (mínimo de 20 caracteres; sem documentos, códigos ou outros dados pessoais):');
  if(!justificativa||justificativa.trim().length<20)throw Error('Justificativa de pelo menos 20 caracteres obrigatória.');
@@ -52,9 +53,9 @@ $('atualizarRecPrivada').onclick=()=>executar(async()=>{limparEnvio?.();$('lista
  if(r.estado==='aprovado'&&r.contato_regularizado===true){const info=document.createElement('p');info.textContent='Contato histórico regularizado com comprovante verificado neste pedido.';item.append(info);}
  if(r.estado==='aprovado'&&(!numeroHistoricoSemNonoDigito(r.whatsapp)||r.contato_regularizado===true)){
   const gerar=botao('Gerar código temporário',async()=>{
-   const telefoneConfirmado=prompt(r.contato_regularizado===true
-    ?'Confirme o novo WhatsApp comprovado para este pedido, com DDD:'
-    :'Confirme o telefone cadastrado, com DDD:');
+   const telefoneConfirmado=await pedirTelefone(r.contato_regularizado===true
+    ?'Confirme o novo WhatsApp comprovado para este pedido, com DDD'
+    :'Confirme o WhatsApp cadastrado, com DDD');
    if(!telefoneConfirmado)return;
    gerar.disabled=true;
    try{

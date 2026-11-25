@@ -1,10 +1,12 @@
+import {ativarMascaraTelefone,normalizarTelefoneRecuperacao,pedirTelefone} from './telefone.js';
 const $=id=>document.getElementById(id);
+ativarMascaraTelefone($('telefone'));
 const status=$('estado');
 const padrao='+5551000000000';
 const telefone=()=>{
  const valor=$('telefone').value.trim();
  if(valor&&!$('consentimento').checked)throw Error('Confirme o consentimento para usar seu próprio número.');
- return valor||padrao;
+ return valor?normalizarTelefoneRecuperacao(valor):padrao;
 };
 const credencial=()=>({protocolo:$('protocolo').value.trim(),chave:$('chave').value.trim()});
 async function api(rota,dados={}){
@@ -83,7 +85,7 @@ $('listar').onclick=()=>executar(async()=>{
    return 'Pedido aprovado. Atualize a lista.';
   }));
   if(p.estado==='aprovado')bloco.append(botao('Gerar código',async()=>{
-   const telefoneConfirmado=prompt('Redigite o WhatsApp autorizado neste teste.');
+   const telefoneConfirmado=await pedirTelefone('Redigite o WhatsApp autorizado neste teste, com DDD');
    if(!telefoneConfirmado)return 'Emissão cancelada.';
    const r=await api('admin/recuperacao/emitir',{pedidoId:p.id,telefoneConfirmado});
    if(r.envioPermitido!==true||!/^\+55\d{11}$/.test(r.telefone))throw Error('Destino não confirmado.');
