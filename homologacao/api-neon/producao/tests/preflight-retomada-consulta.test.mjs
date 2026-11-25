@@ -40,7 +40,7 @@ test('tela fictícia oferece primeiro acesso, sem abrir protocolo isolado',async
  assert.match(html,/Primeiro acesso ou perdi minha chave/);
  assert.match(html,/nunca recebeu uma chave/);
  assert.match(html,/protocolo.*chave de acompanhamento/);
- assert.match(js,/api\.solicitar\(d\)/);
+ assert.match(js,/api\.solicitar\(\{\.\.\.d,autorizado:d\.autorizado==='on'\}\)/);
  assert.match(js,/api\.validar\(/);
  assert.match(candidato,/Primeiro acesso ou perdi minha chave/);
  assert.doesNotMatch(candidato,/consulta_publica_protocolo/);
