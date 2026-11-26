@@ -77,6 +77,9 @@ if($('consultaPrivada')){
   if(!r.encontrado)throw Error('Protocolo ou chave inválidos.');
   for(const [id,campo] of [['rProtocolo','protocolo'],['rStatus','status'],['rAssunto','assunto'],['rLocalidade','localidade']])
    $(id).textContent=r[campo]??'';
+  $('rHistorico').replaceChildren(...(r.historico??[]).map(item=>{
+   const linha=document.createElement('li');linha.textContent=item.status;return linha;
+  }));
   $('rRespostas').replaceChildren(...(r.respostas??[]).map(item=>{
    const linha=document.createElement('p');linha.textContent=item.mensagem;return linha;
   }));

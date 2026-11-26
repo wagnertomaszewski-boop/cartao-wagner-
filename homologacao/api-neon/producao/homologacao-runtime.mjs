@@ -1,5 +1,8 @@
 import {createHmac,randomBytes} from 'node:crypto';
-import {readFile} from 'node:fs/promises';
+import {mkdtemp,readFile,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {montarCidadaoOriginal} from './montar-cidadao-original.mjs';
 import {LIMITE_CORPO_ANEXO_BYTES} from '../validacao-arquivo-hml.mjs';
 import {criarRepositorio} from './repositorio.mjs';
 import {criarHandlerProducao} from './http.mjs';
@@ -118,6 +121,23 @@ function montarRepositorio(query,segredoBase){
 }
 export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
  let inicializacao, fila=Promise.resolve(), pendentes=0;
+ let paginas;
+ async function carregarApp(){
+  const pasta=await mkdtemp(join(tmpdir(),'mandato-web-hml-'));
+  try{
+   await montarCidadaoOriginal(pasta,{homologacao:true});
+   const arquivosApp=new Map();
+   for(const nome of ['index.html','solicitacao.html','acompanhar.html','mandato-seguro/cidadao.mjs'])
+    arquivosApp.set(nome,await readFile(join(pasta,nome)));
+   for(const [publico,origem] of [
+    ['telefone.mjs','./web/telefone.mjs'],
+    ['cliente-cidadao-hml.mjs','./web/cliente-cidadao-hml.mjs'],
+    ['fotos.mjs','../telas/v2/seguranca/fotos-candidata-10mb.mjs']
+   ])arquivosApp.set('v2/seguranca/'+publico,await readFile(new URL(origem,import.meta.url)));
+   return arquivosApp;
+  }finally{await rm(pasta,{recursive:true,force:true});}
+ }
+
  // Reutiliza a conexão saudável e libera uma inicialização rejeitada para a próxima chamada.
  const preparar=()=>inicializacao??=iniciar({urlTeste,segredoBase}).catch(erro=>{
   inicializacao=undefined;
@@ -127,6 +147,17 @@ export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
   const path=req.url?.split('?')[0];
   if(!path?.startsWith(base+'/'))return false;
   const rota=path.slice(base.length+1);
+  if(req.method==='GET'&&(rota==='app'||rota.startsWith('app/'))){
+   if(rota==='app'){res.writeHead(302,{...headers,Location:base+'/app/'});res.end();return true;}
+   const nome=rota.slice(4)||'index.html';
+   try{
+    const app=await (paginas??=carregarApp().catch(e=>{paginas=undefined;throw e;}));
+    if(!app.has(nome))return json(res,404,{erro:'Página indisponível.'});
+    res.writeHead(200,{...headers,'Content-Type':nome.endsWith('.html')?'text/html; charset=utf-8':'text/javascript; charset=utf-8',
+     'Content-Security-Policy':headers['Content-Security-Policy']+"; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://wagnertomaszewski-boop.github.io"});
+    res.end(app.get(nome));return true;
+   }catch(e){console.error('Interface HML indisponível',e.code??e.name);return json(res,503,{erro:'Interface indisponível.'});}
+  }
   if(req.method==='GET'&&arquivos.has(rota)){
    const arquivo=arquivos.get(rota);
    res.writeHead(200,{...headers,...(rota==='painel'?{'Content-Security-Policy':painelCsp}:{}),'Content-Type':rota.endsWith('.js')?'text/javascript; charset=utf-8':'text/html; charset=utf-8'});
