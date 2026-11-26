@@ -181,16 +181,16 @@
 <input
   type="file"
   id="anexo"
-  accept="image/*,.pdf"
+  accept="image/png,image/jpeg,application/pdf"
 >
 
-      <button id="botaoEnviar" type="submit">
+      <button id="botaoEnviar" type="submit" disabled>
         ENVIAR SOLICITAÇÃO
       </button>
 
     </form>
 
-    <div id="mensagem"></div>
+    <div id="mensagem" role="status" style="white-space:pre-wrap;overflow-wrap:anywhere"></div><noscript>Ative o JavaScript para enviar a solicitação.</noscript>
 
   </div>
 
@@ -203,169 +203,8 @@
 </div>
 
 
-<script>
-
-const SUPABASE_URL =
-"https://pmmsdjozyyxkbuqlkfpb.supabase.co";
-
-const SUPABASE_KEY =
-"sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 
 
-document
-  .getElementById("formSolicitacao")
-  .addEventListener("submit", async function(event) {
-
-    event.preventDefault();
-
-    const botao = document.getElementById("botaoEnviar");
-    const mensagem = document.getElementById("mensagem");
-
-    botao.disabled = true;
-    botao.textContent = "ENVIANDO...";
-
-    mensagem.className = "";
-    mensagem.style.display = "none";
-
-
-    const dados = {
-
-      nome:
-        document.getElementById("nome").value.trim(),
-
-      whatsapp:
-        document.getElementById("whatsapp").value.trim(),
-
-      localidade:
-        document.getElementById("localidade").value.trim(),
-
-      assunto:
-        document.getElementById("assunto").value.trim(),
-
-      descricao:
-        document.getElementById("descricao").value.trim()
-
-    };
-
-
-    try {
-const arquivo = document.getElementById("anexo").files[0];
-let caminhoAnexo = null;
-
-if (arquivo) {
-    const nomeArquivo =
-        Date.now() + "-" +
-        arquivo.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-
-    const upload = await fetch(
-        SUPABASE_URL +
-        "/storage/v1/object/anexos-solicitacoes/" +
-        nomeArquivo,
-        {
-            method: "POST",
-            headers: {
-                "apikey": SUPABASE_KEY,
-                "Authorization": "Bearer " + SUPABASE_KEY,
-                "Content-Type": arquivo.type
-            },
-            body: arquivo
-        }
-    );
-
-    if (!upload.ok) {
-        const erroUpload = await upload.text();
-        throw new Error("Erro ao enviar o anexo: " + erroUpload);
-    }
-
-    caminhoAnexo = nomeArquivo;
-}
-      const resposta = await fetch(
-        SUPABASE_URL + "/rest/v1/rpc/criar_solicitacao_com_anexos",
-        {
-
-          method: "POST",
-
-          headers: {
-
-            "apikey": SUPABASE_KEY,
-
-            "Authorization":
-              "Bearer " + SUPABASE_KEY,
-
-            "Content-Type":
-              "application/json",
-
-            "Prefer":
-  "return=representation"
-
-          },
-
-          body: JSON.stringify({
-  p_nome: dados.nome,
-  p_whatsapp: dados.whatsapp,
-  p_localidade: dados.localidade,
-  p_assunto: dados.assunto,
-  p_descricao: dados.descricao,
-  p_anexos: caminhoAnexo ? [caminhoAnexo] : []
-})
-
-        }
-      );
-
-
-      const resultado = await resposta.json();
-
-
-      if (!resposta.ok) {
-
-        throw new Error(
-          resultado.message ||
-          resultado.error ||
-          "Não foi possível enviar."
-        );
-
-      }
-
-
-      
-
-const protocolo = typeof resultado === "string" ? resultado : resultado.protocolo;
-      mensagem.className = "sucesso";
-
-mensagem.innerHTML =
-  "<strong>Solicitação enviada com sucesso!</strong>" +
-  "<br><br>" +
-  "Seu protocolo é:<br>" +
-  "<strong style='font-size:24px'>" + protocolo + "</strong>" +
-  "<br><br>" +
-  "Guarde este número para acompanhar sua solicitação.";
-
-
-      document
-        .getElementById("formSolicitacao")
-        .reset();
-
-
-    } catch (erro) {
-
-      console.error(erro);
-
-      mensagem.className = "erro";
-
-      mensagem.innerHTML =
-        "<strong>Não foi possível enviar a solicitação.</strong>" +
-        "<br><br>" +
-        erro.message;
-
-    }
-
-
-    botao.disabled = false;
-    botao.textContent = "ENVIAR SOLICITAÇÃO";
-
-  });
-
-</script>
-
+<script type="module" src="./mandato-seguro/cidadao.mjs"></script>
 </body>
 </html>

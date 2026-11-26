@@ -1,10 +1,10 @@
-const CACHE_NAME = "wagner-app-v5-agenda";
+const CACHE_NAME = "wagner-app-v6-privado";
 
 const ARQUIVOS = [
   "./",
   "./index.html",
-  "./solicitacao.html",
-  "./acompanhar.html",
+
+
   "./agenda.html",
   "./projetos.html",
   "./enquetes.html",
@@ -15,7 +15,7 @@ const ARQUIVOS = [
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ARQUIVOS))
+      .then(cache => cache.addAll(ARQUIVOS)).then(() => self.skipWaiting())
   );
 });
 
@@ -24,6 +24,9 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
+  const url=new URL(event.request.url);
+  if(event.request.method!=='GET'||url.origin!==self.location.origin)return;
+  if(/\/(?:solicitacao|acompanhar)\.html$/.test(url.pathname)||url.pathname.includes('/mandato-seguro/')||url.pathname.includes('/v2/seguranca/'))return;
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
