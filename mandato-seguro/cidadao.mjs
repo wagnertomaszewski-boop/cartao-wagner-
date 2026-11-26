@@ -1,6 +1,6 @@
 import {validarSelecaoArquivos,prepararAnexo} from '../v2/seguranca/fotos.mjs';
 import {ativarMascaraTelefone} from '../v2/seguranca/telefone.mjs';
-import {criarClienteWeb} from '../v2/seguranca/cliente.mjs';
+import {criarClienteWeb} from '../v2/seguranca/cliente.mjs?v=chave-12-1';
 
 const $=id=>document.getElementById(id);
 const config=await fetch('./v2/seguranca/configuracao-publica.json',{cache:'no-store',redirect:'error'}).then(r=>{

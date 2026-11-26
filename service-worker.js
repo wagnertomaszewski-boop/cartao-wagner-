@@ -1,4 +1,4 @@
-const CACHE_NAME = "wagner-app-v8-consulta-v2";
+const CACHE_NAME = "wagner-app-v9-chave-12";
 const ARQUIVOS_PUBLICOS = [
   "./", "./index.html", "./agenda.html", "./projetos.html",
   "./enquetes.html", "./cartao-wagner.jpg", "./manifest.json"

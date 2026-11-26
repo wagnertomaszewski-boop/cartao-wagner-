@@ -1,6 +1,6 @@
 import {dataMovimentacao, renderizarHistorico} from './historico-consulta.mjs?v=1';
 import {ativarMascaraTelefone} from './telefone.mjs?v=2be3d5035235f04175e7e8f3965112cec6d5fa28';
-import {criarClienteWeb,criarContratoRecuperacaoCidadao} from './cliente.mjs?v=2be3d5035235f04175e7e8f3965112cec6d5fa28';
+import {criarClienteWeb,criarContratoRecuperacaoCidadao} from './cliente.mjs?v=chave-12-1';
 import {criarSelecaoLocalizacao,montarMapaPrivado} from './localizacao.mjs?v=2be3d5035235f04175e7e8f3965112cec6d5fa28';
 import {validarSelecaoArquivos,criarVisualizadorFotos,prepararAnexo} from './fotos.mjs?v=2be3d5035235f04175e7e8f3965112cec6d5fa28';
 const $=id=>document.getElementById(id);let ciclo=0,acesso=null,cadastro=null,pendentes=[],operacaoId=crypto.randomUUID(),ocupado=false,mapa=null,ponto=null;
@@ -20,6 +20,22 @@ $('mapaPrivado').onclick=()=>{mapa?.remover();$('mapaEscolha').hidden=false;$('c
 $('confirmarMapa').onclick=()=>{if(!ponto)return;selecao.mapa(ponto.latitude,ponto.longitude);estado();mapa?.remover();mapa=null;ponto=null;$('mapaEscolha').hidden=true;$('confirmarMapa').hidden=true;};
 $('semLocalizacao').onclick=()=>{selecao.limpar();ponto=null;mapa?.remover();mapa=null;$('mapaEscolha').hidden=true;$('confirmarMapa').hidden=true;estado();};
 const recibo=document.createElement('div');recibo.className='card';recibo.hidden=true;recibo.innerHTML='<strong id="protocoloEmitido"></strong><label for="chaveEmitida">Chave individual de acompanhamento</label><input id="chaveEmitida" readonly autocomplete="off"><p>Guarde o protocolo e esta chave em local seguro. O código de recuperação de seis dígitos é temporário e não substitui esta chave.</p><button type="button" id="repetirAnexos" hidden>Reenviar anexos pendentes</button>';$('formSolicitacao').after(recibo);
+adicionarCopia($('chaveEmitida'));
+adicionarCopia($('novaChave'));
+function adicionarCopia(campo){
+ const botao=document.createElement('button');
+ botao.type='button';
+ botao.textContent='Copiar chave';
+ const estado=document.createElement('span');
+ estado.setAttribute('role','status');
+ botao.onclick=async()=>{
+  if(!campo.value)return;
+  try{await navigator.clipboard.writeText(campo.value);estado.textContent='Chave copiada.';}
+  catch{campo.focus();campo.select();estado.textContent='Use a opção Copiar do celular.';}
+ };
+ campo.after(botao,estado);
+ addEventListener('pagehide',()=>{estado.textContent='';});
+}
 const progresso=document.createElement('progress');progresso.hidden=true;progresso.setAttribute('aria-label','Arquivos enviados');recibo.append(progresso);
 async function anexar(){
  if(!pendentes.length)return;
@@ -90,6 +106,6 @@ $('enviarRecuperacaoV2').onclick=async()=>{try{await api.solicitarNavegador({pro
 $('validarTemporario').onclick=async()=>{try{const r=await api.validarNavegador($('codigoTemporario').value);if(r.reciboAusente)throw Error('Recibo indisponível neste navegador. Use o mesmo navegador em que pediu a recuperação.');if(r.validado!==true)throw Error('Código inválido, expirado ou já utilizado.');$('protocolo').value=r.protocolo;$('novaChave').value=r.novaChave;$('novaChaveBloco').hidden=false;avisar('erro','Guarde sua chave individual. Se existia uma chave anterior, ela foi invalidada.');}catch(e){avisar('erro',e.message);}finally{$('codigoTemporario').value='';}};
 function limpar(){ciclo++;acesso=null;cadastro=null;pendentes=[];limparResultado();$('novaChaveBloco').hidden=true;for(const id of ['chaveEmitida','novaChave','chaveConsultaV2','codigoTemporario'])$(id).value='';$('resultado').classList.remove('show');}
 addEventListener('pagehide',limpar);addEventListener('pageshow',e=>{if(e.persisted)limpar();});
-if('serviceWorker'in navigator)navigator.serviceWorker.register('./service-worker-privado.js?v=consulta-simples-1',{scope:'./',updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./service-worker-privado.js?v=chave-12-1',{scope:'./',updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
 for(const id of ['botaoEnviar','consultar'])$(id).disabled=false;
 avisar('mensagem','Preencha sua solicitação. A localização é opcional.');

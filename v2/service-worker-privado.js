@@ -1,4 +1,4 @@
-// Revisão consulta-simples-1. Escopo /v2/ somente. Nunca controla Financeiro Pro, Painel ou a raiz do site.
+// Revisão chave-12-1. Escopo /v2/ somente. Nunca controla Financeiro Pro, Painel ou a raiz do site.
 self.addEventListener('install',e=>e.waitUntil(self.skipWaiting()));
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>{
