@@ -1,6 +1,6 @@
 import {criarClienteCandidata,ativarMascaraTelefone} from './cliente-candidata.mjs';
 import {criarSelecaoLocalizacao,montarMapaPrivado} from './localizacao-solicitacao-hml.mjs';
-import {validarSelecaoArquivos,enviarArquivosPendentes,prepararAnexo} from './fotos-solicitacao-hml.mjs';
+import {validarSelecaoArquivos,enviarArquivosPendentes,prepararAnexo} from './fotos-candidata-10mb.mjs';
 import {criarBuscaPrivada} from './biometria-cidadao.mjs';
 import {criarClienteRecuperacaoManual} from './cliente-recuperacao-manual.mjs';
 const $=id=>document.getElementById(id);let api,resultado=null,ocupado=false,cicloDaTela=0;const operacaoId=crypto.randomUUID();
