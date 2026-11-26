@@ -1,3 +1,4 @@
+import {validarSelecaoArquivos,prepararAnexo} from '../v2/seguranca/fotos.mjs';
 import {ativarMascaraTelefone} from '../v2/seguranca/telefone.mjs';
 import {criarClienteWeb} from '../v2/seguranca/cliente.mjs';
 
@@ -20,6 +21,10 @@ const form=$('formSolicitacao');
 if(form){
  let operacaoId=crypto.randomUUID();
  let cadastro=null;
+ let pendentes=[];
+ $('anexo').multiple=true;
+ const progresso=document.createElement('progress');progresso.hidden=true;progresso.setAttribute('aria-label','Arquivos enviados');
+ $('mensagem').before(progresso);
  const botao=$('botaoEnviar');
  botao.disabled=false;
  form.addEventListener('submit',async evento=>{
@@ -27,21 +32,22 @@ if(form){
   if(botao.disabled)return;
   botao.disabled=true;
   try{
-   const arquivo=$('anexo').files[0];
-   if(arquivo&&(arquivo.size>1048576||!['image/png','image/jpeg','application/pdf'].includes(arquivo.type)))
-    throw Error('Escolha uma foto PNG/JPEG ou PDF de até 1 MB.');
+   if(!cadastro)pendentes=validarSelecaoArquivos($('anexo').files);
    cadastro??=await api.cadastrar({operacaoId,p_nome:valor('nome'),p_whatsapp:valor('whatsapp'),
     p_localidade:valor('localidade'),p_assunto:valor('assunto'),p_descricao:valor('descricao')});
    const identificacao='Protocolo: '+cadastro.protocolo+'\nChave: '+cadastro.chaveInicial;
-   if(arquivo){
+   if(pendentes.length){
+    progresso.hidden=false;progresso.max=pendentes.length;progresso.value=0;
     try{
-     const bytes=new Uint8Array(await arquivo.arrayBuffer());
-     let binario='';
-     for(const b of bytes)binario+=String.fromCharCode(b);
-     await api.anexar({protocolo:cadastro.protocolo,chave:cadastro.chaveInicial,
-      nome:arquivo.name,mime:arquivo.type,base64:btoa(binario)});
-    }catch{
-     mensagem('mensagem','erro','Solicitação registrada. Use o mesmo formulário para tentar enviar o anexo novamente.\n'+identificacao);
+     while(pendentes.length){
+      mensagem('mensagem','sucesso','Preparando '+pendentes[0].name+'…\n'+identificacao);
+      const anexo=await prepararAnexo(pendentes[0]);
+      mensagem('mensagem','sucesso','Enviando arquivo '+(progresso.value+1)+' de '+progresso.max+'…\n'+identificacao);
+      await api.anexar({protocolo:cadastro.protocolo,chave:cadastro.chaveInicial,...anexo});
+      pendentes.shift();progresso.value++;
+     }
+    }catch(e){
+     mensagem('mensagem','erro','Solicitação registrada. Restam '+pendentes.length+' arquivo(s). '+e.message+' Use o mesmo formulário para reenviar.\n'+identificacao);
      return;
     }
    }
@@ -50,7 +56,7 @@ if(form){
   }catch(e){mensagem('mensagem','erro',e.message);}
   finally{botao.disabled=false;}
  });
- addEventListener('pagehide',()=>{cadastro=null;$('mensagem').textContent='';});
+ addEventListener('pagehide',()=>{cadastro=null;pendentes=[];$('mensagem').textContent='';});
 }
 
 if($('consultaPrivada')){

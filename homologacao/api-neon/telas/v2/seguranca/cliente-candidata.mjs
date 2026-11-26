@@ -2,11 +2,11 @@ import {normalizarTelefoneRecuperacao,ativarMascaraTelefone} from '/hml/candidat
 export {ativarMascaraTelefone};
 export function criarClienteCandidata(buscar){
  async function enviar(rota,dados){
-  const r=await buscar('/hml/candidata/api/v1/'+rota,{method:'POST',credentials:'same-origin',cache:'no-store',redirect:'error',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados),signal:AbortSignal.timeout(20000)});
+  const r=await buscar('/hml/candidata/api/v1/'+rota,{method:'POST',credentials:'same-origin',cache:'no-store',redirect:'error',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados),signal:AbortSignal.timeout(rota.startsWith('arquivos/')?90000:20000)});
   const j=await r.json();
   if(!r.ok){
    if(rota==='arquivos/anexar'){
-    if(r.status===413)throw Error('O arquivo ultrapassou o limite de envio de 1 MB.');
+    if(r.status===413)throw Error('O arquivo ultrapassou o limite de envio de 10 MB.');
     if(r.status===400)throw Error('Confira o formato e a extensão do arquivo. Use PNG, JPEG ou PDF.');
     if(r.status===403)throw Error('O protocolo e a chave não autorizaram o envio do anexo.');
     if(r.status===429)throw Error('O limite de armazenamento ou de tentativas foi atingido. Aguarde e tente novamente.');

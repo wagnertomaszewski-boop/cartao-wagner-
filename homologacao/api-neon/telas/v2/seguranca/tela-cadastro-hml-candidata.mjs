@@ -1,24 +1,33 @@
 import {criarClienteCandidata,ativarMascaraTelefone} from './cliente-candidata.mjs';
 import {criarSelecaoLocalizacao,montarMapaPrivado} from './localizacao-solicitacao-hml.mjs';
-import {validarSelecaoArquivos,enviarArquivosPendentes} from './fotos-solicitacao-hml.mjs';
+import {validarSelecaoArquivos,enviarArquivosPendentes,prepararAnexo} from './fotos-solicitacao-hml.mjs';
 import {criarBuscaPrivada} from './biometria-cidadao.mjs';
 import {criarClienteRecuperacaoManual} from './cliente-recuperacao-manual.mjs';
 const $=id=>document.getElementById(id);let api,resultado=null,ocupado=false,cicloDaTela=0;const operacaoId=crypto.randomUUID();
 const candidata=new URLSearchParams(location.search).get('api')==='candidata';
 const buscar=criarBuscaPrivada((...args)=>fetch(...args),()=>cicloDaTela);
 try{api=candidata?criarClienteCandidata(buscar):criarClienteRecuperacaoManual({origem:location.origin,buscar});}catch(e){$('mensagem').textContent=e.message;$('enviar').disabled=true;}
-if(candidata){
- ativarMascaraTelefone(document.querySelector('[name=p_whatsapp]'));
- const campo=$('anexo'),rotulo=campo.closest('label');
- for(const parte of rotulo?.childNodes??[]){
-  if(parte.nodeType===Node.TEXT_NODE&&parte.textContent.includes('10 MB'))
-   parte.textContent=parte.textContent.replace('10 MB','1 MB');
- }
-}
+if(candidata)ativarMascaraTelefone(document.querySelector('[name=p_whatsapp]'));
 let pendentes=[],mapa=null,pontoPendente=null;const selecao=criarSelecaoLocalizacao();
 const mostrarPonto=()=>{const p=selecao.ler();$('localizacao-estado').textContent=p?(p.localizacaoOrigem==='gps'?'GPS autorizado':'Ponto escolhido manualmente')+': '+p.latitude+', '+p.longitude:'Sem localização. O envio continua permitido.';};
-async function anexarPendentes(){try{await enviarArquivosPendentes(pendentes,async f=>{const bytes=new Uint8Array(await f.arrayBuffer());let binario='';for(const b of bytes)binario+=String.fromCharCode(b);await api.anexar({protocolo:resultado.protocolo,chave:resultado.chaveInicial,nome:f.name,mime:f.type,base64:btoa(binario)});},()=>{$('estado-anexos').textContent='Anexos restantes: '+pendentes.length;});$('estado-anexos').textContent='Todos os anexos selecionados foram registrados de forma privada.';}catch(e){$('estado-anexos').textContent='Envio incompleto. Restam '+pendentes.length+' arquivo(s). '+e.message;}finally{$('reenviar-anexos').hidden=!pendentes.length;}}
-$('cadastro').onsubmit=async e=>{e.preventDefault();if(!api||ocupado)return;ocupado=true;$('enviar').disabled=true;try{pendentes=validarSelecaoArquivos($('anexo').files);if(pendentes.some(f=>f.size>1048576))throw Error('A API candidata aceita arquivos de até 1 MB. Reduza a imagem e tente novamente.');const d=Object.fromEntries(new FormData(e.target)),ponto=selecao.ler();resultado=await api.cadastrar({...d,operacaoId,ficticio:d.ficticio==='on',whatsappRealAutorizado:d.whatsappRealAutorizado==='on',origem:location.pathname.startsWith('/hml/mandato/')?'mandato':'v2',...(ponto&&$('localizacao-autorizada').checked?{...ponto,localizacaoAutorizada:true}:{})});$('protocolo').textContent=resultado.protocolo;$('chave').value=resultado.chaveInicial;const link=$('acompanhar-solicitacao');if(link)link.href='/hml/v2/recuperar'+(candidata?'?api=candidata':'')+'#'+new URLSearchParams({protocolo:resultado.protocolo}).toString();$('resultado').hidden=false;$('cadastro').hidden=true;$('mensagem').textContent='Solicitação fictícia criada com acesso privado.';if(pendentes.length)await anexarPendentes();}catch(e){$('mensagem').textContent=e.message;}finally{ocupado=false;$('enviar').disabled=false;}};
+const progresso=document.createElement('progress');
+progresso.hidden=true;
+progresso.setAttribute('aria-label','Arquivos enviados');
+$('estado-anexos').before(progresso);
+async function anexarPendentes(){
+ progresso.hidden=false;progresso.max=pendentes.length;progresso.value=0;
+ try{
+  await enviarArquivosPendentes(pendentes,async f=>{
+   $('estado-anexos').textContent='Preparando '+f.name+'…';
+   const anexo=await prepararAnexo(f);
+   $('estado-anexos').textContent='Enviando '+f.name+' ('+(progresso.value+1)+' de '+progresso.max+')…';
+   await api.anexar({protocolo:resultado.protocolo,chave:resultado.chaveInicial,...anexo});
+  },()=>{progresso.value++;});
+  $('estado-anexos').textContent='Todos os arquivos selecionados foram enviados e vinculados ao protocolo.';
+ }catch(e){$('estado-anexos').textContent='Envio incompleto. Restam '+pendentes.length+' arquivo(s). '+e.message;}
+ finally{$('reenviar-anexos').hidden=!pendentes.length;}
+}
+$('cadastro').onsubmit=async e=>{e.preventDefault();if(!api||ocupado)return;ocupado=true;$('enviar').disabled=true;try{pendentes=validarSelecaoArquivos($('anexo').files);const d=Object.fromEntries(new FormData(e.target)),ponto=selecao.ler();resultado=await api.cadastrar({...d,operacaoId,ficticio:d.ficticio==='on',whatsappRealAutorizado:d.whatsappRealAutorizado==='on',origem:location.pathname.startsWith('/hml/mandato/')?'mandato':'v2',...(ponto&&$('localizacao-autorizada').checked?{...ponto,localizacaoAutorizada:true}:{})});$('protocolo').textContent=resultado.protocolo;$('chave').value=resultado.chaveInicial;const link=$('acompanhar-solicitacao');if(link)link.href='/hml/v2/recuperar'+(candidata?'?api=candidata':'')+'#'+new URLSearchParams({protocolo:resultado.protocolo}).toString();$('resultado').hidden=false;$('cadastro').hidden=true;$('mensagem').textContent='Solicitação fictícia criada com acesso privado.';if(pendentes.length)await anexarPendentes();}catch(e){$('mensagem').textContent=e.message;}finally{ocupado=false;$('enviar').disabled=false;}};
 $('reenviar-anexos').onclick=async()=>{if(ocupado||!resultado)return;ocupado=true;try{await anexarPendentes();}catch(e){$('mensagem').textContent=e.message;}finally{ocupado=false;}};
 $('copiar').type='button';
 $('copiar').textContent='Copiar chave';

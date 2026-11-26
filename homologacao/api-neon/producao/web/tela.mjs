@@ -1,7 +1,7 @@
 import {ativarMascaraTelefone} from './telefone.mjs';
 import {criarClienteWeb,criarContratoRecuperacaoCidadao} from './cliente.mjs';
 import {criarSelecaoLocalizacao,montarMapaPrivado} from './localizacao.mjs';
-import {validarSelecaoArquivos,criarVisualizadorFotos} from './fotos.mjs';
+import {validarSelecaoArquivos,criarVisualizadorFotos,prepararAnexo} from './fotos.mjs';
 const $=id=>document.getElementById(id);let ciclo=0,acesso=null,cadastro=null,pendentes=[],operacaoId=crypto.randomUUID(),ocupado=false,mapa=null,ponto=null;
 const config=await fetch('./seguranca/configuracao-publica.json',{cache:'no-store',redirect:'error'}).then(r=>{if(!r.ok)throw Error('Configuração indisponível.');return r.json();});
 ativarMascaraTelefone($('whatsapp'));
@@ -20,7 +20,19 @@ $('mapaPrivado').onclick=()=>{mapa?.remover();$('mapaEscolha').hidden=false;$('c
 $('confirmarMapa').onclick=()=>{if(!ponto)return;selecao.mapa(ponto.latitude,ponto.longitude);estado();mapa?.remover();mapa=null;ponto=null;$('mapaEscolha').hidden=true;$('confirmarMapa').hidden=true;};
 $('semLocalizacao').onclick=()=>{selecao.limpar();ponto=null;mapa?.remover();mapa=null;$('mapaEscolha').hidden=true;$('confirmarMapa').hidden=true;estado();};
 const recibo=document.createElement('div');recibo.className='card';recibo.hidden=true;recibo.innerHTML='<strong id="protocoloEmitido"></strong><label for="chaveEmitida">Chave individual de acompanhamento</label><input id="chaveEmitida" readonly autocomplete="off"><p>Guarde o protocolo e esta chave em local seguro. O código de recuperação de seis dígitos é temporário e não substitui esta chave.</p><button type="button" id="repetirAnexos" hidden>Reenviar anexos pendentes</button>';$('formSolicitacao').after(recibo);
-async function anexar(){while(pendentes.length){const f=pendentes[0],bytes=new Uint8Array(await f.arrayBuffer());let bin='';for(const b of bytes)bin+=String.fromCharCode(b);await api.anexar({...acesso,nome:f.name,mime:f.type,base64:btoa(bin)});pendentes.shift();}$('repetirAnexos').hidden=true;}
+const progresso=document.createElement('progress');progresso.hidden=true;progresso.setAttribute('aria-label','Arquivos enviados');recibo.append(progresso);
+async function anexar(){
+ if(!pendentes.length)return;
+ progresso.hidden=false;progresso.max=pendentes.length;progresso.value=0;
+ while(pendentes.length){
+  const arquivo=pendentes[0];avisar('mensagem','Preparando '+arquivo.name+'…');
+  const anexo=await prepararAnexo(arquivo);
+  avisar('mensagem','Enviando arquivo '+(progresso.value+1)+' de '+progresso.max+'…');
+  await api.anexar({...acesso,...anexo});
+  pendentes.shift();progresso.value++;
+ }
+ $('repetirAnexos').hidden=true;avisar('mensagem','Todos os arquivos foram enviados.');
+}
 $('repetirAnexos').onclick=async()=>{if(ocupado)return;ocupado=true;try{await anexar();avisar('mensagem','Fotografias registradas de forma privada.');}catch(e){avisar('mensagem',e.message);}finally{ocupado=false;}};
 $('formSolicitacao').onsubmit=async e=>{e.preventDefault();if(ocupado)return;ocupado=true;$('botaoEnviar').disabled=true;try{pendentes=validarSelecaoArquivos([...$('anexo').files,...camera.files]);const p=selecao.ler(),cat=document.querySelector('.cat.active')?.dataset.cat||'';cadastro=await api.cadastrar({operacaoId,p_nome:$('nome').value,p_whatsapp:$('whatsapp').value,p_localidade:$('localidade').value,p_assunto:(cat?cat+' — ':'')+$('assunto').value,p_descricao:$('descricao').value,...(p?{...p,localizacaoAutorizada:true}:{})});acesso={protocolo:cadastro.protocolo,chave:cadastro.chaveInicial};$('protocoloEmitido').textContent='Protocolo: '+acesso.protocolo;$('chaveEmitida').value=acesso.chave;recibo.hidden=false;avisar('mensagem','Solicitação registrada. Guarde protocolo e chave.');try{await anexar();}catch(e){$('repetirAnexos').hidden=false;avisar('mensagem','Solicitação salva. Há anexos pendentes; use Reenviar anexos pendentes.');}if(!pendentes.length){e.target.reset();selecao.limpar();operacaoId=crypto.randomUUID();}}catch(e){avisar('mensagem',e.message);}finally{ocupado=false;$('botaoEnviar').disabled=false;}};
 function linhas(container,itens,texto){container.replaceChildren();for(const item of itens){const p=document.createElement('p');p.textContent=texto(item);container.append(p);}}

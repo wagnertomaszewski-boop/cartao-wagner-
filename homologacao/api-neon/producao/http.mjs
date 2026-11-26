@@ -1,4 +1,5 @@
 // Handler candidato para o servidor existente; não montado/ativado automaticamente.
+import {LIMITE_CORPO_ANEXO_BYTES} from '../validacao-arquivo-hml.mjs';
 import {ORIGEM_WEB} from './configuracao.mjs';
 export function criarHandlerProducao({repositorio,resolverAdminMfa,origemApi,reciboWeb=false}){
  if(typeof resolverAdminMfa!=='function'||!repositorio||!origemApi)throw Error('Configuração privada incompleta.');
@@ -28,7 +29,9 @@ export function criarHandlerProducao({repositorio,resolverAdminMfa,origemApi,rec
    if(!await repositorio.limitarEntrada('api-v1-global')){send(429,{erro:'Aguarde.'});return true;}
    let op=null;if(rota.startsWith('admin/')){const a=req.headers.authorization||'';if(!/^Bearer \S+$/.test(a)){send(401,{erro:'Autenticação necessária.'});return true;}op=await resolverAdminMfa(a.slice(7));if(!op?.usuarioId||!op.mfaRecente){send(403,{erro:'MFA recente obrigatório.'});return true;}}
    if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']||'')){send(415,{erro:'Envie JSON.'});return true;}
-   const partes=[];let n=0;for await(const b of req){n+=b.length;if(n>(nome==='anexar'?1500000:20000))throw Object.assign(Error(),{status:413});partes.push(b);}let d;try{d=JSON.parse(Buffer.concat(partes));}catch{throw Object.assign(Error(),{status:400});}if(!d||typeof d!=='object'||Array.isArray(d))throw Object.assign(Error(),{status:400});
+   const limite=nome==='anexar'?LIMITE_CORPO_ANEXO_BYTES:20000;
+   if(Number(req.headers['content-length'])>limite)throw Object.assign(Error(),{status:413});
+   const partes=[];let n=0;for await(const b of req){n+=b.length;if(n>limite)throw Object.assign(Error(),{status:413});partes.push(b);}let d;try{d=JSON.parse(Buffer.concat(partes));}catch{throw Object.assign(Error(),{status:400});}if(!d||typeof d!=='object'||Array.isArray(d))throw Object.assign(Error(),{status:400});
    if(web&&nome==='solicitarRecuperacao'){
     const {pedidoId,recibo}=await repositorio.solicitarRecuperacao(d);
     send(200,{recebido:true},{'Set-Cookie':cookie(pedidoId+'.'+recibo,86400)});return true;

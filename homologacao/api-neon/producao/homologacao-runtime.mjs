@@ -1,5 +1,6 @@
 import {createHmac,randomBytes} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
+import {LIMITE_CORPO_ANEXO_BYTES} from '../validacao-arquivo-hml.mjs';
 import {criarRepositorio} from './repositorio.mjs';
 import {criarHandlerProducao} from './http.mjs';
 
@@ -161,7 +162,7 @@ export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
     });
    }catch(e){console.error('Candidata HML indisponível',e.code??e.name);if(!res.headersSent)json(res,503,{erro:'Candidata indisponível'});else res.end();}
   };
-  if(req.headers['content-length']>1500000)return json(res,413,{erro:'Arquivo excede o limite'});
+  if(Number(req.headers['content-length'])>(rota==='api/v1/arquivos/anexar'?LIMITE_CORPO_ANEXO_BYTES:20000))return json(res,413,{erro:'Corpo excede o limite da operação.'});
   if(pendentes>=12)return json(res,429,{erro:'Ambiente de teste ocupado. Tente novamente.'});
   pendentes++;
   const atual=fila.then(processar);
