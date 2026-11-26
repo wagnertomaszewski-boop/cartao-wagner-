@@ -117,6 +117,9 @@ export async function montar({env,pool}){
     if(v2Candidata)content=content.toString().replace(/(\/hml\/v2\/(?:solicitar|recuperar))(?=['"])/g,'$1?api=candidata')
      .replace(/(tela-cadastro-hml|tela-recuperacao-manual)\.mjs(?=['"])/g,
       '$1-candidata.mjs?rev='+encodeURIComponent(process.env.RENDER_GIT_COMMIT??'local'));
+    if(v2Candidata&&path==='/hml/v2/solicitar')content=content.toString()
+     .replace('WhatsApp de teste (+55 DDD número)','WhatsApp com DDD')
+     .replace(/(<input\s+name="p_whatsapp"[^>]*?)\s+pattern="[^"]*"/,'$1');
     let extras={};if(['telas/v2/projetos.html','telas/v2/index.html'].includes(name)){const html=content.toString(),sha=x=>"'sha256-"+createHash('sha256').update(x).digest('base64')+"'",dec=x=>x.replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&');const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(x=>sha(x[1]));const eventos=[...html.matchAll(/\bon[a-z]+="([^"]*)"/g)].map(x=>sha(dec(x[1])));const estilos=[...html.matchAll(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/g)].map(x=>sha(x[1])).concat([...html.matchAll(/\bstyle="([^"]*)"/g)].map(x=>sha(dec(x[1]))));extras={'Content-Security-Policy':seguro['Content-Security-Policy'].replace("script-src 'self'","script-src 'self' 'unsafe-hashes' "+[...new Set([...scripts,...eventos,sha("go('projetos')")])].join(' ')).replace("style-src 'self'","style-src 'self' 'unsafe-hashes' "+[...new Set(estilos)].join(' '))};}res.writeHead(200,{'Content-Type':name.endsWith('.html')?'text/html; charset=utf-8':(name.endsWith('.js')||name.endsWith('.mjs'))?'application/javascript; charset=utf-8':'text/css; charset=utf-8',...seguro,...extras});res.end(content);return true;}
    if(path.startsWith('/hml/auth/')){await autenticar(req,res);return true;}
    if(path==='/hml/setup'&&req.method==='POST'){
