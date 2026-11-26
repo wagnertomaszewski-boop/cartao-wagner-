@@ -14,9 +14,9 @@ export function criarClienteCandidata(buscar){
   return normalizado;
  };
  return {
-  cadastrar:d=>{
-   if(d.ficticio!==true)throw Error('Confirme que a solicitação contém somente dados fictícios.');
-   return enviar('solicitacoes/cadastrar',{...d,p_whatsapp:telefone(d.p_whatsapp,d.whatsappRealAutorizado)});
+  cadastrar:({ficticio,whatsappRealAutorizado,...d})=>{
+   if(ficticio!==true)throw Error('Confirme que a solicitação contém somente dados fictícios.');
+   return enviar('solicitacoes/cadastrar',{...d,p_whatsapp:telefone(d.p_whatsapp,whatsappRealAutorizado)});
   },
   anexar:d=>enviar('arquivos/anexar',d),
   baixar:d=>enviar('arquivos/baixar',d),
