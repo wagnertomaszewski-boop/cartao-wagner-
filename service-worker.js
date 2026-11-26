@@ -1,4 +1,4 @@
-const CACHE_NAME = "wagner-app-v7-atualizacao-web";
+const CACHE_NAME = "wagner-app-v8-consulta-v2";
 const ARQUIVOS_PUBLICOS = [
   "./", "./index.html", "./agenda.html", "./projetos.html",
   "./enquetes.html", "./cartao-wagner.jpg", "./manifest.json"
@@ -34,7 +34,7 @@ self.addEventListener("fetch", event => {
       !url.pathname.startsWith(escopo.pathname)) return;
 
   const relativo = url.pathname.slice(escopo.pathname.length);
-  const privado = /^(?:solicitacao|acompanhar)\.html$/.test(relativo) ||
+  const privado = (request.mode === "navigate" && /^(?:v2|v2\/(?:index\.html)?)$/.test(relativo)) || /^(?:solicitacao|acompanhar)\.html$/.test(relativo) ||
     relativo.startsWith("mandato-seguro/") || relativo.startsWith("v2/seguranca/");
   if (privado) {
     event.respondWith(fetch(request, { cache: "no-store" }));
