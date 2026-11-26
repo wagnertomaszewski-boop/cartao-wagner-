@@ -9,3 +9,15 @@
 .recuperacao-painel button.recuperacao-principal{background:#0b5d9e;color:white;border-color:#0b5d9e}
 .recuperacao-painel button.recuperacao-secundario{background:#eff6fc;color:#0c4d82}
 .recuperacao-painel button:disabled,#acompanhar .arquivo-acao:disabled{opacity:.65;cursor:wait}
+
+dialog.autenticador-painel{box-sizing:border-box;width:min(440px,calc(100% - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:22px;border:1px solid #c8d9e8;border-radius:18px;background:#fff;color:#152b42;box-shadow:0 16px 48px #102d4b45}
+.autenticador-painel::backdrop{background:#102b48a0}
+.autenticador-painel h3{margin:0 0 10px;font-size:1.25rem}
+.autenticador-painel p{margin:0 0 14px;line-height:1.5}
+.autenticador-painel img:not([hidden]){display:block;width:min(100%,240px);height:auto;margin:0 auto 14px}
+.autenticador-painel input{box-sizing:border-box;display:block;width:100%;padding:12px;border:1px solid #9ebcd5;border-radius:10px;font-size:18px;letter-spacing:.13em}
+.autenticador-painel button.autenticador-confirmar,.autenticador-painel button.autenticador-fechar{display:block;width:100%;min-height:46px;margin:10px 0 0;border:1px solid #9ebcd5;border-radius:10px;font-size:16px}
+.autenticador-painel button.autenticador-confirmar{background:#0b5d9e;color:#fff;border-color:#0b5d9e}
+.autenticador-painel button.autenticador-fechar{background:#eff6fc;color:#0c4d82}
+.autenticador-painel button:disabled{opacity:.65;cursor:wait}
+.autenticador-painel :is(input,button):focus-visible{outline:2px solid #0b5d9e;outline-offset:2px}
