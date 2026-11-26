@@ -1,33 +1,50 @@
-const CACHE_NAME = "wagner-app-v6-privado";
-
-const ARQUIVOS = [
-  "./",
-  "./index.html",
-
-
-  "./agenda.html",
-  "./projetos.html",
-  "./enquetes.html",
-  "./cartao-wagner.jpg",
-  "./manifest.json"
+const CACHE_NAME = "wagner-app-v7-atualizacao-web";
+const ARQUIVOS_PUBLICOS = [
+  "./", "./index.html", "./agenda.html", "./projetos.html",
+  "./enquetes.html", "./cartao-wagner.jpg", "./manifest.json"
 ];
 
 self.addEventListener("install", event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ARQUIVOS)).then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME).catch(() => null);
+    if (cache) {
+      await Promise.allSettled(ARQUIVOS_PUBLICOS.map(arquivo =>
+        cache.add(new Request(new URL(arquivo, self.registration.scope), { cache: "reload" }))
+      ));
+    }
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener("activate", event => {
-  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith("wagner-app-")&&k!==CACHE_NAME).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
+  event.waitUntil((async () => {
+    await self.clients.claim();
+    const antigos = (await caches.keys()).filter(nome =>
+      nome.startsWith("wagner-app-") && nome !== CACHE_NAME
+    );
+    await Promise.allSettled(antigos.map(nome => caches.delete(nome)));
+  })());
 });
 
 self.addEventListener("fetch", event => {
-  const url=new URL(event.request.url);
-  if(event.request.method!=='GET'||url.origin!==self.location.origin)return;
-  if(/\/(?:solicitacao|acompanhar)\.html$/.test(url.pathname)||url.pathname.includes('/mandato-seguro/')||url.pathname.includes('/v2/seguranca/'))return;
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
-  );
+  const request = event.request;
+  const url = new URL(request.url);
+  const escopo = new URL(self.registration.scope);
+  if (request.method !== "GET" || url.origin !== escopo.origin ||
+      !url.pathname.startsWith(escopo.pathname)) return;
+
+  const relativo = url.pathname.slice(escopo.pathname.length);
+  const privado = /^(?:solicitacao|acompanhar)\.html$/.test(relativo) ||
+    relativo.startsWith("mandato-seguro/") || relativo.startsWith("v2/seguranca/");
+  if (privado) {
+    event.respondWith(fetch(request, { cache: "no-store" }));
+    return;
+  }
+  const publico = ARQUIVOS_PUBLICOS.includes("./" + relativo);
+  if (publico) {
+    event.respondWith(fetch(request, { cache: "no-cache" }).catch(async () => {
+      const cache = await caches.open(CACHE_NAME);
+      return await cache.match(request) || Response.error();
+    }));
+  }
 });

@@ -131,9 +131,9 @@ footer{
 
   <a class="botao projetos" href="agenda.html" style="background:#0b64ac">📅 AGENDA PÚBLICA DO MANDATO<span class="sub">Sessões, reuniões e eventos para a comunidade</span></a>
 
-  <a class="botao acompanhar" href="acompanhar.html">
+  <a class="botao acompanhar" href="acompanhar.html?v=20261126-7">
     🔎 ACOMPANHAR SUA SOLICITAÇÃO
-    <span class="sub">Consulta temporariamente em manutenção para proteger seus dados</span>
+    <span class="sub">Consulte com o protocolo e a chave de acompanhamento</span>
   </a>
 
 </section>
@@ -144,9 +144,9 @@ Vereador de Cristal/RS
 </footer>
 <script>
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js");
-  });
+  navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" })
+    .then(registration => registration.update())
+    .catch(() => { /* As páginas continuam acessíveis pela rede. */ });
 }
 </script>
 </body>
