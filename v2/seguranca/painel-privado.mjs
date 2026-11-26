@@ -1,4 +1,4 @@
-import {pedirTelefone} from './telefone.mjs?v=2be3d5035235f04175e7e8f3965112cec6d5fa28';
+import {pedirTelefone} from './telefone.mjs?v=telefone-1';
 import {criarClienteWeb} from './cliente.mjs?v=2be3d5035235f04175e7e8f3965112cec6d5fa28';
 import {criarMfaWeb} from './mfa-web.mjs?v=2be3d5035235f04175e7e8f3965112cec6d5fa28';
 const config=await fetch('../v2/seguranca/configuracao-publica.json',{cache:'no-store',redirect:'error'}).then(r=>r.json());const api=criarClienteWeb(config);let limparEnvio=null;

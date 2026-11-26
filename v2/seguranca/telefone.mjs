@@ -62,12 +62,15 @@ export function pedirTelefone(rotulo) {
  ativarMascaraTelefone(campo);
  label.append(campo);
  aviso.setAttribute('role','alert');
+ dialogo.className='autenticador-painel telefone-painel';
  dialogo.setAttribute('aria-label',rotulo);
  cancelar.type='button';
+ cancelar.className='autenticador-fechar';
  cancelar.textContent='Cancelar';
  confirmar.type='submit';
+ confirmar.className='autenticador-confirmar';
  confirmar.textContent='Confirmar número';
- form.append(label,aviso,cancelar,confirmar);
+ form.append(label,aviso,confirmar,cancelar);
  dialogo.append(form);
  document.body.append(dialogo);
  return new Promise(resolve=>{

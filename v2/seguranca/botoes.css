@@ -21,3 +21,8 @@ dialog.autenticador-painel{box-sizing:border-box;width:min(440px,calc(100% - 32p
 .autenticador-painel button.autenticador-fechar{background:#eff6fc;color:#0c4d82}
 .autenticador-painel button:disabled{opacity:.65;cursor:wait}
 .autenticador-painel :is(input,button):focus-visible{outline:2px solid #0b5d9e;outline-offset:2px}
+
+.telefone-painel label{display:block;font-weight:700;line-height:1.4}
+.telefone-painel input{margin-top:8px;letter-spacing:normal;font-weight:400}
+.telefone-painel [role="alert"]:empty{margin:0}
+.telefone-painel [role="alert"]:not(:empty){margin:8px 0;color:#9c2626}
