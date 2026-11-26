@@ -244,6 +244,20 @@ body{background:#e9eff6}
   .home-grid .tile .tile-copy strong{font-size:15px;margin:9px 0 6px}
   .home-grid .tile .tile-copy span{font-size:11.5px;line-height:1.33;padding-right:9px}
 }
+
+#acompanhar .consulta-cidadao label{display:block;font-weight:700;margin:0 0 6px}
+#acompanhar .consulta-cidadao input{width:100%;margin:0 0 14px;padding:12px;border:1px solid #bac8d7;border-radius:10px;font-size:16px}
+#acompanhar .consulta-cidadao summary{color:#085a9e;cursor:pointer;font-weight:700;padding:12px 0}
+#acompanhar #recuperacaoV2 p{margin:0 0 14px;line-height:1.5}
+#acompanhar #recuperacaoV2 button{display:block;margin:0 0 14px;padding:10px 14px}
+#acompanhar #resultado h2{margin:6px 0 12px;overflow-wrap:anywhere}
+#acompanhar #resultado .pill{white-space:normal}
+#acompanhar #detalhesConsulta{border-top:1px solid #dae4ee;margin-top:14px;overflow-wrap:anywhere}
+#acompanhar .timeline{list-style:none;padding:0}
+#acompanhar .step .dot{background:var(--marcador,#68798d);border-color:var(--marcador,#68798d)}
+#acompanhar .step.current .dot{outline:2px solid var(--marcador,#68798d);outline-offset:2px}
+#acompanhar .step.current b{color:#074e89}
+#acompanhar .step .quando{display:block;font-size:13px}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
@@ -350,17 +364,45 @@ body{background:#e9eff6}
 </form></main></section>
 
 <section id="acompanhar" class="page">
-<header class="top"><div class="brand"><span class="back" onclick="go('home')">‹ Voltar</span><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Acompanhar solicitação</h1><p>Consulte com seu protocolo e sua chave individual de acompanhamento.</p></header>
-<main class="wrap"><div class="card"><div class="search"><input id="protocolo" placeholder="Digite seu número de protocolo"><button id="consultar" type="button" aria-label="Consultar solicitação" disabled>⌕</button></div>
-<div id="segurancaV2" style="margin-top:12px"><label for="chaveConsultaV2" style="display:block;font-weight:700;margin-bottom:6px">Chave secreta de acesso</label><input id="chaveConsultaV2" type="password" autocomplete="off" spellcheck="false" placeholder="Digite sua chave de acesso" style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px"><p class="muted">A chave não é armazenada no navegador. A recuperação exige análise da equipe; não há envio automático de chave por WhatsApp.</p><button id="abrirRecuperacaoV2" type="button">Solicitar recuperação de acesso</button><div id="recuperacaoV2" style="display:none;margin-top:10px"><label for="whatsappRecuperacaoV2">WhatsApp com DDD</label><input id="whatsappRecuperacaoV2" type="tel" autocomplete="off" placeholder="(51) 99999-9999" style="width:100%;padding:12px"><button id="enviarRecuperacaoV2" type="button">Enviar pedido para análise</button></div></div>
-<p id="entradaRecuperacaoManual" hidden><a href="#recuperacaoV2">🔐 Consultar com chave ou recuperar meu acesso</a></p>
-<div class="tabs"><button class="tab active" data-tab="det">Detalhes</button><button class="tab" data-tab="and">Andamento</button><button class="tab" data-tab="msg">Mensagens</button></div>
-<div id="erro" class="notice" role="status"></div><div id="resultado" class="req">
-<section id="det" class="pane"><div class="title-row"><div><div class="meta">Protocolo <strong id="rProtocolo"></strong></div><h2 id="rAssunto" style="font-size:19px;margin:6px 0 0"></h2></div><span class="pill" id="rStatus"></span></div><div class="issue"><div class="muted">Solicitante</div><strong id="rSolicitante"></strong></div><div class="issue"><div class="muted">Localidade</div><strong id="rLocalidade"></strong></div></section>
-<section id="and" class="pane" style="display:none"><div style="font-size:16px;font-weight:800;margin:0 0 14px">Linha do tempo do protocolo</div><div class="timeline" id="timeline"></div></section>
-<section id="msg" class="pane" style="display:none"><div id="rRespostas"></div><div id="rAnexosSeguros" style="display:none"><strong>Anexos da solicitação</strong><div id="rListaAnexosSeguros"></div><p class="muted">Os anexos são abertos somente após validar protocolo e chave.</p></div></section>
-</div></div></main></section>
-
+<header class="top"><div class="brand"><span class="back" onclick="go('home')">‹ Voltar</span><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Acompanhar solicitação</h1></header>
+<main class="wrap">
+<div class="card consulta-cidadao">
+<form id="formConsultaV2">
+<label for="protocolo">Protocolo</label>
+<input id="protocolo" required spellcheck="false">
+<label for="chaveConsultaV2">Chave de acesso</label>
+<input id="chaveConsultaV2" type="password" required maxlength="43" autocomplete="off" spellcheck="false">
+<button id="consultar" class="primary" type="submit" disabled>Consultar solicitação</button>
+</form>
+<details id="recuperacaoV2">
+<summary>Esqueceu sua chave?</summary>
+<p>Informe o protocolo acima e o WhatsApp cadastrado. Após a conferência, a equipe poderá enviar um código pelo WhatsApp. Digite o código abaixo neste mesmo navegador.</p>
+<label for="whatsappRecuperacaoV2">WhatsApp com DDD</label>
+<input id="whatsappRecuperacaoV2" type="tel" autocomplete="off">
+<button id="enviarRecuperacaoV2" type="button">Pedir código</button>
+<label for="codigoTemporario">Código recebido</label>
+<input id="codigoTemporario" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
+<button id="validarTemporario" type="button">Confirmar código</button>
+<div id="novaChaveBloco" hidden><label for="novaChave">Nova chave de acesso</label><input id="novaChave" readonly autocomplete="off"></div>
+</details>
+<div id="erro" class="notice" role="status"></div>
+</div>
+<article id="resultado" class="card req consulta-cidadao">
+<p class="meta">Protocolo <strong id="rProtocolo"></strong></p>
+<h2 id="rAssunto" tabindex="-1"></h2>
+<p><span id="rStatus" class="pill"></span></p>
+<p id="rAbertura" hidden>Abertura em <time id="rDataAbertura"></time></p>
+<details id="detalhesConsulta">
+<summary>Ver detalhes e histórico</summary>
+<p id="rDescricao" hidden></p>
+<h3>Histórico</h3>
+<ol id="timeline" class="timeline"></ol>
+<p id="historicoVazio" hidden>Nenhuma movimentação registrada.</p>
+<section id="rMensagens" hidden><h3>Mensagens</h3><div id="rRespostas"></div></section>
+<section id="rAnexosSeguros" hidden><h3>Anexos</h3><div id="rListaAnexosSeguros"></div></section>
+</details>
+</article>
+</main></section>
 
 <section id="pedidosProvidencias" class="page">
 <header class="top"><div class="brand"><button class="back" type="button" onclick="go('home')">‹ Voltar</button><strong>WT · MANDATO EM AÇÃO</strong></div><h1>Pedidos de Providências</h1><p>Solicitações oficiais de melhorias nas comunidades de Cristal.</p></header>
@@ -835,5 +877,5 @@ function renderPedidosMandatoV2(){
 document.addEventListener('DOMContentLoaded',renderPedidosMandatoV2);
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<script>document.getElementById('formSolicitacao').addEventListener('submit',e=>e.preventDefault());for(const id of ['botaoEnviar','consultar'])document.getElementById(id).disabled=true;document.getElementById('mensagem').textContent='Carregando acesso seguro. Se não carregar, tente novamente mais tarde.';document.getElementById('mensagem').style.display='block';</script><script>if(location.hash==="#acompanhar")go("acompanhar");</script><script type="module" src="./seguranca/tela-privada.mjs?v=2be3d5035235f04175e7e8f3965112cec6d5fa28"></script>
+<script>document.getElementById('formSolicitacao').addEventListener('submit',e=>e.preventDefault());for(const id of ['botaoEnviar','consultar'])document.getElementById(id).disabled=true;document.getElementById('mensagem').textContent='Carregando acesso seguro. Se não carregar, tente novamente mais tarde.';document.getElementById('mensagem').style.display='block';</script><script>if(["#acompanhar","#recuperacaoV2"].includes(location.hash))go("acompanhar");</script><script type="module" src="./seguranca/tela-privada.mjs?v=consulta-simples-1"></script>
 </body></html>
