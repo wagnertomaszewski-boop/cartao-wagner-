@@ -2,7 +2,7 @@ import {dataMovimentacao, renderizarHistorico} from './historico-consulta.mjs?v=
 import {ativarMascaraTelefone} from './telefone.mjs?v=2be3d5035235f04175e7e8f3965112cec6d5fa28';
 import {criarClienteWeb,criarContratoRecuperacaoCidadao} from './cliente.mjs?v=chave-12-1';
 import {criarSelecaoLocalizacao,montarMapaPrivado} from './localizacao.mjs?v=2be3d5035235f04175e7e8f3965112cec6d5fa28';
-import {validarSelecaoArquivos,criarVisualizadorFotos,prepararAnexo} from './fotos.mjs?v=2be3d5035235f04175e7e8f3965112cec6d5fa28';
+import {validarSelecaoArquivos,criarVisualizadorFotos,prepararAnexo} from './fotos.mjs?v=botoes-1';
 const $=id=>document.getElementById(id);let ciclo=0,acesso=null,cadastro=null,pendentes=[],operacaoId=crypto.randomUUID(),ocupado=false,mapa=null,ponto=null;
 const config=await fetch('./seguranca/configuracao-publica.json',{cache:'no-store',redirect:'error'}).then(r=>{if(!r.ok)throw Error('Configuração indisponível.');return r.json();});
 ativarMascaraTelefone($('whatsapp'));
@@ -51,13 +51,13 @@ async function anexar(){
 }
 $('repetirAnexos').onclick=async()=>{if(ocupado)return;ocupado=true;try{await anexar();avisar('mensagem','Fotografias registradas de forma privada.');}catch(e){avisar('mensagem',e.message);}finally{ocupado=false;}};
 $('formSolicitacao').onsubmit=async e=>{e.preventDefault();if(ocupado)return;ocupado=true;$('botaoEnviar').disabled=true;try{pendentes=validarSelecaoArquivos([...$('anexo').files,...camera.files]);const p=selecao.ler(),cat=document.querySelector('.cat.active')?.dataset.cat||'';cadastro=await api.cadastrar({operacaoId,p_nome:$('nome').value,p_whatsapp:$('whatsapp').value,p_localidade:$('localidade').value,p_assunto:(cat?cat+' — ':'')+$('assunto').value,p_descricao:$('descricao').value,...(p?{...p,localizacaoAutorizada:true}:{})});acesso={protocolo:cadastro.protocolo,chave:cadastro.chaveInicial};$('protocoloEmitido').textContent='Protocolo: '+acesso.protocolo;$('chaveEmitida').value=acesso.chave;recibo.hidden=false;avisar('mensagem','Solicitação registrada. Guarde protocolo e chave.');try{await anexar();}catch(e){$('repetirAnexos').hidden=false;avisar('mensagem','Solicitação salva. Há anexos pendentes; use Reenviar anexos pendentes.');}if(!pendentes.length){e.target.reset();selecao.limpar();operacaoId=crypto.randomUUID();}}catch(e){avisar('mensagem',e.message);}finally{ocupado=false;$('botaoEnviar').disabled=false;}};
-function linhas(container,itens,texto){container.replaceChildren();for(const item of itens){const p=document.createElement('p');p.textContent=texto(item);container.append(p);}}
-function documento(f){const b=document.createElement('button');b.type='button';b.textContent='Baixar '+f.nome;b.onclick=async()=>{try{if(!acesso)throw Error('Consulte novamente.');const r=await api.baixar({...acesso,arquivoId:f.id}),bytes=Uint8Array.from(atob(r.base64),c=>c.charCodeAt(0)),url=URL.createObjectURL(new Blob([bytes],{type:r.mime})),a=document.createElement('a');a.href=url;a.download=r.nome;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){avisar('erro',e.message);}};$('rListaAnexosSeguros').append(b);}
+function documento(f){const b=document.createElement('button');b.type='button';b.className='arquivo-acao';b.textContent='Baixar arquivo: '+f.nome;b.onclick=async()=>{b.disabled=true;try{if(!acesso)throw Error('Consulte novamente.');const r=await api.baixar({...acesso,arquivoId:f.id}),bytes=Uint8Array.from(atob(r.base64),c=>c.charCodeAt(0)),url=URL.createObjectURL(new Blob([bytes],{type:r.mime})),a=document.createElement('a');a.href=url;a.download=r.nome;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){avisar('erroAnexoV2',e.message);}finally{b.disabled=false;}};$('rListaAnexosSeguros').append(b);}
 function limparResultado(){
  acesso=null;
  $('resultado').classList.remove('show');
  $('detalhesConsulta').open=false;
  galeria.limpar();
+ $('erroAnexoV2').style.display='none';
 }
 async function consultar(event){
  event.preventDefault();
@@ -81,7 +81,21 @@ async function consultar(event){
   $('historicoVazio').hidden=renderizarHistorico($('timeline'),r.historico)>0;
   const respostas=(r.respostas||[]).filter(x=>x.mensagem);
   $('rMensagens').hidden=!respostas.length;
-  linhas($('rRespostas'),respostas,x=>[x.mensagem,dataMovimentacao(x.criadoEm)].filter(Boolean).join(' — '));
+  $('rRespostas').replaceChildren(...respostas.map(resposta=>{
+   const card=document.createElement('article');
+   card.className='mensagem-cidadao';
+   const texto=document.createElement('p');
+   texto.textContent=resposta.mensagem;
+   card.append(texto);
+   const data=dataMovimentacao(resposta.criadoEm);
+   if(data){
+    const hora=document.createElement('time');
+    hora.dateTime=resposta.criadoEm;
+    hora.textContent=data;
+    card.append(hora);
+   }
+   return card;
+  }));
   for(const f of r.anexos||[]){
    if(['image/png','image/jpeg'].includes(f.mime))galeria.adicionar(f);
    else documento(f);
