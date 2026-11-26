@@ -67,7 +67,7 @@ android {
             initWith release
             // Mesmo aplicativo; sem sufixo .homologacao. Não é distribuído automaticamente.
             debuggable false
-            signingConfig null
+            signingConfig System.getenv('PAINEL_ASSINAR_CANDIDATA') == '1' ? signingConfigs.release : null
             versionNameSuffix '-candidata-bio'
             buildConfigField 'boolean', 'BIOMETRIA_PLAY', 'true'
             matchingFallbacks = ['release']

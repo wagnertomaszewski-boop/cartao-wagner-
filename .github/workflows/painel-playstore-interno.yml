@@ -2,13 +2,23 @@ name: Painel do Mandato - Play Store (teste interno)
 
 on:
   workflow_dispatch:
+    inputs:
+      ultimo_codigo:
+        description: Maior versionCode registrado no Painel na Play Console
+        required: true
+        type: string
+      upload_sha256:
+        description: SHA-256 do certificado de upload do Painel (publico)
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   gerar-aab:
-    name: Gerar AAB assinado para teste interno
+    if: github.ref == 'refs/heads/candidate/painel-biometria-assinada'
+    name: Gerar candidata biometrica assinada
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -35,6 +45,8 @@ jobs:
 
       - name: Carregar assinatura privada
         env:
+          ULTIMO_CODIGO: ${{ inputs.ultimo_codigo }}
+          UPLOAD_SHA256: ${{ inputs.upload_sha256 }}
           KEYSTORE_B64: ${{ secrets.PAINEL_KEYSTORE_BASE64 }}
           STORE_PASSWORD: ${{ secrets.PAINEL_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.PAINEL_KEY_ALIAS }}
@@ -48,20 +60,36 @@ jobs:
           mkdir -p "$RUNNER_TEMP/painel-assinatura"
           printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/painel-assinatura/upload.jks"
           test -s "$RUNNER_TEMP/painel-assinatura/upload.jks"
+          [[ "$ULTIMO_CODIGO" =~ ^[1-9][0-9]{0,9}$ ]] && (( ULTIMO_CODIGO < 2100000000 ))
+          esperado="$(printf '%s' "$UPLOAD_SHA256" | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          [[ "$esperado" =~ ^[0-9a-f]{64}$ ]]
+          keytool -exportcert -keystore "$RUNNER_TEMP/painel-assinatura/upload.jks" \
+            -alias "$KEY_ALIAS" -storepass:env STORE_PASSWORD \
+            -file "$RUNNER_TEMP/painel-assinatura/cert.der"
+          real="$(sha256sum "$RUNNER_TEMP/painel-assinatura/cert.der" | cut -d' ' -f1)"
+          if [[ "$real" != "$esperado" ]]; then
+            echo 'Certificado de upload diferente do informado na Play Console.' >&2
+            exit 1
+          fi
+          echo "PAINEL_VERSION_CODE=$((ULTIMO_CODIGO+1))" >> "$GITHUB_ENV"
 
-      - name: Compilar AAB de producao
+      - name: Testar e compilar candidata biometrica
         working-directory: android-painel
         env:
+          PAINEL_ASSINAR_CANDIDATA: '1'
           PAINEL_KEYSTORE_FILE: ${{ runner.temp }}/painel-assinatura/upload.jks
           PAINEL_KEYSTORE_PASSWORD: ${{ secrets.PAINEL_KEYSTORE_PASSWORD }}
           PAINEL_KEY_ALIAS: ${{ secrets.PAINEL_KEY_ALIAS }}
           PAINEL_KEY_PASSWORD: ${{ secrets.PAINEL_KEY_PASSWORD }}
-        run: gradle --no-daemon :app:bundleRelease
+        run: gradle --no-daemon :app:testPlayCandidatoUnitTest :app:bundlePlayCandidato
 
-      - name: Disponibilizar AAB para a Play Console
+      - name: Verificar assinatura do AAB
+        run: jarsigner -verify android-painel/app/build/outputs/bundle/playCandidato/app-playCandidato.aab
+
+      - name: Disponibilizar AAB de teste, sem envio a Play
         uses: actions/upload-artifact@v4
         with:
-          name: Painel-do-Mandato-PlayStore-AAB
-          path: android-painel/app/build/outputs/bundle/release/app-release.aab
+          name: Painel-do-Mandato-Biometria-Assinado
+          path: android-painel/app/build/outputs/bundle/playCandidato/app-playCandidato.aab
           if-no-files-found: error
           retention-days: 14
