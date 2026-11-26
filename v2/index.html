@@ -258,6 +258,8 @@ body{background:#e9eff6}
 #acompanhar .step.current .dot{outline:2px solid var(--marcador,#68798d);outline-offset:2px}
 #acompanhar .step.current b{color:#074e89}
 #acompanhar .step .quando{display:block;font-size:13px}
+#acompanhar #estadoPedidoRecuperacao:empty{display:none}
+#acompanhar #estadoPedidoRecuperacao:not(:empty){padding:10px 12px;border-radius:10px;background:#edf6ff;color:#16476f}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="./seguranca/botoes.css?v=1">
@@ -381,6 +383,7 @@ body{background:#e9eff6}
 <label for="whatsappRecuperacaoV2">WhatsApp com DDD</label>
 <input id="whatsappRecuperacaoV2" type="tel" autocomplete="off">
 <button id="enviarRecuperacaoV2" type="button">Pedir código</button>
+<p id="estadoPedidoRecuperacao" role="status" aria-atomic="true"></p>
 <label for="codigoTemporario">Código recebido</label>
 <input id="codigoTemporario" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
 <button id="validarTemporario" type="button">Confirmar código</button>
@@ -878,5 +881,5 @@ function renderPedidosMandatoV2(){
 document.addEventListener('DOMContentLoaded',renderPedidosMandatoV2);
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<script>document.getElementById('formSolicitacao').addEventListener('submit',e=>e.preventDefault());for(const id of ['botaoEnviar','consultar'])document.getElementById(id).disabled=true;document.getElementById('mensagem').textContent='Carregando acesso seguro. Se não carregar, tente novamente mais tarde.';document.getElementById('mensagem').style.display='block';</script><script>if(["#acompanhar","#recuperacaoV2"].includes(location.hash))go("acompanhar");</script><script type="module" src="./seguranca/tela-privada.mjs?v=botoes-1"></script>
+<script>document.getElementById('formSolicitacao').addEventListener('submit',e=>e.preventDefault());for(const id of ['botaoEnviar','consultar'])document.getElementById(id).disabled=true;document.getElementById('mensagem').textContent='Carregando acesso seguro. Se não carregar, tente novamente mais tarde.';document.getElementById('mensagem').style.display='block';</script><script>if(["#acompanhar","#recuperacaoV2"].includes(location.hash))go("acompanhar");</script><script type="module" src="./seguranca/tela-privada.mjs?v=pedido-codigo-1"></script>
 </body></html>

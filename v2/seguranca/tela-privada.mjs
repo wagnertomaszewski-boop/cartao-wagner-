@@ -116,7 +116,34 @@ function mostrarRecuperacaoPeloLink(){
 }
 addEventListener('hashchange',mostrarRecuperacaoPeloLink);
 mostrarRecuperacaoPeloLink();
-$('enviarRecuperacaoV2').onclick=async()=>{try{await api.solicitarNavegador({protocolo:$('protocolo').value.trim(),telefone:$('whatsappRecuperacaoV2').value});avisar('erro','Se os dados corresponderem ao cadastro, o pedido será analisado pela equipe.');}catch(e){avisar('erro',e.message);}};
+const pedirCodigo=$('enviarRecuperacaoV2');
+const estadoPedido=$('estadoPedidoRecuperacao');
+pedirCodigo.onclick=async()=>{
+ if(pedirCodigo.disabled)return;
+ const protocolo=$('protocolo').value.trim();
+ const telefone=$('whatsappRecuperacaoV2').value.trim();
+ if(!protocolo||!telefone){
+  estadoPedido.textContent='Informe o protocolo acima e o WhatsApp com DDD.';
+  $(protocolo?'whatsappRecuperacaoV2':'protocolo').focus();
+  return;
+ }
+ pedirCodigo.disabled=true;
+ pedirCodigo.textContent='Enviando pedido…';
+ estadoPedido.textContent='';
+ try{
+  await api.solicitarNavegador({protocolo,telefone});
+  pedirCodigo.textContent='Pedido enviado';
+  estadoPedido.textContent='Se os dados estiverem corretos, a equipe vai analisar o pedido. Aguarde o código pelo WhatsApp.';
+  setTimeout(()=>{
+   pedirCodigo.disabled=false;
+   pedirCodigo.textContent='Pedir código novamente';
+  },60000);
+ }catch(e){
+  estadoPedido.textContent=e.message;
+  pedirCodigo.disabled=false;
+  pedirCodigo.textContent='Pedir código';
+ }
+};
 $('validarTemporario').onclick=async()=>{try{const r=await api.validarNavegador($('codigoTemporario').value);if(r.reciboAusente)throw Error('Recibo indisponível neste navegador. Use o mesmo navegador em que pediu a recuperação.');if(r.validado!==true)throw Error('Código inválido, expirado ou já utilizado.');$('protocolo').value=r.protocolo;$('novaChave').value=r.novaChave;$('novaChaveBloco').hidden=false;avisar('erro','Guarde sua chave individual. Se existia uma chave anterior, ela foi invalidada.');}catch(e){avisar('erro',e.message);}finally{$('codigoTemporario').value='';}};
 function limpar(){ciclo++;acesso=null;cadastro=null;pendentes=[];limparResultado();$('novaChaveBloco').hidden=true;for(const id of ['chaveEmitida','novaChave','chaveConsultaV2','codigoTemporario'])$(id).value='';$('resultado').classList.remove('show');}
 addEventListener('pagehide',limpar);addEventListener('pageshow',e=>{if(e.persisted)limpar();});
