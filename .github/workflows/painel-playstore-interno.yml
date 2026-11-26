@@ -1,6 +1,9 @@
 name: Painel do Mandato - Play Store (teste interno)
 
 on:
+  push:
+    branches: [candidate/painel-biometria-assinada]
+    paths: [.github/workflows/painel-playstore-interno.yml]
   workflow_dispatch:
     inputs:
       ultimo_codigo:
@@ -45,8 +48,8 @@ jobs:
 
       - name: Carregar assinatura privada
         env:
-          ULTIMO_CODIGO: ${{ inputs.ultimo_codigo }}
-          UPLOAD_SHA256: ${{ inputs.upload_sha256 }}
+          ULTIMO_CODIGO: ${{ inputs.ultimo_codigo || '3' }}
+          UPLOAD_SHA256: ${{ inputs.upload_sha256 || 'E3:3F:D6:DF:8F:53:4A:33:E1:74:0F:0C:50:1F:31:0A:B4:8E:6F:47:78:55:E4:C4:90:BE:AC:A9:80:EC:DA:59' }}
           KEYSTORE_B64: ${{ secrets.PAINEL_KEYSTORE_BASE64 }}
           STORE_PASSWORD: ${{ secrets.PAINEL_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.PAINEL_KEY_ALIAS }}
@@ -84,7 +87,9 @@ jobs:
         run: gradle --no-daemon :app:testPlayCandidatoUnitTest :app:bundlePlayCandidato
 
       - name: Verificar assinatura do AAB
-        run: jarsigner -verify android-painel/app/build/outputs/bundle/playCandidato/app-playCandidato.aab
+        run: |
+          LC_ALL=C jarsigner -verify android-painel/app/build/outputs/bundle/playCandidato/app-playCandidato.aab | tee "$RUNNER_TEMP/painel-verificacao.txt"
+          grep -Fx 'jar verified.' "$RUNNER_TEMP/painel-verificacao.txt"
 
       - name: Disponibilizar AAB de teste, sem envio a Play
         uses: actions/upload-artifact@v4
