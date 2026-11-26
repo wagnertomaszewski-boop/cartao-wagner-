@@ -2,11 +2,11 @@ import {readFile,writeFile,copyFile,mkdir} from 'node:fs/promises';
 import {resolve} from 'node:path';
 
 const raiz=new URL('../../../',import.meta.url);
-const ler=nome=>readFile(new URL(nome,raiz),'utf8');
 const modulo='<script type="module" src="./mandato-seguro/cidadao.mjs"></script>';
 const substituirScripts=html=>html.replace(/<script(?:\s[^>]*)?>[\s\S]*?<\/script>/gi,'').replace('</body>',modulo+'\n</body>');
 
-export async function montarCidadaoOriginal(destino,{homologacao=false}={}){
+export async function montarCidadaoOriginal(destino,{homologacao=false,origem=raiz}={}){
+ const ler=nome=>readFile(new URL(nome,origem),'utf8');
  const [inicio,solicitacao,acompanhar,worker]=await Promise.all(['index.html','solicitacao.html','acompanhar.html','service-worker.js'].map(ler));
  if(!solicitacao.includes('criar_solicitacao_com_anexos')||!acompanhar.includes('consultarSolicitacao()')||!worker.includes('wagner-app-'))
   throw Error('A página original mudou. Revise a integração.');
@@ -34,8 +34,10 @@ export async function montarCidadaoOriginal(destino,{homologacao=false}={}){
 <label for="codigoRecuperacao">Código de seis dígitos</label><input id="codigoRecuperacao" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
 <button id="validarRecuperacao" type="button" disabled>Validar código</button>
 <p id="estadoRecuperacao" role="status"></p></details>`;
+ const botaoLegado=/<button\b[^>]*\bonclick="consultarSolicitacao\(\)"[^>]*>[\s\S]*?<\/button>(?:\s*<p role="status"[^>]*>Por segurança, estamos atualizando o acesso às solicitações\.[\s\S]*?<\/p>)?/g;
+ if([...acompanhar.matchAll(botaoLegado)].length!==1)throw Error('Botão original de acompanhamento ausente ou ambíguo.');
  await gravar('acompanhar.html',sinalizar(substituirScripts(acompanhar))
-  .replace(/<button onclick="consultarSolicitacao\(\)">[\s\S]*?<\/button>/,campos)
+  .replace(botaoLegado,campos)
   .replace('<div id="rRespostas"></div>','<div id="rRespostas"></div><ul id="rHistorico" aria-label="Histórico da solicitação"></ul><div id="rAnexos"></div>')
   .replace('id="erro">','id="erro" role="alert">'));
  // Conserva o cache offline público do cartão. As telas privadas e os seus módulos exigem rede.

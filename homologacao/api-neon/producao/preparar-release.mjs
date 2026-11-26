@@ -1,6 +1,6 @@
 import {cp,mkdir,readFile,writeFile} from 'node:fs/promises';
 import {resolve,relative,dirname,isAbsolute} from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 import {montarCandidata} from './montar-candidata.mjs';
 import {montarCidadaoOriginal} from './montar-cidadao-original.mjs';
@@ -9,7 +9,7 @@ const raiz=fileURLToPath(new URL('../',import.meta.url));
 const projeto=fileURLToPath(new URL('../../../',import.meta.url));
 const entrada='producao/supabase/functions/mandato-privado/index.ts';
 const configEdge='producao/supabase/config.toml';
-const [versao,destino]=process.argv.slice(2);
+const [versao,destino,baseWeb]=process.argv.slice(2);
 if(!destino||!/^[0-9a-f]{40}$/.test(versao??''))throw Error('Uso: node preparar-release.mjs <commit completo> <novo diretório externo ao repositório>');
 const out=resolve(destino);
 const relativo=relative(projeto,out);
@@ -34,6 +34,8 @@ const web=await montarCandidata({
  config:{ambiente:'producao',projeto:'pmmsdjozyyxkbuqlkfpb',apiBase:'https://pmmsdjozyyxkbuqlkfpb.supabase.co/functions/v1/mandato-privado',versao},
  destino:resolve(out,'web')
 });
-await montarCidadaoOriginal(resolve(out,'web'));
+await montarCidadaoOriginal(resolve(out,'web'),{
+ origem:baseWeb ? pathToFileURL(resolve(baseWeb)+'/') : undefined
+});
 await writeFile(resolve(out,'manifesto.json'),JSON.stringify({versao,publicado:false,edge:{entrada,arquivos:Object.fromEntries(arquivos)},web},null,2)+'\n');
 console.log('Artefatos da Edge e dos clientes web preparados. Publicação bloqueada.');
