@@ -10,7 +10,7 @@ const telefone=()=>{
 };
 const credencial=()=>({protocolo:$('protocolo').value.trim(),chave:$('chave').value.trim()});
 async function api(rota,dados={}){
- const r=await fetch('/hml/candidata/api/v1/'+rota,{method:'POST',credentials:'same-origin',referrerPolicy:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados),cache:'no-store',redirect:'error',signal:AbortSignal.timeout(20000)});
+ const r=await fetch('/hml/candidata/api/v1/'+rota,{method:'POST',credentials:'same-origin',referrerPolicy:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados),cache:'no-store',redirect:'error',signal:AbortSignal.timeout(rota.includes('arquivos/')||rota.endsWith('/baixar-anexo')?90000:20000)});
  const j=await r.json();
  if(!r.ok)throw Error(j.erro||'Operação indisponível.');
  return j;
@@ -25,13 +25,16 @@ async function executar(fn){
 function botao(nome,fn){
  const b=document.createElement('button');b.type='button';b.textContent=nome;b.onclick=()=>executar(fn);return b;
 }
-function mostrarAnexos(itens){
- $('anexos').replaceChildren(...itens.map(a=>botao('Baixar '+a.nome,async()=>{
-  const f=await api('arquivos/baixar',{...credencial(),arquivoId:a.id});
-  const bytes=Uint8Array.from(atob(f.base64),x=>x.charCodeAt(0));
+function salvarAnexo(f){
+ const bytes=Uint8Array.from(atob(f.base64),x=>x.charCodeAt(0));
   const url=URL.createObjectURL(new Blob([bytes],{type:f.mime}));
   const link=document.createElement('a');link.href=url;link.download=f.nome;link.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function mostrarAnexos(itens){
+ $('anexos').replaceChildren(...itens.map(a=>botao('Baixar '+a.nome,async()=>{
+  const f=await api('arquivos/baixar',{...credencial(),arquivoId:a.id});
+  salvarAnexo(f);
   return 'Download autorizado pela API candidata.';
  })));
 }
@@ -116,8 +119,14 @@ if(painel){
  $('consultar-local').onclick=()=>executar(async()=>{
   limparMapa();ponto=null;abrir.hidden=true;abrir.removeAttribute('href');mostrar.hidden=true;
   $('origem-local').textContent='';
-  const resposta=await api('admin/solicitacoes/localizacao',{protocolo:$('local-protocolo').value.trim()});
-  if(!resposta.ponto)return 'Nenhuma localização autorizada para este protocolo.';
+  const lista=$('anexos-admin');lista.replaceChildren();
+  const protocolo=$('local-protocolo').value.trim();
+  const resposta=await api('admin/solicitacoes/localizacao',{protocolo});
+  for(const a of resposta.anexos)lista.append(botao('Baixar '+a.nome,async()=>{
+   salvarAnexo(await api('admin/solicitacoes/baixar-anexo',{protocolo,arquivoId:a.id}));
+   return 'Download privado autorizado pelo Painel.';
+  }));
+  if(!resposta.ponto)return resposta.anexos.length?'Anexos encontrados. Sem localização autorizada.':'Nenhuma localização autorizada ou anexo para este protocolo.';
   ponto=resposta.ponto;
   $('origem-local').textContent=ponto.origem==='gps'?'Origem: GPS autorizado':'Origem: marcação manual';
   const destino=encodeURIComponent(ponto.latitude+','+ponto.longitude);
@@ -141,6 +150,6 @@ if(painel){
   mapa=montarMapaPrivado(caixa,ponto);
   return 'Mapa exibido.';
  });
- addEventListener('pagehide',()=>{limparMapa();ponto=null;abrir.hidden=true;abrir.removeAttribute('href');mostrar.hidden=true;$('origem-local').textContent='';});
+ addEventListener('pagehide',()=>{$('anexos-admin').replaceChildren();limparMapa();ponto=null;abrir.hidden=true;abrir.removeAttribute('href');mostrar.hidden=true;$('origem-local').textContent='';});
 }
 

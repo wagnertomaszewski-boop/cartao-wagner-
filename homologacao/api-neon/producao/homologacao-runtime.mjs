@@ -103,6 +103,17 @@ function montarRepositorio(query,segredoBase){
    AND latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180
    AND localizacao_origem IN ('gps','mapa')`,[protocolo]);
   return ponto??null;
+ },async anexosAdmin(protocolo){
+  return (await query(`SELECT a.id,a.nome,a.mime FROM mandato_privado.arquivos a
+   JOIN public.solicitacoes s ON s.id=a.solicitacao_id WHERE s.protocolo=$1 ORDER BY a.criado_em,a.id LIMIT 20`,[protocolo])).rows;
+ },async baixarAnexoAdmin(protocolo,arquivoId,operador){
+  const {rows:[arquivo]}=await query(`SELECT a.solicitacao_id,a.nome,a.mime,a.caminho FROM mandato_privado.arquivos a
+   JOIN public.solicitacoes s ON s.id=a.solicitacao_id WHERE s.protocolo=$1 AND a.id=$2`,[protocolo,arquivoId]);
+  if(!arquivo)return null;
+  const bytes=await storage.baixar(arquivo.caminho);
+  await query(`INSERT INTO mandato_privado.auditoria_recuperacao(evento,solicitacao_id,operador_id)
+   VALUES ('arquivo_privado_baixado_admin_hml',$1,$2)`,[arquivo.solicitacao_id,operador]);
+  return {nome:arquivo.nome,mime:arquivo.mime,base64:bytes.toString('base64')};
  }};
 }
 export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
@@ -142,7 +153,9 @@ export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
     const interno=operador?randomBytes(24).toString('base64url'):null;
     if(interno)req.headers.authorization='Bearer '+interno;
     await banco.executar(async repositorio=>{
-     if(rota==='api/v1/admin/solicitacoes/localizacao'){
+     const localizacao=rota==='api/v1/admin/solicitacoes/localizacao';
+     const baixar=rota==='api/v1/admin/solicitacoes/baixar-anexo';
+     if(localizacao||baixar){
       if(!await repositorio.limitarEntrada('api-v1-global'))return json(res,429,{erro:'Aguarde.'});
       if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']??''))return json(res,415,{erro:'Envie JSON.'});
       let corpo='';
@@ -154,7 +167,14 @@ export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
       try{dados=JSON.parse(corpo);}catch{return json(res,400,{erro:'Protocolo inválido.'});}
       if(typeof dados?.protocolo!=='string'||!/^HML-CANDIDATA-\d{6,}$/.test(dados.protocolo))
        return json(res,400,{erro:'Informe um protocolo da candidata.'});
-      return json(res,200,{ponto:await repositorio.localizacao(dados.protocolo)});
+      if(localizacao)return json(res,200,{
+       ponto:await repositorio.localizacao(dados.protocolo),
+       anexos:await repositorio.anexosAdmin(dados.protocolo)
+      });
+      if(typeof dados.arquivoId!=='string'||!/^([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.test(dados.arquivoId))
+       return json(res,400,{erro:'Arquivo inválido.'});
+      const arquivo=await repositorio.baixarAnexoAdmin(dados.protocolo,dados.arquivoId,operador.usuarioId);
+      return arquivo?json(res,200,arquivo):json(res,404,{erro:'Arquivo indisponível para este protocolo.'});
      }
      const handler=criarHandlerProducao({repositorio:recuperacaoNoNavegador(repositorio,req,res),origemApi:origem,
       resolverAdminMfa:async token=>interno&&token===interno?{usuarioId:operador.usuarioId,mfaRecente:true}:null});
