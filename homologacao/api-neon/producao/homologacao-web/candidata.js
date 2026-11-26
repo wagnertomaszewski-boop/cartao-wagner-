@@ -107,4 +107,40 @@ $('listar').onclick=()=>executar(async()=>{
  }
  return itens.length?'Pedidos fictícios carregados.':'Sem pedidos fictícios.';
 });
-$(location.pathname.endsWith('/painel')?'painel':'cidadao').hidden=false;
+const painel=location.pathname.endsWith('/painel');
+$(painel?'painel':'cidadao').hidden=false;
+if(painel){
+ let ponto=null,mapa=null;
+ const caixa=$('mapa-local'),abrir=$('abrir-local'),mostrar=$('mostrar-mapa');
+ const limparMapa=()=>{mapa?.remover();mapa=null;caixa.hidden=true;};
+ $('consultar-local').onclick=()=>executar(async()=>{
+  limparMapa();ponto=null;abrir.hidden=true;abrir.removeAttribute('href');mostrar.hidden=true;
+  $('origem-local').textContent='';
+  const resposta=await api('admin/solicitacoes/localizacao',{protocolo:$('local-protocolo').value.trim()});
+  if(!resposta.ponto)return 'Nenhuma localização autorizada para este protocolo.';
+  ponto=resposta.ponto;
+  $('origem-local').textContent=ponto.origem==='gps'?'Origem: GPS autorizado':'Origem: marcação manual';
+  const destino=encodeURIComponent(ponto.latitude+','+ponto.longitude);
+  abrir.href='https://www.google.com/maps/search/?api=1&query='+destino;
+  abrir.hidden=false;mostrar.hidden=false;
+  return 'Localização encontrada.';
+ });
+ mostrar.onclick=()=>executar(async()=>{
+  limparMapa();
+  if(!ponto)return 'Consulte um protocolo primeiro.';
+  if(!globalThis.L){
+   const css=document.createElement('link');css.rel='stylesheet';css.href='/hml/v2/vendor/leaflet/leaflet.css';document.head.append(css);
+   await new Promise((resolve,reject)=>{
+    const script=document.createElement('script');script.src='/hml/v2/vendor/leaflet/leaflet.js';
+    script.onload=resolve;script.onerror=()=>reject(Error('Mapa indisponível. Use o link para o aplicativo de mapas.'));
+    document.head.append(script);
+   });
+  }
+  const {montarMapaPrivado}=await import('/hml/v2/seguranca/localizacao-solicitacao-hml.mjs');
+  caixa.style.height='320px';caixa.hidden=false;
+  mapa=montarMapaPrivado(caixa,ponto);
+  return 'Mapa exibido.';
+ });
+ addEventListener('pagehide',()=>{limparMapa();ponto=null;abrir.hidden=true;abrir.removeAttribute('href');mostrar.hidden=true;$('origem-local').textContent='';});
+}
+

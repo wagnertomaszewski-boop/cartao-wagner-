@@ -37,6 +37,7 @@ const arquivos=new Map([
 ]);
 const headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff',
  'Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'none'; script-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"};
+const painelCsp=headers['Content-Security-Policy']+"; style-src 'self'; img-src 'self' https://tile.openstreetmap.org data:";
 const json=(res,status,body)=>{
  res.writeHead(status,{...headers,'Content-Type':'application/json'});
  res.end(JSON.stringify(body));return true;
@@ -76,7 +77,7 @@ async function iniciar({urlTeste,segredoBase}){
  }
  await db.exec('CREATE TABLE mandato_privado.storage_teste (caminho text PRIMARY KEY, bytes bytea NOT NULL); GRANT SELECT, INSERT ON mandato_privado.storage_teste TO mandato_api_privada; SET ROLE mandato_api_privada;');
  const repo=montarRepositorio((q,p)=>db.query(q,p),randomBytes(32).toString('hex'));
- return {banco:'PGlite isolado',executar:fn=>fn(repo)};
+ return {banco:'PGlite isolado',executar:fn=>fn(repo),fechar:()=>db.close()};
 }
 
 function montarRepositorio(query,segredoBase){
@@ -94,7 +95,14 @@ function montarRepositorio(query,segredoBase){
    return Buffer.from(objeto.bytes);
   }
  };
- return criarRepositorio({pool,storage,segredo:derivar('candidata-hml/operacoes'),segredoChaves:derivar('candidata-hml/chaves')});
+ const repo=criarRepositorio({pool,storage,segredo:derivar('candidata-hml/operacoes'),segredoChaves:derivar('candidata-hml/chaves')});
+ return {...repo,async localizacao(protocolo){
+  const {rows:[ponto]}=await query(`SELECT latitude::float8 AS latitude, longitude::float8 AS longitude, localizacao_origem AS origem
+   FROM public.solicitacoes WHERE protocolo=$1 AND localizacao_autorizada_em IS NOT NULL
+   AND latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180
+   AND localizacao_origem IN ('gps','mapa')`,[protocolo]);
+  return ponto??null;
+ }};
 }
 export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
  let inicializacao, fila=Promise.resolve(), pendentes=0;
@@ -109,7 +117,7 @@ export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
   const rota=path.slice(base.length+1);
   if(req.method==='GET'&&arquivos.has(rota)){
    const arquivo=arquivos.get(rota);
-   res.writeHead(200,{...headers,'Content-Type':rota.endsWith('.js')?'text/javascript; charset=utf-8':'text/html; charset=utf-8'});
+   res.writeHead(200,{...headers,...(rota==='painel'?{'Content-Security-Policy':painelCsp}:{}),'Content-Type':rota.endsWith('.js')?'text/javascript; charset=utf-8':'text/html; charset=utf-8'});
    res.end(await readFile(new URL('./homologacao-web/'+arquivo,import.meta.url)));return true;
   }
   if(rota==='versao'&&req.method==='GET'){
@@ -122,7 +130,7 @@ export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
   if(req.headers.origin!==origem||req.headers['sec-fetch-site']==='cross-site')return json(res,403,{erro:'Origem não autorizada'});
   let operador=null;
   if(rota.startsWith('api/v1/admin/')){
-   try{operador=await verificarMfa(req);}catch{return json(res,403,{erro:'Entre novamente na homologação e confirme o MFA.'});}
+   try{operador=await verificarMfa(req);if(!operador?.usuarioId)throw Error('Sessão inválida');}catch{return json(res,403,{erro:'Entre novamente na homologação e confirme o MFA.'});}
   }
   // PGlite usa uma única conexão. Serializa as transações do repositório.
   const processar=async()=>{
@@ -133,6 +141,20 @@ export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
     const interno=operador?randomBytes(24).toString('base64url'):null;
     if(interno)req.headers.authorization='Bearer '+interno;
     await banco.executar(async repositorio=>{
+     if(rota==='api/v1/admin/solicitacoes/localizacao'){
+      if(!await repositorio.limitarEntrada('api-v1-global'))return json(res,429,{erro:'Aguarde.'});
+      if(!/^application\/json(?:;|$)/i.test(req.headers['content-type']??''))return json(res,415,{erro:'Envie JSON.'});
+      let corpo='';
+      for await(const parte of req){
+       corpo+=parte.toString();
+       if(corpo.length>512)return json(res,413,{erro:'Protocolo inválido.'});
+      }
+      let dados;
+      try{dados=JSON.parse(corpo);}catch{return json(res,400,{erro:'Protocolo inválido.'});}
+      if(typeof dados?.protocolo!=='string'||!/^HML-CANDIDATA-\d{6,}$/.test(dados.protocolo))
+       return json(res,400,{erro:'Informe um protocolo da candidata.'});
+      return json(res,200,{ponto:await repositorio.localizacao(dados.protocolo)});
+     }
      const handler=criarHandlerProducao({repositorio:recuperacaoNoNavegador(repositorio,req,res),origemApi:origem,
       resolverAdminMfa:async token=>interno&&token===interno?{usuarioId:operador.usuarioId,mfaRecente:true}:null});
      await handler(req,res);
@@ -148,5 +170,6 @@ export function criarCandidataHml({origem,verificarMfa,urlTeste,segredoBase}){
   return true;
  };
  handler.preparar=preparar;
+ handler.fechar=async()=>{const banco=await inicializacao;await banco?.fechar?.();};
  return handler;
 }

@@ -32,6 +32,13 @@
 <button id="sessao">Validar MFA</button>
 <button id="listar">Listar pedidos de recuperação</button>
 <div id="pedidos"></div>
+<h2>Localização da solicitação</h2>
+<p><label>Protocolo de homologação <input id="local-protocolo" autocomplete="off"></label>
+<button id="consultar-local">Consultar localização</button></p>
+<p id="origem-local"></p>
+<p><a id="abrir-local" target="_blank" rel="noopener noreferrer" hidden>Abrir no aplicativo de mapas</a></p>
+<button id="mostrar-mapa" hidden>Exibir mapa (OpenStreetMap)</button>
+<div id="mapa-local" hidden></div>
 </section>
 </main>
 <script type="module" src="./app.js"></script>
