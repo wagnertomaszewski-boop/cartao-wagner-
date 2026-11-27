@@ -532,6 +532,7 @@
 @media(max-width:460px){.alertas-movimento-grid{gap:5px}.alertas-movimento-grid button{padding:8px 6px}.alertas-movimento-grid strong{font-size:20px}.alertas-movimento-grid span{font-size:10px}}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="../v2/seguranca/botoes.css?v=telefone-1">
 </head>
 <body>
   <div id="telaLogin">
@@ -585,11 +586,6 @@
       <button class="total-solicitacoes-banner" type="button" onclick="selecionarStatusRapido('Todos')" aria-label="Mostrar todas as solicitações cadastradas">
         <span><small>TOTAL DE SOLICITAÇÕES</small><strong id="cntTotalSolicitacoes">—</strong></span><span class="total-banner-descricao">Todos os protocolos, independentemente da situação ↗</span>
       </button>
-      <div id="alertasPrazoMandato" style="background:#fff;border:1px solid #d9e3ee;border-radius:14px;padding:14px;margin:0 0 14px" aria-live="polite">
-        <strong style="display:block;margin-bottom:5px;color:#16446f">Acompanhamento de prazos das solicitações</strong>
-        <div id="alertasPrazoResumo" style="font-size:14px;line-height:1.6">Carregando indicadores...</div>
-        <small style="display:block;color:#64748b;margin-top:7px">Contagem desde a data oficial de encaminhamento cadastrada no painel. Solicitações sem essa data não entram nos indicadores.</small>
-      </div>
       <div class="status-resumo">
         <button class="sr-card recebida" type="button" onclick="selecionarStatusRapido('Recebida')"><small>Recebidas (aguardando análise)</small><strong id="cntRecebida">—</strong></button>
         <button class="sr-card analise" type="button" onclick="selecionarStatusRapido('Em análise')"><small>Em análise</small><strong id="cntAnalise">—</strong></button>
@@ -704,19 +700,6 @@
     </section>
 
     <section id="viewMais" class="painel-view">
-      <a class="atalho" id="entradaRecuperacoesManuais" href="./recuperacoes.html" hidden style="display:none"><b>🔐</b><strong>Recuperações de acesso</strong><span>Aprovar, rejeitar e enviar código manual pelo WhatsApp</span></a>
-      <section aria-labelledby="tituloChavesPrivadas" style="background:#fff;border:1px solid #d9e3ee;border-radius:14px;padding:16px;margin-bottom:16px">
-        <h3 id="tituloChavesPrivadas">🔐 Chaves privadas de acompanhamento</h3>
-        <p>Emissão e revogação exigem autorização administrativa e comprovação de identidade pelo servidor.</p>
-        <label for="chaveSolicitacaoId">ID da solicitação</label>
-        <input id="chaveSolicitacaoId" type="text" inputmode="numeric" maxlength="16" placeholder="ID da solicitação" autocomplete="off">
-        <p id="estadoAutorizacaoChaves" role="status" aria-live="polite">Verificando disponibilidade da integração segura…</p><button type="button" onclick="verificarIntegracaoChaves()" id="btnVerificarIntegracaoChaves">Verificar integração</button>
-        <label for="atestadoChaves">Comprovante de identidade assinado</label>
-        <textarea id="atestadoChaves" rows="2" maxlength="4096" placeholder="Cole o comprovante emitido por conferente autorizado" autocomplete="off" spellcheck="false"></textarea>
-        <button type="button" id="btnEmitirChave" disabled onclick="executarOperacaoChave('emitir')">Emitir nova chave</button>
-        <button type="button" id="btnRevogarChave" disabled onclick="executarOperacaoChave('revogar')">Revogar chave</button>
-        <p id="resultadoChaves" role="status" aria-live="polite"></p>
-      </section>
       <h2 class="titulo">Mais</h2>
       <div class="atalhos-grid">
         <div class="atalho" onclick="irPainel('projetos',null,true)"><b>🏛️</b><strong>Projetos e ações</strong><span>Gerenciar conteúdos do mandato</span></div>
@@ -754,91 +737,6 @@ const SUPABASE_KEY = "sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_";
 const STORAGE_KEY = "wagner_admin_session_v2";
 const TEMPO_LIMITE_MS = 15000;
 const arquivosPendentesPorSolicitacao = new Map();
-
-// Diagnóstico somente de leitura. Nunca envia chave, protocolo ou sessão para a rota /health.
-const API_CHAVES_HOMOLOGACAO='https://mandato-neon-homologacao.onrender.com';
-let permissoesChaves={emitir:false,revogar:false};
-function atualizarBotoesChaves(){
- const id=document.getElementById('chaveSolicitacaoId')?.value.trim()||'';
- const atestado=document.getElementById('atestadoChaves')?.value.trim()||'';
- const pronto=/^[1-9][0-9]{0,15}$/.test(id)&&atestado.length>=16&&atestado.length<=4096;
- for(const acao of ['emitir','revogar']){
-  const botao=document.getElementById(acao==='emitir'?'btnEmitirChave':'btnRevogarChave');
-  if(botao)botao.disabled=!(permissoesChaves[acao]&&pronto);
- }
-}
-async function verificarRecuperacaoSolicitacao(id,botao){
- const secao=botao?.closest('[data-recuperacao-homologacao]');
- const saida=secao?.querySelector('[data-resultado-recuperacao]');
- if(!saida||!Number.isSafeInteger(id)||id<1)return;
- botao.disabled=true;
- saida.textContent='Verificando autenticação e disponibilidade da homologação…';
- try{
-  const sessao=await obterSessaoValida();
-  if(!sessao?.access_token){saida.textContent='Sessão administrativa expirada. Entre novamente no Painel.';return;}
-  const resposta=await fetch(API_CHAVES_HOMOLOGACAO+'/api/admin/chaves/estado',{
-   method:'GET',headers:{Authorization:'Bearer '+sessao.access_token},
-   credentials:'omit',cache:'no-store',signal:AbortSignal.timeout(8000)
-  });
-  if(resposta.status===401||resposta.status===403){saida.textContent='Esta sessão não foi autorizada pela API de homologação.';return;}
-  if(!resposta.ok)throw Error('API indisponível');
-  const dados=await resposta.json();
-  if(dados?.ambiente!=='homologacao')throw Error('Ambiente inesperado');
-  saida.textContent=dados.recuperacaoHabilitada===true?'Sessão reconhecida. A API informa recuperação habilitada, mas esta tela permanece bloqueada até a validação completa do fluxo.':'Sessão reconhecida. Recuperação ainda não habilitada na API de homologação; nenhuma chave foi alterada.';
- }catch{saida.textContent='Não foi possível confirmar a integração. Nenhuma chave foi alterada.';}
- finally{botao.disabled=false;}
-}
-
-async function executarOperacaoChave(acao){
- if(!['emitir','revogar'].includes(acao))return;
- const id=document.getElementById('chaveSolicitacaoId')?.value.trim();
- const atestado=document.getElementById('atestadoChaves')?.value.trim();
- const resultado=document.getElementById('resultadoChaves');
- if(!permissoesChaves[acao]||!/^[1-9][0-9]{0,15}$/.test(id||'')||!atestado||atestado.length<16)return;
- if(!window.confirm(acao==='emitir'?'Emitir uma nova chave e invalidar a anterior?':'Revogar a chave de acompanhamento desta solicitação?'))return;
- permissoesChaves={emitir:false,revogar:false};atualizarBotoesChaves();
- if(resultado)resultado.textContent='Executando operação autorizada…';
- try{
-  const sessao=await obterSessaoValida();
-  if(!sessao?.access_token)throw Error('Sessão expirada');
-  const resposta=await fetch(API_CHAVES_HOMOLOGACAO+'/api/admin/chaves/'+acao,{
-   method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+sessao.access_token},
-   credentials:'omit',cache:'no-store',signal:AbortSignal.timeout(10000),
-   body:JSON.stringify({solicitacaoId:id,atestado})
-  });
-  if(!resposta.ok)throw Error('Operação recusada pelo servidor');
-  const dados=await resposta.json();
-  if(resultado)resultado.textContent=acao==='emitir'&&typeof dados.chave==='string'?
-   'Chave emitida (exibida uma única vez): '+dados.chave:
-   acao==='revogar'&&dados.revogada===true?'Chave revogada com sucesso.':'Resposta inesperada: confirme o estado no servidor.';
- }catch{if(resultado)resultado.textContent='Operação não confirmada. Verifique o servidor antes de repetir.';}
- finally{const campo=document.getElementById('atestadoChaves');if(campo)campo.value='';await verificarIntegracaoChaves();}
-}
-document.addEventListener('input',evento=>{
- if(evento.target?.id==='chaveSolicitacaoId'||evento.target?.id==='atestadoChaves')atualizarBotoesChaves();
-});
-async function verificarIntegracaoChaves(){
- const estado=document.getElementById('estadoAutorizacaoChaves');
- const botao=document.getElementById('btnVerificarIntegracaoChaves');
- if(!estado||!botao)return;
- botao.disabled=true;
- permissoesChaves={emitir:false,revogar:false};
- atualizarBotoesChaves();
- estado.textContent='Verificando sessão e conexão segura…';
- try{
-  const sessao=await obterSessaoValida();
-  if(!sessao?.access_token){estado.textContent='Faça login no Painel para continuar.';return;}
-  const resposta=await fetch(API_CHAVES_HOMOLOGACAO+'/api/admin/chaves/estado',{method:'GET',headers:{Authorization:'Bearer '+sessao.access_token},cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(8000)});
-  if(!resposta.ok)throw Error('Servidor indisponível');
-  const estadoApi=await resposta.json();
-  if(estadoApi?.ambiente!=='homologacao')
-   throw Error('Consulta privada não habilitada');
-  permissoesChaves={emitir:estadoApi.emissaoHabilitada===true,revogar:estadoApi.revogacaoHabilitada===true};
-  estado.textContent=permissoesChaves.emitir&&permissoesChaves.revogar?'Operações habilitadas pelo servidor; é obrigatório comprovante assinado válido.':'Servidor conectado. Emissão e revogação ainda bloqueadas pelo servidor.';
- }catch{
-  estado.textContent='Não foi possível confirmar a integração. As operações continuam bloqueadas.';
- }finally{botao.disabled=false;atualizarBotoesChaves();}
-}
 
 function recarregarSemCache(){
   const base=location.href.split("?")[0].split("#")[0];
@@ -913,32 +811,37 @@ function atualizarResumoPainel(itens){
   set("resumoAbertas",abertas);
   set("resumoLembretes",lembretes);
   set("resumoConcluidas",concluidas);
-  // Indicadores internos: não alteram status, prazos legais ou dados públicos.
-  const faixas=[30,60,90,180];
-  const abertasSemEncaminhamento=todos.filter(x=>normalizar(x.status)!=="concluido" && !x.encaminhado_prefeitura_em).length;
-  const pendentes=todos.filter(x=>normalizar(x.status)!=="concluido" && x.encaminhado_prefeitura_em);
-  const dias=(x)=>diasEntreDatasCivisMandato(x.encaminhado_prefeitura_em,hoje);
-  const contagens=faixas.map((n,i)=>pendentes.filter(x=>dias(x)>=n && (i===faixas.length-1 || dias(x)<faixas[i+1])).length);
-  const resumo=document.getElementById("alertasPrazoResumo");
-  if(resumo) resumo.innerHTML=faixas.map((n,i)=>`<button type="button" onclick="filtrarPrazoMandato(${n})" style="margin:3px;padding:7px;border:1px solid #cbd5e1;border-radius:8px;background:#eff6ff;color:#174a7e;font-weight:700">${n===180?"180+ dias":n+"–"+(faixas[i+1]-1)+" dias"}: ${contagens[i]}</button>`).join("")+`<button type="button" onclick="filtrarPrazoMandato(-1)" style="margin:3px;padding:7px;border:1px solid #e8c27c;border-radius:8px;background:#fff5df;color:#754b13;font-weight:700">Sem data oficial: ${abertasSemEncaminhamento}</button><button type="button" onclick="filtrarPrazoMandato(0)" style="margin:3px;padding:7px;border:1px solid #cbd5e1;border-radius:8px;background:white">Limpar filtro</button>`;
-
 }
 
+// Inserido como script clássico somente no HTML candidato do Painel.
+// A identificação nativa apenas escolhe armazenamento; nunca concede acesso.
+const painelBiometriaNativa=/\bMandatoPainelBiometria\/1\b/.test(navigator.userAgent);
+let sessaoNativaMemoria=null;
+if(painelBiometriaNativa){try{localStorage.removeItem(STORAGE_KEY);localStorage.removeItem('sb-pmmsdjozyyxkbuqlkfpb-auth-token');}catch{}}
 function salvarSessao(sessao){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessao));
+ if(painelBiometriaNativa){sessaoNativaMemoria=sessao?{access_token:sessao.access_token,expires_at:sessao.expires_at}:null;return;}
+ localStorage.setItem(STORAGE_KEY,JSON.stringify(sessao));
 }
-
 function lerSessao(){
-  try{
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-  }catch(e){
-    return null;
-  }
+ if(painelBiometriaNativa)return sessaoNativaMemoria;
+ try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');}catch{return null;}
 }
-
 function limparSessao(){
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem("sb-pmmsdjozyyxkbuqlkfpb-auth-token");
+ sessaoNativaMemoria=null;window.mandatoLimparMfaNativo?.();
+ if(painelBiometriaNativa)location.assign('mandato-painel://sair');
+ try{localStorage.removeItem(STORAGE_KEY);localStorage.removeItem('sb-pmmsdjozyyxkbuqlkfpb-auth-token');}catch{}
+}
+if(painelBiometriaNativa){
+ window.mandatoSessaoParaBiometria=()=>{
+  const token=window.mandatoTokenMfaNativo?.();if(typeof token!=='string')return null;
+  try{const c=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));if(c.aal!=='aal2'||!Number.isSafeInteger(c.exp)||c.exp*1000<=Date.now())return null;return JSON.stringify({access_token:token,expires_at:c.exp*1000});}catch{return null;}
+ };
+ window.mandatoRestaurarSessaoBiometrica=valor=>{
+  try{const s=JSON.parse(valor);if(Object.keys(s).length!==2||typeof s.access_token!=='string'||!Number.isSafeInteger(s.expires_at)||s.expires_at<=Date.now())return false;
+   salvarSessao(s);mostrarPainel();Promise.resolve(carregarSolicitacoes()).catch(()=>mostrarLogin('Entre novamente.'));return true;
+  }catch{return false;}
+ };
+ addEventListener('pagehide',()=>{sessaoNativaMemoria=null;window.mandatoLimparMfaNativo?.();});
 }
 
 async function requisicao(url, opcoes = {}) {
@@ -1073,7 +976,6 @@ function atualizarFiltroMovimento(){
 
 function selecionarStatusRapido(status){
   faixaSemMovimento=0;
-  filtroPrazoMandato=0;
   const select=document.getElementById("filtroStatus");
   if(select) select.value=status;
   document.querySelectorAll("#statusFiltros button").forEach(b=>b.classList.toggle("ativo",b.dataset.status===status));
@@ -1085,7 +987,7 @@ async function atualizarContadoresStatus(){
     const sessao=await obterSessaoValida();
     if(!sessao) return;
     const resp=await requisicao(
-      SUPABASE_URL + "/rest/v1/solicitacoes?select=status,lembrete_em,criado_em,atualizado_em,encaminhado_prefeitura_em",
+      SUPABASE_URL + "/rest/v1/solicitacoes?select=status,lembrete_em,criado_em,atualizado_em",
       {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token}}
     );
     if(!resp.ok) return;
@@ -1163,6 +1065,11 @@ function normalizarAnexos(v) {
   }
 }
 
+function caminhoPublicoStorage(bucket, caminho) {
+  const partes = String(caminho || "").split("/").filter(Boolean).map(encodeURIComponent);
+  return SUPABASE_URL + "/storage/v1/object/public/" + encodeURIComponent(bucket) + "/" + partes.join("/");
+}
+
 function fecharAnexoModal(){
   const modal=document.getElementById("anexoModal");
   const conteudo=document.getElementById("anexoModalConteudo");
@@ -1189,41 +1096,48 @@ function mostrarAnexoNoPainel(url, caminho){
   modal.classList.add("aberto");
 }
 
-// Documentos enviados pelo mandato: apenas link assinado após login administrativo.
-// Os caminhos históricos continuam no JSON, mas os URLs públicos não são usados.
-async function abrirDocumentoResposta(caminho, botao) {
-  if (!/^[0-9]+\/[A-Za-z0-9._\/-]+$/.test(String(caminho || "")) || String(caminho).includes("..")) {
-    alert("Caminho de documento inválido.");
-    return;
+// Acesso administrativo a documentos de respostas: nunca reutilizar URL pública.
+function caminhoPrivadoDocumentoResposta(a) {
+  let caminho = String(a?.caminho || '');
+  if (!caminho) {
+    const legado=String(a?.url || '');
+    const prefixo=SUPABASE_URL + "/storage/v1/object/public/documentos-respostas/";
+    if (!legado.startsWith(prefixo) || legado.includes("?") || legado.includes("#")) return "";
+    try { caminho=legado.slice(prefixo.length).split("/").map(decodeURIComponent).join("/"); }
+    catch { return ""; }
   }
-  const textoOriginal = botao?.textContent || "Abrir documento";
-  if (botao) { botao.disabled = true; botao.textContent = "Abrindo..."; }
+  if (!new RegExp('^[0-9]+/[A-Za-z0-9._/-]+$').test(caminho) ||
+      caminho.includes("..") || caminho.includes("//")) return "";
+  return caminho;
+}
+
+async function abrirDocumentoResposta(caminho, botao) {
+  const caminhoSeguro=caminhoPrivadoDocumentoResposta({caminho});
+  if (!caminhoSeguro) { alert("Documento inválido."); return; }
+  const textoOriginal=botao?.textContent || "Abrir documento";
+  if(botao){botao.disabled=true;botao.textContent="Abrindo...";}
   try {
-    const sessao = await obterSessaoValida();
-    if (!sessao) throw new Error("Sua sessão expirou. Entre novamente.");
-    const codificado = String(caminho).split("/").map(encodeURIComponent).join("/");
-    const resposta = await requisicao(
-      SUPABASE_URL + "/storage/v1/object/sign/documentos-respostas/" + codificado,
+    const sessao=await obterSessaoValida();
+    if(!sessao) throw Error("Sua sessão expirou. Entre novamente.");
+    const caminhoUrl=caminhoSeguro.split("/").map(encodeURIComponent).join("/");
+    const resp=await requisicao(
+      SUPABASE_URL + "/storage/v1/object/sign/documentos-respostas/" + caminhoUrl,
       {method:"POST",headers:{
-        apikey:SUPABASE_KEY,
-        Authorization:"Bearer " + sessao.access_token,
+        apikey:SUPABASE_KEY, Authorization:"Bearer " + sessao.access_token,
         "Content-Type":"application/json"
       },body:JSON.stringify({expiresIn:300})}
     );
-    const dados = await resposta.json().catch(() => ({}));
-    if (!resposta.ok) throw new Error("Acesso ao documento não autorizado.");
-    let url = dados.signedURL || dados.signedUrl || "";
-    if (url.startsWith("/")) url = SUPABASE_URL + "/storage/v1" + url;
-    const validado = new URL(url);
-    if (validado.origin !== new URL(SUPABASE_URL).origin ||
-      !validado.pathname.startsWith("/storage/v1/object/sign/documentos-respostas/"))
-      throw new Error("Link de documento inválido.");
-    mostrarAnexoNoPainel(validado.href, caminho);
-  } catch(e) {
-    alert(mensagemDeErro(e));
-  } finally {
-    if (botao) { botao.disabled = false; botao.textContent = textoOriginal; }
-  }
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok) throw Error("Documento não autorizado ou indisponível.");
+    let link=data.signedURL || data.signedUrl || "";
+    if(link.startsWith("/")) link=SUPABASE_URL + "/storage/v1" + link;
+    const u=new URL(link);
+    if(u.origin!==new URL(SUPABASE_URL).origin ||
+       !u.pathname.startsWith("/storage/v1/object/sign/documentos-respostas/"))
+      throw Error("Link temporário inválido.");
+    mostrarAnexoNoPainel(u.href,caminhoSeguro);
+  } catch(err) { alert(mensagemDeErro(err)); }
+  finally { if(botao){botao.disabled=false;botao.textContent=textoOriginal;} }
 }
 
 async function abrirAnexoCidadao(caminho, botao) {
@@ -1404,6 +1318,7 @@ async function obterSessaoValida() {
   if (!sessao || !sessao.access_token) return null;
 
   if (sessao.expires_at && Date.now() > sessao.expires_at - 60000) {
+    if(painelBiometriaNativa){limparSessao();mostrarLogin('Sessão expirada. Entre com e-mail, senha e MFA.');return null;}
     if (!sessao.refresh_token) return null;
     sessao = await renovarSessao(sessao.refresh_token);
   }
@@ -1847,34 +1762,6 @@ function validarStatusParaAviso(link) {
   return true;
 }
 
-let filtroPrazoMandato=0;
-function diasEntreDatasCivisMandato(dataISO, hojeISO=dataHojeISO()){
-  const validar=(valor)=>{
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(String(valor||"")))return null;
-    const [ano,mes,dia]=valor.split("-").map(Number);
-    const utc=Date.UTC(ano,mes-1,dia);
-    const d=new Date(utc);
-    return d.getUTCFullYear()===ano && d.getUTCMonth()===mes-1 && d.getUTCDate()===dia ? utc : null;
-  };
-  const inicio=validar(dataISO), hoje=validar(hojeISO);
-  return inicio===null||hoje===null?-1:Math.floor((hoje-inicio)/86400000);
-}
-function diasDesdeEncaminhamentoMandato(item){
-  return diasEntreDatasCivisMandato(item.encaminhado_prefeitura_em);
-}
-function filtrarPrazoMandato(faixa){
-  filtroPrazoMandato=[-1,0,30,60,90,180].includes(faixa)?faixa:0;
-  faixaSemMovimento=0;
-  // O resumo conta todas as solicitações abertas; não herdar um filtro de status anterior.
-  if(filtroPrazoMandato!==0){
-    const seletor=document.getElementById("filtroStatus");
-    if(seletor)seletor.value="Todos";
-    // A busca textual também pode ocultar resultados contados no resumo.
-    const busca=document.getElementById("filtroBusca");
-    if(busca)busca.value="";
-  }
-  irPainel("solicitacoes",null,true);
-}
 async function carregarSolicitacoes() {
   const lista = document.getElementById("lista");
   lista.textContent = "Carregando solicitações...";
@@ -1972,15 +1859,6 @@ async function carregarSolicitacoes() {
       dados.sort((a,b)=>diasSemMovimento(b)-diasSemMovimento(a));
     }
     atualizarFiltroMovimento();
-    if([30,60,90,180].includes(filtroPrazoMandato)){
-      const limites={30:60,60:90,90:180,180:Infinity};
-      dados=dados.filter(item=>normalizar(item.status)!=="concluido" && diasDesdeEncaminhamentoMandato(item)>=filtroPrazoMandato && diasDesdeEncaminhamentoMandato(item)<limites[filtroPrazoMandato]);
-      dados.sort((a,b)=>diasDesdeEncaminhamentoMandato(b)-diasDesdeEncaminhamentoMandato(a));
-    }
-
-    if(filtroPrazoMandato===-1){
-      dados=dados.filter(item=>normalizar(item.status)!=="concluido" && !item.encaminhado_prefeitura_em);
-    }
 
     if (termoBusca) {
       dados = dados.filter(item =>
@@ -2044,11 +1922,10 @@ async function carregarSolicitacoes() {
             const links = anexos.length
               ? '<div class="anexos">' + anexos.map(a => {
                   const nome = esc(a.nome || "Documento");
-                  const caminho = String(a.caminho || "");
-                  // Não usar URL pública persistida em anexos antigos.
-                  return caminho ? '<button type="button" class="btn-anexo-cidadao" ' +
-                    'data-caminho="' + escCampo(caminho) + '" ' +
-                    'onclick="abrirDocumentoResposta(this.dataset.caminho, this)">📎 ' + nome + '</button>' : "";
+                  const caminho = caminhoPrivadoDocumentoResposta(a);
+                  return caminho ? '<button type="button" class="btn-anexo-cidadao" '+
+                    'data-caminho="' + escCampo(caminho) + '" '+
+                    'onclick="abrirDocumentoResposta(this.dataset.caminho,this)">📎 '+nome+'</button>' : "";
                 }).join("") + '</div>'
               : "";
             return '<div class="resposta-item">' +
@@ -2137,22 +2014,6 @@ async function carregarSolicitacoes() {
                   <div class="nota-info">Opcional</div>
                 </div>
               </div>
-              <div style="margin:10px 0;padding:10px;background:#edf7f1;border-radius:9px">
-                <strong style="font-size:13px">Encaminhamento oficial à Prefeitura</strong>
-                <div class="nota-grid">
-                  <div class="campo-mini"><label for="encaminhado-prefeitura-${id}">Data do encaminhamento</label><input id="encaminhado-prefeitura-${id}" type="date" value="${escCampo(item.encaminhado_prefeitura_em||"")}"></div>
-                  <div class="campo-mini"><label for="protocolo-prefeitura-${id}">Número do pedido / protocolo</label><input id="protocolo-prefeitura-${id}" type="text" maxlength="120" value="${escCampo(item.protocolo_prefeitura||"")}" placeholder="Ex.: Pedido 23/2026"></div>
-                </div>
-                <button type="button" onclick="salvarEncaminhamentoPrefeitura(${id},this)">Salvar encaminhamento</button>
-              </div>
-              <div style="margin:10px 0;padding:10px;background:#f1f7ff;border-radius:9px">
-                <strong style="font-size:13px">Fiscalização — cobranças à Prefeitura</strong>
-                <p style="font-size:12px;margin:5px 0">Registre data do encaminhamento e cobranças na anotação interna. Estas anotações são editáveis e ainda não constituem histórico auditável.</p>
-                <button type="button" onclick="registrarCobrancaMandato(${id})">Registrar cobrança na anotação</button>
-                <button type="button" onclick="registrarHistoricoFiscalizacaoMandato(${id},this)">Registrar no histórico auditável</button>
-                <button type="button" onclick="consultarHistoricoFiscalizacaoMandato(${id},this)">Consultar histórico auditável</button>
-                <div id="historico-fiscalizacao-${id}" role="status" aria-live="polite" style="font-size:12px;margin-top:8px"></div>
-              </div>
               <div class="nota-actions">
                 ${item.lembrete_em ? `<button type="button" class="linkbtn" onclick="removerLembrete(${id})">Remover lembrete</button>` : ""}
                 <button id="btn-anotacao-${id}" class="primario" type="button" onclick="salvarAnotacaoInterna(${id})">Salvar</button>
@@ -2193,19 +2054,6 @@ async function carregarSolicitacoes() {
             <button type="button" onclick="prepararConviteAvaliacao(${id},this)">Preparar avaliação</button>
             <div class="convite-resultado" aria-live="polite"></div>
           </section>` : ""}
-
-          <section class="gestao-card nota" aria-label="Recuperação segura de acesso" data-recuperacao-homologacao="pendente">
-            <div class="gestao-head">
-              <div class="gestao-ico">🔐</div>
-              <div><strong>Recuperação segura de acesso</strong><small>Disponível após homologação da identidade e do WhatsApp</small></div>
-            </div>
-            <div class="gestao-body">
-              <p style="font-size:13px;line-height:1.5;margin:0">A recuperação da chave privada desta solicitação ainda não está habilitada. A confirmação do WhatsApp, a verificação independente de identidade e a autorização administrativa precisam ser validadas antes da liberação.</p>
-              <p style="font-size:12px;margin:9px 0 0;color:#64748b">Nenhuma chave será emitida ou revogada por esta tela enquanto a integração segura estiver pendente.</p>
-              <button type="button" onclick="verificarRecuperacaoSolicitacao(${id},this)" style="margin-top:10px">Verificar autorização na homologação</button>
-              <div data-resultado-recuperacao role="status" aria-live="polite" style="font-size:12px;margin-top:8px"></div>
-            </div>
-          </section>
 
           <section class="gestao-card resposta">
             <div class="gestao-head">
@@ -2369,184 +2217,6 @@ async function removerLembrete(id){
   await salvarAnotacaoInterna(id);
 }
 
-async function salvarEncaminhamentoPrefeitura(id,botao){
-  // Evita requisições duplicadas enquanto uma operação anterior está em andamento.
-  if(botao?.disabled)return;
-  if(!/^[1-9]\d*$/.test(String(id)) || !Number.isSafeInteger(Number(id))){alert("Identificador da solicitação inválido.");return;}
-  const data=document.getElementById("encaminhado-prefeitura-"+id)?.value||null;
-  const protocolo=document.getElementById("protocolo-prefeitura-"+id)?.value.trim()||null;
-  const hojeISO=dataHojeISO();
-  if(data && !/^\d{4}-\d{2}-\d{2}$/.test(data)){alert("Informe uma data válida de encaminhamento.");return;}
-  if(data && diasEntreDatasCivisMandato(data,hojeISO)<0){alert("A data de encaminhamento é inválida ou futura.");return;}
-  if(!data && protocolo){alert("Informe também a data do encaminhamento.");return;}
-  if(!data && !protocolo){alert("Para remover um encaminhamento já registrado, utilize um procedimento administrativo específico. Não é permitido apagar esses dados por engano.");return;}
-  if(protocolo && protocolo.length>120){alert("O protocolo deve ter no máximo 120 caracteres.");return;}
-  if(!confirm("Confirmar dados do encaminhamento oficial à Prefeitura?"))return;
-  botao.disabled=true;
-  try{
-    const sessao=await obterSessaoValida();
-    if(!sessao)throw new Error("Sessão expirada.");
-    const resp=await requisicao(SUPABASE_URL+"/rest/v1/solicitacoes?id=eq."+encodeURIComponent(id),{
-      method:"PATCH",
-      headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Content-Type":"application/json","Prefer":"return=representation"},
-      body:JSON.stringify({encaminhado_prefeitura_em:data,protocolo_prefeitura:protocolo})
-    });
-    const retorno=await resp.json().catch(()=>[]);
-    if(!resp.ok || !Array.isArray(retorno) || retorno.length!==1)throw new Error(retorno.message||"Não foi possível confirmar a gravação.");
-    if(String(retorno[0].id)!==String(id) || retorno[0].encaminhado_prefeitura_em!==data || (retorno[0].protocolo_prefeitura||null)!==protocolo)throw new Error("O servidor não confirmou os valores informados.");
-    // Leitura independente após o PATCH: não considerar a operação concluída
-    // apenas porque a resposta de escrita repetiu os valores enviados.
-    const verificacao=await requisicao(
-      SUPABASE_URL+"/rest/v1/solicitacoes?id=eq."+encodeURIComponent(id)+"&select=id,encaminhado_prefeitura_em,protocolo_prefeitura",
-      {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Cache-Control":"no-cache"}}
-    );
-    const persistidos=await verificacao.json().catch(()=>[]);
-    if(!verificacao.ok || !Array.isArray(persistidos) || persistidos.length!==1 ||
-       String(persistidos[0].id)!==String(id) || persistidos[0].encaminhado_prefeitura_em!==data ||
-       (persistidos[0].protocolo_prefeitura||null)!==protocolo){
-      throw new Error("A gravação foi enviada, mas a leitura de confirmação falhou. Recarregue o painel antes de tentar novamente para evitar duplicidade.");
-    }
-    await carregarSolicitacoes();
-    alert("Dados do encaminhamento salvos com sucesso.");
-    await atualizarContadoresStatus();
-  }catch(e){alert(mensagemDeErro(e));}
-  finally{botao.disabled=false;}
-}
-async function registrarHistoricoFiscalizacaoMandato(id,botao){
-  // Evita requisições duplicadas enquanto uma operação anterior está em andamento.
-  if(botao?.disabled)return;
-  if(!/^[1-9]\d*$/.test(String(id)) || !Number.isSafeInteger(Number(id))){alert("Identificador da solicitação inválido.");return;}
-  const tipos=["encaminhamento","cobranca","retorno","verificacao"];
-  const entrada=prompt("Tipo: encaminhamento, cobranca, retorno ou verificacao","cobranca");
-  if(entrada===null)return;
-  const tipo=normalizar(entrada).replace(/ç/g,"c");
-  if(!tipos.includes(tipo)){alert("Tipo inválido. Use: "+tipos.join(", "));return;}
-  const descricaoEntrada=prompt("Descreva o ato de fiscalização (5 a 2000 caracteres, sem dados pessoais sensíveis):","");
-  if(descricaoEntrada===null)return;
-  const descricao=descricaoEntrada.trim();
-  if(descricao.length<5 || descricao.length>2000){alert("Descrição deve ter entre 5 e 2000 caracteres.");return;}
-  const protocoloEntrada=prompt("Protocolo oficial de referência (opcional):","");
-  if(protocoloEntrada===null)return;
-  const protocolo=protocoloEntrada.trim()||null;
-  if(protocolo && protocolo.length>120){alert("Protocolo deve ter até 120 caracteres.");return;}
-  if(!confirm("Registrar permanentemente esta fiscalização? O histórico não permite edição ou exclusão pelo painel."))return;
-  botao.disabled=true;
-  let envioIniciado=false;
-  let respostaRecebida=false;
-  let gravacaoConfirmada=false;
-  try{
-    const sessao=await obterSessaoValida();
-    if(!sessao)throw new Error("Sessão expirada. Entre novamente.");
-    envioIniciado=true;
-    const resposta=await requisicao(SUPABASE_URL+"/rest/v1/solicitacoes_fiscalizacao_historico",{
-      method:"POST",
-      headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Content-Type":"application/json","Prefer":"return=representation"},
-      body:JSON.stringify({solicitacao_id:Number(id),tipo,descricao,protocolo_referencia:protocolo})
-    });
-    respostaRecebida=true;
-    const retorno=await resposta.json().catch(()=>null);
-    if(!resposta.ok){
-      if(resposta.status===404 || retorno?.code==="PGRST205" || retorno?.code==="42P01"){
-        throw new Error("Histórico auditável ainda não habilitado. Nenhum registro foi criado.");
-      }
-      throw new Error(retorno?.message||"Não foi possível registrar a fiscalização.");
-    }
-    if(!Array.isArray(retorno)||retorno.length!==1||!retorno[0].id){
-      throw new Error("Resposta de gravação inconclusiva. Consulte o histórico antes de tentar novamente para evitar duplicidade.");
-    }
-    const idRegistro=retorno[0].id;
-    gravacaoConfirmada=true;
-    const verificacao=await requisicao(
-      SUPABASE_URL+"/rest/v1/solicitacoes_fiscalizacao_historico?id=eq."+encodeURIComponent(idRegistro)+"&select=id,solicitacao_id,tipo,descricao,protocolo_referencia",
-      {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Cache-Control":"no-cache"}}
-    );
-    const confirmado=await verificacao.json().catch(()=>null);
-    if(!verificacao.ok || !Array.isArray(confirmado) || confirmado.length!==1 ||
-       String(confirmado[0].id)!==String(idRegistro) ||
-       Number(confirmado[0].solicitacao_id)!==Number(id) ||
-       confirmado[0].tipo!==tipo || confirmado[0].descricao!==descricao ||
-       (confirmado[0].protocolo_referencia||null)!==protocolo){
-      throw new Error("Registro enviado, mas não foi possível confirmar a persistência. Consulte o histórico antes de repetir para evitar duplicidade.");
-    }
-    alert("Fiscalização registrada e confirmada por nova leitura do banco.");
-    const destino=document.getElementById("historico-fiscalizacao-"+id);
-    if(destino)destino.textContent="Registro confirmado. Use Consultar histórico auditável para visualizar a linha do tempo.";
-  }catch(e){
-    const erro=mensagemDeErro(e);
-    if(gravacaoConfirmada){
-      alert("Registro enviado. A leitura de confirmação não foi concluída. Consulte o histórico antes de repetir para evitar duplicidade. Detalhes: "+erro);
-    }else if(envioIniciado && !respostaRecebida){
-      alert("A conexão falhou durante o envio. A gravação pode ter ocorrido. Consulte o histórico antes de tentar novamente para evitar duplicidade. Detalhes: "+erro);
-    }else{
-      alert(erro);
-    }
-  }
-  finally{botao.disabled=false;}
-}
-async function consultarHistoricoFiscalizacaoMandato(id,botao){
-  // Evita requisições duplicadas enquanto uma operação anterior está em andamento.
-  if(botao?.disabled)return;
-  if(!/^[1-9]\d*$/.test(String(id)) || !Number.isSafeInteger(Number(id))){alert("Identificador da solicitação inválido.");return;}
-  const destino=document.getElementById("historico-fiscalizacao-"+id);
-  if(!destino)return;
-  botao.disabled=true;
-  destino.textContent="Consultando histórico...";
-  try{
-    const sessao=await obterSessaoValida();
-    if(!sessao)throw new Error("Sessão expirada. Entre novamente.");
-    const url=SUPABASE_URL+"/rest/v1/solicitacoes_fiscalizacao_historico?select=id,solicitacao_id,tipo,descricao,protocolo_referencia,registrado_em&solicitacao_id=eq."+encodeURIComponent(id)+"&order=registrado_em.desc&limit=100";
-    const resposta=await requisicao(url,{headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Cache-Control":"no-cache"}});
-    const dados=await resposta.json().catch(()=>null);
-    if(!resposta.ok){
-      if(resposta.status===404 || dados?.code==="PGRST205" || dados?.code==="42P01"){
-        destino.textContent="Histórico auditável ainda não habilitado neste banco. As anotações internas continuam editáveis.";
-        return;
-      }
-      throw new Error(dados?.message||"Não foi possível consultar o histórico.");
-    }
-    if(!Array.isArray(dados))throw new Error("Resposta inesperada ao consultar histórico.");
-    if(dados.some(registro=>String(registro?.solicitacao_id)!==String(id)))throw new Error("Histórico retornou registro de outra solicitação. Exibição bloqueada.");
-    if(!dados.length){destino.textContent="Nenhum registro de fiscalização encontrado.";return;}
-    destino.replaceChildren();
-    const lista=document.createElement("ol");
-    for(const registro of dados){
-      const item=document.createElement("li");
-      const data=formatarData(registro.registrado_em)||"Data indisponível";
-      const tipo=String(registro.tipo||"Registro");
-      const descricao=String(registro.descricao||"");
-      const protocolo=registro.protocolo_referencia?" | Protocolo: "+registro.protocolo_referencia:"";
-      item.textContent=data+" — "+tipo+": "+descricao+protocolo;
-      lista.appendChild(item);
-    }
-    destino.appendChild(lista);
-    if(dados.length===100){
-      const aviso=document.createElement("p");
-      aviso.textContent="Exibidos os 100 registros mais recentes.";
-      destino.appendChild(aviso);
-    }
-  }catch(e){
-    destino.textContent="Erro ao consultar histórico: "+mensagemDeErro(e);
-  }finally{botao.disabled=false;}
-}
-function registrarCobrancaMandato(id){
-  const campo=document.getElementById("anotacao-"+id);
-  if(!campo) return;
-  const tipo=prompt("Tipo de registro: encaminhamento, cobrança, retorno ou verificação","cobrança");
-  if(tipo===null) return;
-  const tiposPermitidos=["encaminhamento","cobrança","retorno","verificação"];
-  const tipoNormalizado=tipo.trim().toLocaleLowerCase("pt-BR");
-  if(!tiposPermitidos.includes(tipoNormalizado)){alert("Selecione um tipo válido: "+tiposPermitidos.join(", ")+".");return;}
-  const descricao=prompt("Descreva a providência cobrada ou resposta recebida (sem dados pessoais sensíveis):","");
-  if(descricao===null)return;
-  const descricaoLimpa=descricao.trim();
-  if(descricaoLimpa.length<5 || descricaoLimpa.length>2000){alert("A descrição deve ter de 5 a 2000 caracteres.");return;}
-  const agora=new Date();
-  const instante=agora.toISOString();
-  const entrada="[Fiscalização "+instante+" — "+tipoNormalizado+"] "+descricaoLimpa;
-  campo.value=(campo.value.trim()?campo.value.trim()+"\n":"")+entrada;
-  campo.dispatchEvent(new Event("input",{bubbles:true}));
-  alert("Rascunho adicionado à anotação interna (editável). Toque em Salvar para gravar. Ainda não é um histórico auditável.");
-}
 async function salvarAnotacaoInterna(id) {
   const campo = document.getElementById(`anotacao-${id}`);
   const lembrete = document.getElementById(`lembrete-${id}`);
@@ -2597,18 +2267,7 @@ async function salvarAnotacaoInterna(id) {
       );
     }
 
-    const notaEsperada=campo.value.trim()||null;
-    const confirmacao=await requisicao(
-      SUPABASE_URL + "/rest/v1/solicitacoes?id=eq." + encodeURIComponent(id) + "&select=id,anotacao_interna,lembrete_em",
-      {headers:{"apikey":SUPABASE_KEY,"Authorization":"Bearer "+sessao.access_token,"Cache-Control":"no-cache"}}
-    );
-    const registros=await confirmacao.json().catch(()=>[]);
-    if(!confirmacao.ok || !Array.isArray(registros) || registros.length!==1 ||
-       (registros[0].anotacao_interna||null)!==notaEsperada ||
-       (registros[0].lembrete_em||null)!==lembreteIso){
-      throw new Error("A gravação foi enviada, mas a leitura de confirmação não correspondeu. Recarregue o painel antes de tentar salvar novamente.");
-    }
-    alert("Anotação e lembrete salvos e confirmados no banco!");
+    alert("Anotação e lembrete salvos!");
     await carregarSolicitacoes();
 
   } catch (e) {
@@ -2754,7 +2413,6 @@ document.getElementById("filtroBusca").addEventListener("input", () => {
 
 document.getElementById("btnSair").addEventListener("click", sair);
 
-if(location.origin==='https://mandato-neon-homologacao.onrender.com'&&location.pathname.startsWith('/hml/painel/')){document.getElementById('entradaRecuperacoesManuais').hidden=false;document.getElementById('entradaRecuperacoesManuais').style.display='block';}
 verificarLogin();
 
 // Permite instalar o Painel V17 na tela inicial do celular como aplicativo web.
@@ -2769,5 +2427,6 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="./mapa-solicitacoes.js" defer></script>
+<script>window.MANDATO_CHAVE_PUBLICA=SUPABASE_KEY;</script><script type="module" src="../v2/seguranca/painel-privado.mjs?v=telefone-1"></script>
 </body>
 </html>
