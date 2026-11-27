@@ -22,7 +22,8 @@ export function criarResolvedorMfaRecente(params){
    const alterada=Date.parse(usuarioAtual?.updated_at||'');
    const contaAtual=Number.isFinite(alterada)&&Number.isSafeInteger(claims.iat)&&claims.iat*1000<=tempo&&claims.iat>=Math.floor(alterada/1000);
    const recente=metodos.some(a=>a.method==='totp'&&Number.isSafeInteger(a.timestamp)&&a.timestamp*1000<=tempo&&tempo-a.timestamp*1000<300000);
-   return {usuarioId,mfaRecente:claims.sub===usuarioId&&claims.aal==='aal2'&&Number.isSafeInteger(claims.exp)&&claims.exp*1000>tempo&&recente&&fatorAtual&&contaAtual};
+   const mfaValido=claims.sub===usuarioId&&claims.aal==='aal2'&&Number.isSafeInteger(claims.exp)&&claims.exp*1000>tempo&&fatorAtual&&contaAtual&&metodos.some(a=>a.method==='totp'&&Number.isSafeInteger(a.timestamp)&&a.timestamp*1000<=tempo);
+   return {usuarioId,mfaAtivado:mfaValido,mfaRecente:mfaValido&&recente};
   }catch{return {usuarioId,mfaRecente:false};}
  };
 }

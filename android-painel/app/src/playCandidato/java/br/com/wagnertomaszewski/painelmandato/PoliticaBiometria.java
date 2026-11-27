@@ -11,6 +11,10 @@ final class PoliticaBiometria {
         estado=autenticado&&mfaAtivado&&mfaRecente?Resultado.ABERTA:Resultado.LOGIN_COMPLETO;
         return estado==Resultado.ABERTA;
     }
+    boolean validarReabertura(boolean autenticado,boolean mfaAtivado){
+        estado=autenticado&&mfaAtivado?Resultado.ABERTA:Resultado.LOGIN_COMPLETO;
+        return estado==Resultado.ABERTA;
+    }
     static boolean origemPermitida(String url){
         if(url==null)return false;
         try{java.net.URI u=new java.net.URI(url);return "https".equals(u.getScheme())&&"wagnertomaszewski-boop.github.io".equals(u.getHost())&&u.getPort()==-1&&u.getUserInfo()==null&&u.getQuery()==null&&"/cartao-wagner-/painel/index.html".equals(u.getPath());}catch(Exception e){return false;}

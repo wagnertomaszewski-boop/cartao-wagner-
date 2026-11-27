@@ -79,7 +79,7 @@ final class BiometriaPainel extends ProtecaoLocal {
           try{Object v=new org.json.JSONTokener(valor).nextValue();if(!(v instanceof String))throw new Exception();cookie=validarSessao((String)v);}catch(Exception e){informar("Faça login completo e confirme o MFA na candidata web antes de ativar.");return;}
           mostrarBloqueio("Conferindo login e MFA com o servidor…");final int tarefa=++sequencia;
           trabalho.execute(()->{try{
-            boolean[] estado=estadoServidor(cookie);
+            boolean[] estado=estadoServidor(cookie,false);
             if(!estado[0]||!estado[1]||!estado[2]){naTela(tarefa,()->loginCompleto("Faça novo login completo com MFA antes de ativar a biometria."));return;}
             KeyStore ks=chaves();if(ks.containsAlias(ALIAS))ks.deleteEntry(ALIAS);
             KeyPairGenerator gerador=KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA,"AndroidKeyStore");
@@ -123,9 +123,9 @@ final class BiometriaPainel extends ProtecaoLocal {
                     Cipher autenticado=resultado.getCryptoObject()==null?null:resultado.getCryptoObject().getCipher();if(autenticado==null)throw new GeneralSecurityException();
                     bytes=EnvelopeSessao.abrir(EnvelopeSessao.ler(envelope),autenticado);
                     String cookie=validarSessao(new String(bytes,StandardCharsets.UTF_8));
-                    boolean[] estado=estadoServidor(cookie);
+                    boolean[] estado=estadoServidor(cookie,true);
                     naTela(tarefa,()->{
-                        if(!politica.validarServidor(estado[0],estado[1],estado[2])){loginCompleto("Sessão expirada, revogada ou MFA sem validade recente. Faça login completo novamente.");return;}
+                        if(!politica.validarReabertura(estado[0],estado[1])){loginCompleto("Sessão expirada, revogada ou sem fator verificado. Faça login completo novamente.");return;}
                         if(ativacao){if(!prefs.edit().putString(REGISTRO,Base64.encodeToString(envelope,Base64.NO_WRAP)).commit()){loginCompleto("Não foi possível guardar a sessão protegida.");return;}ativa=true;}
                         retomadaBiometrica=!ativacao;
                         restaurarCookie(cookie,tarefa);informar(ativacao?"Biometria ativada. Senha e MFA continuam obrigatórios quando exigidos.":"Sessão válida desbloqueada. A biometria não renovou o MFA.");
@@ -149,8 +149,8 @@ final class BiometriaPainel extends ProtecaoLocal {
         if(j.length()!=2||!token.matches("[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+")||token.length()>7600||exp<=System.currentTimeMillis())throw new GeneralSecurityException();
         return new JSONObject().put("access_token",token).put("expires_at",exp).toString();
     }
-    private boolean[] estadoServidor(String sessao) throws IOException {
-        HttpsURLConnection c=(HttpsURLConnection)new URL(API).openConnection();
+    private boolean[] estadoServidor(String sessao,boolean reabrir) throws IOException {
+        HttpsURLConnection c=(HttpsURLConnection)new URL(reabrir?API.replace("/validar","/reabrir"):API).openConnection();
         c.setConnectTimeout(10000);c.setReadTimeout(10000);c.setInstanceFollowRedirects(false);c.setUseCaches(false);
         try {
             JSONObject j=new JSONObject(validarSessao(sessao));
@@ -161,7 +161,7 @@ final class BiometriaPainel extends ProtecaoLocal {
             if(c.getResponseCode()!=200)return new boolean[]{false,false,false};
             ByteArrayOutputStream out=new ByteArrayOutputStream();try(InputStream in=c.getInputStream()){byte[] b=new byte[512];int n;while((n=in.read(b))!=-1){if(out.size()+n>4096)throw new IOException();out.write(b,0,n);}}
             JSONObject e=new JSONObject(out.toString("UTF-8"));
-            return new boolean[]{e.optBoolean("autenticado"),e.optBoolean("mfaRecente"),e.optBoolean("mfaRecente")};
+            return new boolean[]{e.optBoolean("autenticado"),reabrir?e.optBoolean("mfaAtivado"):e.optBoolean("mfaRecente"),e.optBoolean("mfaRecente")};
         }catch(IOException e){throw e;}catch(Exception e){return new boolean[]{false,false,false};}finally{c.disconnect();}
     }
     private KeyStore chaves() throws GeneralSecurityException,IOException {KeyStore k=KeyStore.getInstance("AndroidKeyStore");try{k.load(null);}catch(java.security.cert.CertificateException e){throw new GeneralSecurityException(e);}return k;}

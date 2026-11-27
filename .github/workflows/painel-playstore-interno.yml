@@ -3,7 +3,7 @@ name: Painel do Mandato - Play Store (teste interno)
 on:
   push:
     branches: [candidate/painel-biometria-assinada]
-    paths: [.github/workflows/painel-playstore-interno.yml]
+    paths: [.github/workflows/painel-playstore-interno.yml, 'android-painel/app/src/playCandidato/**']
   workflow_dispatch:
     inputs:
       ultimo_codigo:
