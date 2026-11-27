@@ -58,7 +58,7 @@ export function criarRepositorio({pool,segredo,segredoChaves,storage,agora=()=>D
     throw falha(409,'Envio já processado ou alterado.');
    }
    if(!await limitar(c,'cadastro-telefone',campos[1],5,3600000))return {erro:429};
-   const s=(await c.query(`INSERT INTO public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,status,latitude,longitude,localizacao_origem,precisao_metros,localizacao_autorizada_em) VALUES($1,$2,$3,$4,$5,'Encaminhado',$6,$7,$8,$9,$10) RETURNING id,protocolo`,[...campos,lat,lng,origem,precisao,origem?new Date(agora()):null])).rows[0];
+   const s=(await c.query(`INSERT INTO public.solicitacoes(nome,whatsapp,localidade,assunto,descricao,status,latitude,longitude,localizacao_origem,precisao_metros,localizacao_autorizada_em) VALUES($1,$2,$3,$4,$5,'Recebida',$6,$7,$8,$9,$10) RETURNING id,protocolo`,[...campos,lat,lng,origem,precisao,origem?new Date(agora()):null])).rows[0];
    if(!s.protocolo||(await c.query('SELECT id FROM public.solicitacoes WHERE protocolo=$1',[s.protocolo])).rows.length!==1)throw falha(409,'Protocolo indisponível; nenhuma solicitação criada.');
    await c.query('INSERT INTO mandato_privado.chaves_acompanhamento(solicitacao_id,segredo_verificador) VALUES($1,$2)',[s.id,hash]);
    await c.query('INSERT INTO mandato_privado.operacoes(id,solicitacao_id,dados_hash) VALUES($1,$2,$3)',[op,s.id,dadosHash]);
