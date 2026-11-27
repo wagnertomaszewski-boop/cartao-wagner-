@@ -114,6 +114,21 @@ button.primary{color:#fff;background:#0a68b4}button:disabled{opacity:.6}
 "use strict";
 const BASE="https://pmmsdjozyyxkbuqlkfpb.supabase.co",KEY="sb_publishable_DA687gC36Y6UO3up6G8ZDA_OeLoqZk_",ADMIN="ca5c30ec-828e-4c95-a0b9-a415bb9b3643";
 const STORE="wagner_admin_session_v2";
+const nativa=/\bMandatoPainelBiometria\/1\b/.test(navigator.userAgent);
+let memoriaAgenda=null;
+if(nativa){try{localStorage.removeItem(STORE);}catch{}window.mandatoAgendaMemoria=true;}
+const sessaoAgenda={
+ getItem:k=>nativa?memoriaAgenda:localStorage.getItem(k),
+ setItem:(k,v)=>{
+  if(nativa){const d=JSON.parse(v);delete d.refresh_token;memoriaAgenda=JSON.stringify(d);}
+  else localStorage.setItem(k,v);
+ },
+ removeItem:k=>{
+  if(nativa){memoriaAgenda=null;location.assign('mandato-painel://sair');}
+  else localStorage.removeItem(k);
+ }
+};
+addEventListener('pagehide',()=>{memoriaAgenda=null;});
 const $=x=>document.getElementById(x);
 const esc=x=>String(x==null?"":x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const norm=x=>String(x||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
@@ -138,7 +153,7 @@ async function validarToken(access){
 async function carregarSessao(){
  let sucesso=false;
  try{
-  const s=JSON.parse(localStorage.getItem(STORE)||"null");
+  const s=JSON.parse(sessaoAgenda.getItem(STORE)||"null");
   if(!s?.access_token)return;
   if(s.expires_at && s.expires_at<Date.now()+10000)return;
   if(!await validarToken(s.access_token))return;
@@ -155,11 +170,11 @@ $("loginForm").onsubmit=async e=>{
   const r=await fetch(BASE+"/auth/v1/token?grant_type=password",{method:"POST",headers:{apikey:KEY,"Content-Type":"application/json"},body:JSON.stringify({email:$("email").value.trim(),password:$("senha").value})});
   const data=await r.json();if(!r.ok||!data.access_token)throw Error(data?.msg||data?.message||"Falha na autenticação.");
   if(!await validarToken(data.access_token))throw Error("Esta conta não tem permissão de administrador.");
-  token=data.access_token;localStorage.setItem(STORE,JSON.stringify({access_token:token,refresh_token:data.refresh_token,expires_at:Date.now()+(data.expires_in||3600)*1000}));
+  token=data.access_token;sessaoAgenda.setItem(STORE,JSON.stringify({access_token:token,refresh_token:data.refresh_token,expires_at:Date.now()+(data.expires_in||3600)*1000}));
   $("senha").value="";await carregar();$("login").style.display="none";$("workspace").style.display="block";aviso("msgLogin","");
  }catch(err){token="";aviso("msgLogin",err.message,true)}finally{b.disabled=false}
 };
-$("logout").onclick=()=>{token="";localStorage.removeItem(STORE);$("workspace").style.display="none";$("login").style.display="block"};
+$("logout").onclick=()=>{token="";sessaoAgenda.removeItem(STORE);$("workspace").style.display="none";$("login").style.display="block"};
 async function carregar(){
  items=await chamar("/rest/v1/agenda_mandato?select=*&order=inicio_em.asc");
  if(!Array.isArray(items))throw Error("A agenda retornou dados inesperados.");
