@@ -64,6 +64,13 @@ function limparResultado(){
  galeria.limpar();
  $('erroAnexoV2').style.display='none';
 }
+const campoChaveConsulta=$('chaveConsultaV2');
+const mostrarChaveConsulta=$('mostrarChaveV2');
+function exibirChaveConsulta(visivel){
+ campoChaveConsulta.type=visivel?'text':'password';
+ mostrarChaveConsulta.textContent=visivel?'Ocultar chave':'Mostrar chave';
+}
+mostrarChaveConsulta.onclick=()=>exibirChaveConsulta(campoChaveConsulta.type==='password');
 async function consultar(event){
  event.preventDefault();
  limparResultado();
@@ -112,7 +119,8 @@ async function consultar(event){
   avisar('erro',e.message);
  }finally{
   $('consultar').disabled=false;
-  $('chaveConsultaV2').value='';
+  campoChaveConsulta.value='';
+  exibirChaveConsulta(false);
  }
 }
 $('formConsultaV2').addEventListener('submit',consultar);
@@ -150,7 +158,7 @@ pedirCodigo.onclick=async()=>{
  }
 };
 $('validarTemporario').onclick=async()=>{try{const r=await api.validarNavegador($('codigoTemporario').value);if(r.reciboAusente)throw Error('Recibo indisponível neste navegador. Use o mesmo navegador em que pediu a recuperação.');if(r.validado!==true)throw Error('Código inválido, expirado ou já utilizado.');$('protocolo').value=r.protocolo;$('novaChave').value=r.novaChave;$('novaChaveBloco').hidden=false;avisar('erro','Guarde sua chave individual. Se existia uma chave anterior, ela foi invalidada.');}catch(e){avisar('erro',e.message);}finally{$('codigoTemporario').value='';}};
-function limpar(){ciclo++;acesso=null;cadastro=null;pendentes=[];recibo.hidden=true;limparResultado();$('novaChaveBloco').hidden=true;for(const id of ['chaveEmitida','novaChave','chaveConsultaV2','codigoTemporario'])$(id).value='';$('resultado').classList.remove('show');}
+function limpar(){exibirChaveConsulta(false);ciclo++;acesso=null;cadastro=null;pendentes=[];recibo.hidden=true;limparResultado();$('novaChaveBloco').hidden=true;for(const id of ['chaveEmitida','novaChave','chaveConsultaV2','codigoTemporario'])$(id).value='';$('resultado').classList.remove('show');}
 addEventListener('pagehide',limpar);addEventListener('pageshow',e=>{if(e.persisted)limpar();});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('./service-worker-privado.js?v=chave-12-1',{scope:'./',updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
 for(const id of ['botaoEnviar','consultar'])$(id).disabled=false;

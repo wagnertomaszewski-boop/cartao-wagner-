@@ -265,6 +265,9 @@ body{background:#e9eff6}
 #solicitar .recibo-solicitacao h2{margin:0 0 12px;font-size:1.25rem}
 #solicitar .recibo-solicitacao label{display:block;margin-top:12px}
 #solicitar #chaveEmitida{width:100%;box-sizing:border-box;font-size:16px}
+#acompanhar .campo-chave-consulta{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-bottom:14px}
+#acompanhar .campo-chave-consulta input{margin:0;min-width:0}
+#mostrarChaveV2{min-height:44px;border:1px solid #bac8d7;border-radius:10px;padding:0 10px;background:#edf6ff;color:#084c82;font-weight:700}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="./seguranca/botoes.css?v=1">
@@ -379,7 +382,7 @@ body{background:#e9eff6}
 <label for="protocolo">Protocolo</label>
 <input id="protocolo" required spellcheck="false">
 <label for="chaveConsultaV2">Chave de acesso</label>
-<input id="chaveConsultaV2" type="password" required maxlength="43" autocomplete="off" spellcheck="false">
+<div class="campo-chave-consulta"><input id="chaveConsultaV2" type="password" required maxlength="43" autocomplete="off" spellcheck="false"><button id="mostrarChaveV2" type="button" aria-controls="chaveConsultaV2">Mostrar chave</button></div>
 <button id="consultar" class="primary" type="submit" disabled>Consultar solicitação</button>
 </form>
 <details id="recuperacaoV2">
@@ -897,5 +900,5 @@ function renderPedidosMandatoV2(){
 document.addEventListener('DOMContentLoaded',renderPedidosMandatoV2);
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<script>document.getElementById('formSolicitacao').addEventListener('submit',e=>e.preventDefault());for(const id of ['botaoEnviar','consultar'])document.getElementById(id).disabled=true;document.getElementById('mensagem').textContent='Carregando acesso seguro. Se não carregar, tente novamente mais tarde.';document.getElementById('mensagem').style.display='block';</script><script>if(["#acompanhar","#recuperacaoV2"].includes(location.hash))go("acompanhar");</script><script type="module" src="./seguranca/tela-privada.mjs?v=recibo-1"></script>
+<script>document.getElementById('formSolicitacao').addEventListener('submit',e=>e.preventDefault());for(const id of ['botaoEnviar','consultar'])document.getElementById(id).disabled=true;document.getElementById('mensagem').textContent='Carregando acesso seguro. Se não carregar, tente novamente mais tarde.';document.getElementById('mensagem').style.display='block';</script><script>if(["#acompanhar","#recuperacaoV2"].includes(location.hash))go("acompanhar");</script><script type="module" src="./seguranca/tela-privada.mjs?v=mostrar-chave-1"></script>
 </body></html>
